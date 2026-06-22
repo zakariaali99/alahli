@@ -1,0 +1,241 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --font-sans: var(--font-sans);
+  --color-sidebar-ring: var(--sidebar-ring);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar: var(--sidebar);
+  --color-chart-5: var(--chart-5);
+  --color-chart-4: var(--chart-4);
+  --color-chart-3: var(--chart-3);
+  --color-chart-2: var(--chart-2);
+  --color-chart-1: var(--chart-1);
+  --color-ring: var(--ring);
+  --color-input: var(--input);
+  --color-border: var(--border);
+  --color-destructive: var(--destructive);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-accent: var(--accent);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-muted: var(--muted);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-secondary: var(--secondary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-primary: var(--primary);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-popover: var(--popover);
+  --color-card-foreground: var(--card-foreground);
+  --color-card: var(--card);
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
+
+  /* Custom surfaces & utility colors from Design System */
+  --color-surface-dim: var(--surface-dim);
+  --color-surface-container-lowest: var(--surface-container-lowest);
+  --color-surface-container-low: var(--surface-container-low);
+  --color-surface-container: var(--surface-container);
+  --color-surface-container-high: var(--surface-container-high);
+  --color-surface-container-highest: var(--surface-container-highest);
+  --color-on-surface-variant: var(--on-surface-variant);
+  --color-outline: var(--outline);
+  --color-outline-variant: var(--outline-variant);
+  --color-primary-container: var(--primary-container);
+  --color-secondary-container: var(--secondary-container);
+  --color-on-secondary-container: var(--on-secondary-container);
+
+  /* AWS Academy theme (Green) variables */
+  --color-aws-primary: var(--aws-primary);
+  --color-aws-secondary: var(--aws-secondary);
+  --color-aws-accent: var(--aws-accent);
+}
+
+:root {
+  --background: #f8f9ff;
+  --foreground: #0b1c30;
+  --card: #ffffff;
+  --card-foreground: #0b1c30;
+  --popover: #ffffff;
+  --popover-foreground: #0b1c30;
+  
+  --primary: #00288e;
+  --primary-foreground: #ffffff;
+  --primary-container: #1e40af;
+  
+  --secondary: #006d30;
+  --secondary-foreground: #ffffff;
+  --secondary-container: #92f5a4;
+  --on-secondary-container: #007233;
+  
+  --muted: #eff4ff;
+  --muted-foreground: #444653;
+  --accent: #e5eeff;
+  --accent-foreground: #00288e;
+  
+  --destructive: #ba1a1a;
+  --destructive-foreground: #ffffff;
+  
+  --border: #c4c5d5;
+  --input: #c4c5d5;
+  --ring: #3755c3;
+  --radius: 0.625rem;
+  
+  --sidebar: #ffffff;
+  --sidebar-foreground: #0b1c30;
+  --sidebar-primary: #00288e;
+  --sidebar-primary-foreground: #ffffff;
+  --sidebar-accent: #eff4ff;
+  --sidebar-accent-foreground: #00288e;
+  --sidebar-border: #c4c5d5;
+  --sidebar-ring: #3755c3;
+
+  /* Custom details */
+  --surface-dim: #cbdbf5;
+  --surface-container-lowest: #ffffff;
+  --surface-container-low: #eff4ff;
+  --surface-container: #e5eeff;
+  --surface-container-high: #dce9ff;
+  --surface-container-highest: #d3e4fe;
+  --on-surface-variant: #444653;
+  --outline: #757684;
+  --outline-variant: #c4c5d5;
+
+  /* AWS Academy theme (Green) */
+  --aws-primary: #1e7a43;
+  --aws-secondary: #14532d;
+  --aws-accent: #a7f3d0;
+  
+  --chart-1: #00288e;
+  --chart-2: #006d30;
+  --chart-3: #ffa929;
+  --chart-4: #4c2e00;
+  --chart-5: #ba1a1a;
+}
+
+.dark {
+  --background: #0b1c30;
+  --foreground: #f8f9ff;
+  --card: #213145;
+  --card-foreground: #f8f9ff;
+  --popover: #213145;
+  --popover-foreground: #f8f9ff;
+  
+  --primary: #b8c4ff;
+  --primary-foreground: #001453;
+  --primary-container: #173bab;
+  
+  --secondary: #95f8a7;
+  --secondary-foreground: #00210a;
+  --secondary-container: #005323;
+  --on-secondary-container: #95f8a7;
+  
+  --muted: #213145;
+  --muted-foreground: #cbdbf5;
+  --accent: #173bab;
+  --accent-foreground: #b8c4ff;
+  
+  --destructive: #ffdad6;
+  --destructive-foreground: #ba1a1a;
+  
+  --border: rgba(255, 255, 255, 0.1);
+  --input: rgba(255, 255, 255, 0.1);
+  --ring: #b8c4ff;
+  
+  --sidebar: #0b1c30;
+  --sidebar-foreground: #f8f9ff;
+  --sidebar-primary: #b8c4ff;
+  --sidebar-primary-foreground: #001453;
+  --sidebar-accent: #173bab;
+  --sidebar-accent-foreground: #b8c4ff;
+  --sidebar-border: rgba(255, 255, 255, 0.1);
+  --sidebar-ring: #b8c4ff;
+
+  --surface-dim: #213145;
+  --surface-container-lowest: #0b1c30;
+  --surface-container-low: #1e3046;
+  --surface-container: #213145;
+  --surface-container-high: #2c3f58;
+  --surface-container-highest: #374d6b;
+  --on-surface-variant: #cbdbf5;
+  --outline: #757684;
+  --outline-variant: rgba(255, 255, 255, 0.1);
+}
+
+.glass-card {
+  background-color: rgba(255, 255, 255, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.5);
+  box-shadow: 0 10px 20px -5px rgba(0, 40, 142, 0.05);
+}
+
+.dark .glass-card {
+  background-color: rgba(33, 49, 69, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.2);
+}
+
+/* error color utility */
+:root {
+  --color-error: #ba1a1a;
+  --color-on-primary-container: #a8b8ff;
+  --color-surface-variant: #d3e4fe;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+  html {
+    @apply font-sans;
+  }
+}
+
+@layer utilities {
+  .animate-fade-in {
+    animation: fadeIn 0.4s ease-out forwards;
+  }
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(12px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  .text-error {
+    color: #ba1a1a;
+  }
+  .bg-surface-variant {
+    background-color: #d3e4fe;
+  }
+  .text-on-surface-variant {
+    color: #444653;
+  }
+  .on-primary-container {
+    color: #a8b8ff;
+  }
+  .primary-container {
+    background-color: #1e40af;
+  }
+}
