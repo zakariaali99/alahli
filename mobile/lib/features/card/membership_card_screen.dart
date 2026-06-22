@@ -109,7 +109,7 @@ class _MembershipCardScreenState extends ConsumerState<MembershipCardScreen>
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: const Color(0xFF00204f).withOpacity(0.3),
+                    color: const Color(0xFF00204f).withValues(alpha: 0.3),
                     blurRadius: 30,
                     offset: const Offset(0, 16),
                   ),
@@ -126,7 +126,7 @@ class _MembershipCardScreenState extends ConsumerState<MembershipCardScreen>
                       height: 140,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: Colors.white.withOpacity(0.06),
+                        color: Colors.white.withValues(alpha: 0.06),
                       ),
                     ),
                   ),
@@ -138,7 +138,7 @@ class _MembershipCardScreenState extends ConsumerState<MembershipCardScreen>
                       height: 120,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: const Color(0xFF2c694e).withOpacity(0.15),
+                        color: const Color(0xFF2c694e).withValues(alpha: 0.15),
                       ),
                     ),
                   ),
@@ -158,7 +158,7 @@ class _MembershipCardScreenState extends ConsumerState<MembershipCardScreen>
                                 Text(
                                   'عضوية مميزة',
                                   style: TextStyle(
-                                    color: Colors.white.withOpacity(0.7),
+                                    color: Colors.white.withValues(alpha: 0.7),
                                     fontSize: 11,
                                     letterSpacing: 1.5,
                                     fontWeight: FontWeight.w700,
@@ -185,7 +185,7 @@ class _MembershipCardScreenState extends ConsumerState<MembershipCardScreen>
                                 color: const Color(0xFF2c694e),
                                 borderRadius: BorderRadius.circular(20),
                                 border: Border.all(
-                                  color: const Color(0xFF95d4b3).withOpacity(0.4),
+                                  color: const Color(0xFF95d4b3).withValues(alpha: 0.4),
                                   width: 1,
                                 ),
                               ),
@@ -242,7 +242,7 @@ class _MembershipCardScreenState extends ConsumerState<MembershipCardScreen>
                                 Text(
                                   'ID: AH-9876',
                                   style: TextStyle(
-                                    color: Colors.white.withOpacity(0.6),
+                                    color: Colors.white.withValues(alpha: 0.6),
                                     fontSize: 13,
                                   ),
                                 ),
@@ -287,7 +287,7 @@ class _MembershipCardScreenState extends ConsumerState<MembershipCardScreen>
                                               boxShadow: [
                                                 BoxShadow(
                                                   color: const Color(0xFF2c694e)
-                                                      .withOpacity(0.5),
+                                                      .withValues(alpha: 0.5),
                                                   blurRadius: 6,
                                                 ),
                                               ],
@@ -368,7 +368,7 @@ class _ActionButton extends StatelessWidget {
         decoration: BoxDecoration(
           color: const Color(0xFFF3F4F5),
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: const Color(0xFFc4c6d0).withOpacity(0.5)),
+          border: Border.all(color: const Color(0xFFc4c6d0).withValues(alpha: 0.5)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,

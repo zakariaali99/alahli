@@ -1,0 +1,142 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e3]:
+    - banner [ref=e4]:
+      - generic [ref=e6]:
+        - img [ref=e7]
+        - textbox "بحث..." [ref=e10]
+      - generic [ref=e11]:
+        - generic [ref=e12]: إدارة الرياضة
+        - generic [ref=e13]:
+          - button [ref=e14]:
+            - img [ref=e15]
+          - button [ref=e19]:
+            - img [ref=e20]
+          - generic [ref=e22]: م
+    - navigation [ref=e23]:
+      - generic [ref=e26]:
+        - img "شعار النادي" [ref=e29]
+        - generic [ref=e30]:
+          - heading "الأهلي للياقة البدنية" [level=1] [ref=e31]
+          - paragraph [ref=e32]: نظام إدارة الأداء الرياضي
+        - button "تبديل الأكاديمية" [ref=e33]:
+          - img [ref=e34]
+          - text: تبديل الأكاديمية
+      - generic [ref=e37]:
+        - link "لوحة القيادة" [ref=e39] [cursor=pointer]:
+          - /url: /
+          - generic [ref=e40]:
+            - img [ref=e41]
+            - generic [ref=e46]: لوحة القيادة
+        - link "اللاعبين" [ref=e49] [cursor=pointer]:
+          - /url: /athletes
+          - generic [ref=e50]:
+            - img [ref=e51]
+            - generic [ref=e56]: اللاعبين
+        - link "الاشتراكات" [ref=e58] [cursor=pointer]:
+          - /url: /memberships
+          - generic [ref=e59]:
+            - img [ref=e60]
+            - generic [ref=e62]: الاشتراكات
+        - link "الفحص السريع" [ref=e64] [cursor=pointer]:
+          - /url: /verify
+          - generic [ref=e65]:
+            - img [ref=e66]
+            - generic [ref=e72]: الفحص السريع
+        - link "التنبيهات" [ref=e74] [cursor=pointer]:
+          - /url: /notifications
+          - generic [ref=e75]:
+            - img [ref=e76]
+            - generic [ref=e79]: التنبيهات
+        - link "التقارير" [ref=e81] [cursor=pointer]:
+          - /url: /reports
+          - generic [ref=e82]:
+            - img [ref=e83]
+            - generic [ref=e85]: التقارير
+      - generic [ref=e86]:
+        - link "الإعدادات" [ref=e87] [cursor=pointer]:
+          - /url: /settings
+          - img [ref=e88]
+          - generic [ref=e91]: الإعدادات
+        - button "تسجيل الخروج" [ref=e92]:
+          - img [ref=e93]
+          - generic [ref=e96]: تسجيل الخروج
+    - main [ref=e97]:
+      - generic [ref=e100]:
+        - generic [ref=e101]:
+          - generic [ref=e102]:
+            - heading "مرحباً بك، مشرف النظام" [level=2] [ref=e103]:
+              - text: مرحباً بك، مشرف النظام
+              - img [ref=e104]
+            - paragraph [ref=e106]: إليك نظرة عامة على أداء الأكاديمية ونشاط المشتركين اليوم.
+          - generic [ref=e107]:
+            - button "تحميل التقرير" [ref=e108]:
+              - img [ref=e109]
+              - text: تحميل التقرير
+            - link "إضافة لاعب جديد" [ref=e112] [cursor=pointer]:
+              - /url: /dashboard/athletes/add
+              - button "إضافة لاعب جديد" [ref=e113]:
+                - img [ref=e114]
+                - text: إضافة لاعب جديد
+        - generic [ref=e115]:
+          - generic [ref=e118]:
+            - generic [ref=e119]:
+              - generic [ref=e120]: إجمالي اللاعبين
+              - img [ref=e122]
+            - generic [ref=e127]: ١٧
+            - generic [ref=e128]:
+              - img [ref=e129]
+              - generic [ref=e132]: +20 هذا الشهر
+          - generic [ref=e136]:
+            - generic [ref=e137]:
+              - generic [ref=e138]: اشتراكات نشطة
+              - img [ref=e140]
+            - generic [ref=e143]: ١٧
+          - generic [ref=e147]:
+            - generic [ref=e148]:
+              - generic [ref=e149]: اشتراكات منتهية
+              - img [ref=e151]
+            - generic [ref=e153]: ٠
+          - generic [ref=e157]:
+            - generic [ref=e158]:
+              - generic [ref=e159]: تنتهي قريباً (7 أيام)
+              - img [ref=e161]
+            - generic [ref=e164]: ٠
+            - generic [ref=e165]:
+              - img [ref=e166]
+              - generic [ref=e169]: تتطلب المتابعة
+        - generic [ref=e171]:
+          - generic [ref=e174]:
+            - generic [ref=e175]:
+              - heading "نمو الاشتراكات الشهري" [level=3] [ref=e176]
+              - button "شهر" [ref=e178]
+            - application [ref=e182]:
+              - generic [ref=e194]:
+                - generic [ref=e197]: يونيو
+                - generic [ref=e198]:
+                  - generic [ref=e200]: "0"
+                  - generic [ref=e202]: "5"
+                  - generic [ref=e204]: "10"
+                  - generic [ref=e206]: "15"
+                  - generic [ref=e208]: "20"
+          - generic [ref=e209]:
+            - generic [ref=e211]:
+              - heading "أداء الأقسام" [level=3] [ref=e212]
+              - generic [ref=e213]:
+                - generic [ref=e214]:
+                  - generic [ref=e216]:
+                    - img [ref=e218]
+                    - generic [ref=e222]: أكاديمية AWS لكرة القدم
+                  - generic [ref=e224]:
+                    - generic [ref=e225]: عدد اللاعبين
+                    - generic [ref=e226]: 9 لاعب
+                - generic [ref=e229]:
+                  - generic [ref=e231]:
+                    - img [ref=e233]
+                    - generic [ref=e237]: مركز الأهلي الرياضي
+                  - generic [ref=e239]:
+                    - generic [ref=e240]: عدد اللاعبين
+                    - generic [ref=e241]: 11 لاعب
+            - link "عرض التقارير التفصيلية" [ref=e244] [cursor=pointer]:
+              - /url: /dashboard/reports
+              - button "عرض التقارير التفصيلية" [ref=e245]
+  - generic [ref=e246]: "0"

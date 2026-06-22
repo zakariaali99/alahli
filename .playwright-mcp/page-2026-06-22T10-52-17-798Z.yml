@@ -1,0 +1,32 @@
+- generic [active] [ref=e1]:
+  - generic [ref=e13]:
+    - img "شعار مركز الأهلي الرياضي" [ref=e17]
+    - generic [ref=e18]:
+      - heading "تسجيل الدخول" [level=2] [ref=e19]
+      - paragraph [ref=e20]: مركز الأهلي الرياضي وأكاديمية العوز
+    - generic [ref=e21]:
+      - generic [ref=e22]:
+        - generic [ref=e23]: رقم الهاتف
+        - generic [ref=e24]:
+          - generic:
+            - img
+          - textbox "رقم الهاتف" [ref=e25]:
+            - /placeholder: "0910000000"
+      - generic [ref=e26]:
+        - generic [ref=e27]: كلمة المرور
+        - generic [ref=e28]:
+          - generic:
+            - img
+          - textbox "كلمة المرور" [ref=e29]:
+            - /placeholder: أدخل كلمة المرور
+          - img [ref=e31] [cursor=pointer]
+      - generic [ref=e34]:
+        - generic [ref=e35]:
+          - checkbox "تذكرني" [ref=e36]
+          - generic [ref=e37] [cursor=pointer]: تذكرني
+        - link "نسيت كلمة المرور؟" [ref=e38] [cursor=pointer]:
+          - /url: "#"
+      - button "تسجيل الدخول" [ref=e40]
+  - button "Open Next.js Dev Tools" [ref=e46] [cursor=pointer]:
+    - img [ref=e47]
+  - alert [ref=e50]

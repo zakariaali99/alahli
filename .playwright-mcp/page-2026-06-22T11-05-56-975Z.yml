@@ -1,0 +1,28 @@
+- generic [ref=e14]:
+  - img "شعار مركز الأهلي الرياضي" [ref=e18]
+  - generic [ref=e19]:
+    - heading "تسجيل الدخول" [level=2] [ref=e20]
+    - paragraph [ref=e21]: مركز الأهلي الرياضي وأكاديمية العوز
+  - generic [ref=e22]:
+    - generic [ref=e23]:
+      - generic [ref=e24]: رقم الهاتف
+      - generic [ref=e25]:
+        - generic:
+          - img
+        - textbox "رقم الهاتف" [ref=e26]:
+          - /placeholder: "0910000000"
+    - generic [ref=e27]:
+      - generic [ref=e28]: كلمة المرور
+      - generic [ref=e29]:
+        - generic:
+          - img
+        - textbox "كلمة المرور" [ref=e30]:
+          - /placeholder: أدخل كلمة المرور
+        - img [ref=e32] [cursor=pointer]
+    - generic [ref=e35]:
+      - generic [ref=e36]:
+        - checkbox "تذكرني" [ref=e37]
+        - generic [ref=e38] [cursor=pointer]: تذكرني
+      - link "نسيت كلمة المرور؟" [ref=e39] [cursor=pointer]:
+        - /url: "#"
+    - button "تسجيل الدخول" [ref=e41]

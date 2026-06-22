@@ -2,7 +2,9 @@ import 'package:dio/dio.dart';
 
 class ApiClient {
   final Dio dio;
-  String? _token;
+  String? _accessToken;
+  String? _refreshToken;
+  void Function()? _onUnauthorized;
 
   ApiClient({String baseUrl = 'http://localhost:8000/api'})
       : dio = Dio(
@@ -19,22 +21,51 @@ class ApiClient {
     dio.interceptors.add(
       InterceptorsWrapper(
         onRequest: (options, handler) {
-          if (_token != null) {
-            options.headers['Authorization'] = 'Bearer $_token';
+          if (_accessToken != null) {
+            options.headers['Authorization'] = 'Bearer $_accessToken';
           }
           return handler.next(options);
         },
-        onError: (DioException error, handler) {
-          // Add custom error parsing or logouts on 401
+        onError: (DioException error, handler) async {
+          if (error.response?.statusCode == 401 && _refreshToken != null) {
+            try {
+              final res = await Dio(
+                BaseOptions(baseUrl: dio.options.baseUrl),
+              ).post(
+                '/auth/token/refresh/',
+                data: {'refresh': _refreshToken},
+              );
+              _accessToken = res.data['access'] as String;
+              error.requestOptions.headers['Authorization'] = 'Bearer $_accessToken';
+              final retryResponse = await dio.fetch(error.requestOptions);
+              return handler.resolve(retryResponse);
+            } catch (_) {
+              _onUnauthorized?.call();
+              return handler.next(error);
+            }
+          }
+          _onUnauthorized?.call();
           return handler.next(error);
         },
       ),
     );
   }
 
-  void setToken(String? token) {
-    _token = token;
+  void setTokens({String? access, String? refresh}) {
+    _accessToken = access;
+    _refreshToken = refresh;
   }
 
-  bool get isAuthenticated => _token != null;
+  void setOnUnauthorized(void Function() callback) {
+    _onUnauthorized = callback;
+  }
+
+  void clearTokens() {
+    _accessToken = null;
+    _refreshToken = null;
+  }
+
+  bool get isAuthenticated => _accessToken != null;
 }
+
+

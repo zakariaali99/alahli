@@ -76,7 +76,7 @@ class MembershipDetailsScreen extends StatelessWidget {
                 borderRadius: BorderRadius.circular(20),
                 boxShadow: [
                   BoxShadow(
-                    color: theme.colorScheme.primary.withOpacity(0.25),
+                    color: theme.colorScheme.primary.withValues(alpha: 0.25),
                     blurRadius: 20,
                     offset: const Offset(0, 10),
                   ),
@@ -161,7 +161,7 @@ class MembershipDetailsScreen extends StatelessWidget {
                           Text(
                             '165 يوم متبقي',
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.9),
+                              color: Colors.white.withValues(alpha: 0.9),
                               fontSize: 13,
                               fontWeight: FontWeight.w600,
                             ),
@@ -169,7 +169,7 @@ class MembershipDetailsScreen extends StatelessWidget {
                           Text(
                             '54%',
                             style: TextStyle(
-                              color: Colors.white.withOpacity(0.7),
+                              color: Colors.white.withValues(alpha: 0.7),
                               fontSize: 12,
                             ),
                           ),
@@ -239,8 +239,8 @@ class MembershipDetailsScreen extends StatelessWidget {
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(
                       color: item.isActive
-                          ? theme.colorScheme.primary.withOpacity(0.3)
-                          : theme.colorScheme.outlineVariant.withOpacity(0.4),
+                          ? theme.colorScheme.primary.withValues(alpha: 0.3)
+                          : theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
                       width: item.isActive ? 1.5 : 0.5,
                     ),
                   ),
@@ -252,8 +252,8 @@ class MembershipDetailsScreen extends StatelessWidget {
                         height: 44,
                         decoration: BoxDecoration(
                           color: item.isActive
-                              ? theme.colorScheme.primary.withOpacity(0.1)
-                              : theme.colorScheme.outlineVariant.withOpacity(0.2),
+                              ? theme.colorScheme.primary.withValues(alpha: 0.1)
+                              : theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
                           borderRadius: BorderRadius.circular(12),
                         ),
                         child: Icon(

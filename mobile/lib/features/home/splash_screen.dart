@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/providers/providers.dart';
 
-class SplashScreen extends StatefulWidget {
+class SplashScreen extends ConsumerStatefulWidget {
   const SplashScreen({super.key});
 
   @override
-  State<SplashScreen> createState() => _SplashScreenState();
+  ConsumerState<SplashScreen> createState() => _SplashScreenState();
 }
 
-class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderStateMixin {
+class _SplashScreenState extends ConsumerState<SplashScreen>
+    with SingleTickerProviderStateMixin {
   late AnimationController _controller;
   late Animation<double> _fadeAnimation;
 
@@ -19,16 +22,21 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
       vsync: this,
       duration: const Duration(milliseconds: 1500),
     );
-    _fadeAnimation = CurvedAnimation(parent: _controller, curve: Curves.easeIn);
-
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _controller, curve: Curves.easeIn),
+    );
     _controller.forward();
+    _navigateAfterDelay();
+  }
 
-    // Redirection delay
-    Future.delayed(const Duration(seconds: 3), () {
-      if (mounted) {
-        context.go('/login');
-      }
-    });
+  Future<void> _navigateAfterDelay() async {
+    await Future.delayed(const Duration(seconds: 2));
+    final authState = ref.read<AuthState>(authStateProvider);
+    if (authState.status == AuthStatus.authenticated) {
+      context.go('/');
+    } else {
+      context.go('/login');
+    }
   }
 
   @override
@@ -40,65 +48,52 @@ class _SplashScreenState extends State<SplashScreen> with SingleTickerProviderSt
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
+
     return Scaffold(
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topRight,
-            end: Alignment.bottomLeft,
-            colors: [
-              theme.colorScheme.primary,
-              theme.colorScheme.primaryContainer,
-            ],
-          ),
-        ),
+      backgroundColor: theme.colorScheme.surface,
+      body: Center(
         child: FadeTransition(
           opacity: _fadeAnimation,
-          child: Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Container(
-                  width: 120,
-                  height: 120,
-                  decoration: const BoxDecoration(
-                    color: Colors.white,
-                    shape: BoxShape.circle,
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black12,
-                        blurRadius: 20,
-                        offset: Offset(0, 10),
-                      ),
-                    ],
-                  ),
-                  padding: const EdgeInsets.all(20),
-                  child: Image.network(
-                    'https://lh3.googleusercontent.com/aida-public/AB6AXuDzd-Fz8J0E-KmHaxFHJtcTAs2IbV7LjcEWBB0VFr9qsMife67LAhnwqm0EUiJQf550FSNCPzLJapxFXxNc-m67jHNnqVpAeav8A0qExgnHtMdVPdP1_NgVXu0yXKlbLYfzoPAsPFCwOczVyS_MnYe9hN5JRjoavwDTRwaAvDICgjb_LgGjnZ4N9atlApWPKYZ5zZxe_H_3NcZpR3h1lRHTUF-ftHnSruOZJChFQVzddBoNWeVYijUDreEVARSbOH6Igx4h_32q1_0',
-                    fit: BoxFit.contain,
-                  ),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Container(
+                width: 120,
+                height: 120,
+                decoration: BoxDecoration(
+                  color: theme.colorScheme.primaryContainer,
+                  borderRadius: BorderRadius.circular(32),
+                  boxShadow: [
+                    BoxShadow(
+                      color: theme.colorScheme.primary.withValues(alpha: 0.3),
+                      blurRadius: 30,
+                      offset: const Offset(0, 10),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 24),
-                Text(
-                  'مركز الأهلي الرياضي',
-                  style: theme.textTheme.headlineMedium?.copyWith(
-                    color: Colors.white,
-                    fontWeight: FontWeight.bold,
-                  ),
+                child: Icon(
+                  Icons.fitness_center,
+                  size: 56,
+                  color: theme.colorScheme.onPrimaryContainer,
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  'نظام إدارة الأداء والأكاديميات الرياضية',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: Colors.white70,
-                  ),
+              ),
+              const SizedBox(height: 32),
+              Text(
+                'مركز الأهلي الرياضي',
+                style: theme.textTheme.headlineLarge?.copyWith(
+                  fontWeight: FontWeight.bold,
                 ),
-                const SizedBox(height: 48),
-                const CircularProgressIndicator(
-                  valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'نظام إدارة الأداء الرياضي',
+                style: theme.textTheme.bodyLarge?.copyWith(
+                  color: theme.colorScheme.outline,
                 ),
-              ],
-            ),
+              ),
+              const SizedBox(height: 48),
+              const CircularProgressIndicator(),
+            ],
           ),
         ),
       ),

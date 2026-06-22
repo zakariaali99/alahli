@@ -43,7 +43,7 @@ class MainNavigationLayout extends StatelessWidget {
           // Child Screen Content
           Positioned.fill(
             child: Padding(
-              padding: const EdgeInsets.bottom(96.0), // Padding to make room for bottom navigation layout
+              padding: const EdgeInsets.only(bottom: 96.0),
               child: child,
             ),
           ),
@@ -59,15 +59,15 @@ class MainNavigationLayout extends StatelessWidget {
                 child: Container(
                   padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
                   decoration: BoxDecoration(
-                    color: theme.colorScheme.surface.withOpacity(0.85),
+                    color: theme.colorScheme.surface.withValues(alpha: 0.85),
                     borderRadius: BorderRadius.circular(24),
                     border: Border.all(
-                      color: Colors.white.withOpacity(0.3),
+                      color: Colors.white.withValues(alpha: 0.3),
                       width: 0.5,
                     ),
                     boxShadow: [
                       BoxShadow(
-                        color: theme.colorScheme.primary.withOpacity(0.08),
+                        color: theme.colorScheme.primary.withValues(alpha: 0.08),
                         blurRadius: 20,
                         offset: const Offset(0, -4),
                       ),
@@ -143,7 +143,7 @@ class MainNavigationLayout extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
               color: isActive
-                  ? theme.colorScheme.secondaryContainer.withOpacity(0.5)
+                  ? theme.colorScheme.secondaryContainer.withValues(alpha: 0.5)
                   : Colors.transparent,
               borderRadius: BorderRadius.circular(16),
             ),
