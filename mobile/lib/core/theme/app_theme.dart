@@ -2,12 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 enum SportsBrand {
-  alAhly, // Blue
-  awsAcademy // Green
+  alAhly,
+  awsAcademy
 }
 
 class AppTheme {
-  // Brand 1: Al Ahly Fitness Center Colors (Blue-centric)
   static ColorScheme get alAhlyColorScheme => const ColorScheme(
         brightness: Brightness.light,
         primary: Color(0xFF00204F),
@@ -34,14 +33,13 @@ class AppTheme {
         shadow: Colors.black12,
       );
 
-  // Brand 2: AWS Football Academy Colors (Green-centric)
   static ColorScheme get awsColorScheme => const ColorScheme(
         brightness: Brightness.light,
         primary: Color(0xFF1E7A43),
         onPrimary: Colors.white,
         primaryContainer: Color(0xFF14532D),
         onPrimaryContainer: Color(0xFFA7F3D0),
-        secondary: Color(0xFF00204F), // Mix standard primary
+        secondary: Color(0xFF00204F),
         onSecondary: Colors.white,
         secondaryContainer: Color(0xFFD8E2FF),
         onSecondaryContainer: Color(0xFF001A42),
@@ -71,11 +69,25 @@ class AppTheme {
       textTheme: GoogleFonts.ibmPlexSansArabicTextTheme(
         TextTheme(
           displayLarge: TextStyle(fontSize: 40, fontWeight: FontWeight.w800, color: colorScheme.onSurface),
-          headlineLarge: TextStyle(fontSize: 32, fontWeight: FontWeight.bold, color: colorScheme.onSurface),
+          headlineLarge: TextStyle(fontSize: 32, fontWeight: FontWeight.w700, color: colorScheme.onSurface),
+          headlineMedium: TextStyle(fontSize: 28, fontWeight: FontWeight.w700, color: colorScheme.onSurface),
           titleLarge: TextStyle(fontSize: 20, fontWeight: FontWeight.w600, color: colorScheme.onSurface),
+          titleMedium: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: colorScheme.onSurface),
           bodyLarge: TextStyle(fontSize: 16, fontWeight: FontWeight.w400, color: colorScheme.onSurface),
           bodyMedium: TextStyle(fontSize: 14, fontWeight: FontWeight.w400, color: colorScheme.onSurfaceVariant),
-          labelLarge: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: colorScheme.primary),
+          labelLarge: TextStyle(fontSize: 12, fontWeight: FontWeight.w700, color: colorScheme.primary),
+        ),
+      ),
+      appBarTheme: AppBarTheme(
+        backgroundColor: colorScheme.surface,
+        foregroundColor: colorScheme.onSurface,
+        elevation: 0,
+        scrolledUnderElevation: 1,
+        centerTitle: false,
+        titleTextStyle: TextStyle(
+          fontSize: 20,
+          fontWeight: FontWeight.bold,
+          color: colorScheme.primary,
         ),
       ),
       cardTheme: CardTheme(
@@ -88,7 +100,7 @@ class AppTheme {
       ),
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
-        fillColor: const Color(0xFFF1F5F9),
+        fillColor: colorScheme.surfaceContainerHighest.withValues(alpha: 0.5),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(8),
           borderSide: BorderSide.none,
@@ -103,9 +115,7 @@ class AppTheme {
         style: ElevatedButton.styleFrom(
           backgroundColor: colorScheme.primary,
           foregroundColor: colorScheme.onPrimary,
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(24),
-          ),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
           padding: const EdgeInsets.symmetric(vertical: 16, horizontal: 24),
         ),
       ),
@@ -113,11 +123,10 @@ class AppTheme {
   }
 }
 
-// Extra light-weight helper configuration class
 extension ColorSchemeExt on ColorScheme {
-  Color get surfaceContainerLowest => Colors.white;
-  Color get surfaceContainerLow => const Color(0xFFF3F4F5);
-  Color get surfaceContainer => const Color(0xFFEDEEEF);
-  Color get surfaceContainerHigh => const Color(0xFFE7E8E9);
-  Color get surfaceContainerHighest => const Color(0xFFE1E3E4);
+  Color get surfaceContainerLowest => surface.withValues(alpha: 1.0);
+  Color get surfaceContainerLow => surfaceContainerLowest.withValues(alpha: 0.95);
+  Color get surfaceContainer => surfaceContainerLowest.withValues(alpha: 0.90);
+  Color get surfaceContainerHigh => surfaceContainerLowest.withValues(alpha: 0.85);
+  Color get surfaceContainerHighest => surfaceContainerLowest.withValues(alpha: 0.80);
 }

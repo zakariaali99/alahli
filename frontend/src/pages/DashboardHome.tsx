@@ -1,9 +1,15 @@
-import React, { useEffect, useRef, useState } from "react"
-import { motion } from "framer-motion"
-import { Download, Plus, Users, ShieldAlert, CheckCircle, Clock, TrendingUp, Sparkles, Building2, Flame } from "lucide-react"
+import React, { useRef, useState, useEffect } from "react"
+import { motion, type Variants } from "framer-motion"
+import {
+  Users, CheckCircle, ShieldAlert, Clock, TrendingUp, TrendingDown,
+  Plus, UserPlus, ScanLine, CalendarPlus, ArrowLeft, Sparkles,
+} from "lucide-react"
 import { Link } from "react-router-dom"
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from "recharts"
-import { useDashboardStats, useMonthlyGrowth, useDepartmentDistribution } from "@/lib/hooks/useAnalytics"
+import { Button } from "@/components/ui/button"
+import {
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
+} from "recharts"
+import { useDashboardStats, useMonthlyGrowth } from "@/lib/hooks/useAnalytics"
 import { useAuth } from "@/lib/auth"
 
 function CountUp({ end, duration = 1500 }: { end: number; duration?: number }) {
@@ -37,7 +43,7 @@ function CountUp({ end, duration = 1500 }: { end: number; duration?: number }) {
   return <span ref={ref}>{count.toLocaleString("ar-SA")}</span>
 }
 
-const containerVariants = {
+const containerVariants: Variants = {
   hidden: { opacity: 0 },
   visible: {
     opacity: 1,
@@ -45,61 +51,54 @@ const containerVariants = {
   },
 }
 
-const cardVariants = {
+const cardVariants: Variants = {
   hidden: { opacity: 0, y: 24 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] as const } },
+  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } },
 }
 
 export default function DashboardPage() {
   const { user } = useAuth()
   const { data: stats, isLoading: statsLoading } = useDashboardStats()
   const { data: growthData, isLoading: growthLoading } = useMonthlyGrowth()
-  const { data: deptData, isLoading: deptLoading } = useDepartmentDistribution()
+  const [period, setPeriod] = useState<string>("شهر")
 
   const statCards = [
     {
       label: "إجمالي اللاعبين",
       value: stats?.total_athletes ?? 0,
       icon: Users,
-      color: "text-primary",
-      bg: "bg-primary/10",
-      gradient: "from-primary/20 to-primary/5",
+      iconBg: "bg-primary-container/30 text-primary",
+      glow: "shadow-primary/10",
       badge: stats?.new_this_month ? `+${stats.new_this_month} هذا الشهر` : null,
-      badgeIcon: TrendingUp,
-      badgeColor: "text-secondary",
+      trend: "up" as const,
     },
     {
       label: "اشتراكات نشطة",
       value: stats?.active_memberships ?? 0,
       icon: CheckCircle,
-      color: "text-secondary",
-      bg: "bg-secondary/10",
-      gradient: "from-secondary/20 to-secondary/5",
+      iconBg: "bg-secondary-container/30 text-secondary",
+      glow: "shadow-secondary/10",
       badge: null,
-      badgeIcon: null,
-      badgeColor: "",
+      trend: "up" as const,
     },
     {
       label: "اشتراكات منتهية",
       value: stats?.expired_memberships ?? 0,
       icon: ShieldAlert,
-      color: "text-error",
-      bg: "bg-error/10",
-      gradient: "from-error/20 to-error/5",
+      iconBg: "bg-error-container/30 text-error",
+      glow: "shadow-error/10",
       badge: null,
-      badgeIcon: null,
-      badgeColor: "",
+      trend: "down" as const,
     },
     {
       label: "تنتهي قريباً (7 أيام)",
       value: stats?.expiring_soon ?? 0,
       icon: Clock,
-      color: "text-amber-600",
-      bg: "bg-amber-500/10",
-      gradient: "from-amber-500/20 to-amber-500/5",
+      iconBg: "bg-amber-500/15 text-amber-600",
+      glow: "shadow-amber-500/10",
       badge: "تتطلب المتابعة",
       badgeIcon: Sparkles,
-      badgeColor: "text-amber-600",
+      trend: "warning" as const,
     },
   ]
 
@@ -109,173 +108,317 @@ export default function DashboardPage() {
     return { name: months[date.getMonth()], value: d.count }
   })
 
-  const branches = (deptData || []).map((d, i) => ({
-    name: d.department__name_ar,
-    revenue: `${d.count} لاعب`,
-    percent: Math.min(Math.round((d.count / (stats?.total_athletes || 1)) * 100), 100),
-    color: i === 0 ? "bg-gradient-to-r from-primary to-primary/70" : "bg-gradient-to-r from-secondary to-secondary/70",
-    iconColor: i === 0 ? "text-primary" : "text-secondary",
-  }))
+  const branchData = [
+    {
+      name: "الأهلي للياقة",
+      icon: "🏋️",
+      color: "bg-primary",
+      revenue: "850,000",
+      percentage: 75,
+      trend: "+8%",
+    },
+    {
+      name: "أكاديمية العوز",
+      icon: "⚽",
+      color: "bg-tertiary-container",
+      revenue: "420,000",
+      percentage: 45,
+      trend: "+12%",
+    },
+  ]
+
+  const recentAthletes = [
+    { name: "عمر عبدالله", id: "#4592", date: "12 مايو 2024", sport: "كرة القدم - العوز", package: "احترافي 6 شهور", status: "نشط" as const },
+    { name: "سارة محمد", id: "#4591", date: "11 مايو 2024", sport: "لياقة بدنية - الأهلي", package: "أساسي 3 شهور", status: "نشط" as const },
+    { name: "خالد سعيد", id: "#4590", date: "10 مايو 2024", sport: "سباحة - الأهلي", package: "شهر واحد", status: "قيد المراجعة" as const },
+  ]
+
+  const statusBadge = (status: string) => {
+    const styles: Record<string, string> = {
+      "نشط": "bg-secondary-container/30 text-secondary",
+      "منتهي": "bg-error-container/30 text-error",
+      "قيد المراجعة": "bg-tertiary-container/30 text-on-tertiary-container",
+    }
+    const dots: Record<string, string> = {
+      "نشط": "bg-secondary",
+      "منتهي": "bg-error",
+      "قيد المراجعة": "bg-tertiary",
+    }
+    return (
+      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold ${styles[status] || "bg-surface-container-high text-muted-foreground"}`}>
+        <span className={`w-1.5 h-1.5 rounded-full ${dots[status] || "bg-muted-foreground"}`} />
+        {status}
+      </span>
+    )
+  }
 
   return (
     <motion.div
       variants={containerVariants}
       initial="hidden"
       animate="visible"
-      className="space-y-8 select-none"
+      className="space-y-6 select-none"
     >
+      {/* ── Header ── */}
       <motion.div variants={cardVariants} className="flex flex-col md:flex-row justify-between items-start md:items-end gap-4">
         <div>
-          <h2 className="text-3xl font-extrabold text-foreground flex items-center gap-2">
-            مرحباً بك، {user?.full_name_ar || "المسؤول"}
-            <Flame className="w-8 h-8 text-primary animate-pulse-soft" />
-          </h2>
+          <h1 className="text-3xl font-extrabold flex items-center gap-3">
+            <span>مرحباً بك</span>
+            <span className="gradient-text">، {user?.full_name_ar || "المسؤول"}</span>
+            <span className="w-2 h-2 rounded-full bg-primary animate-pulse-soft" />
+          </h1>
           <p className="text-muted-foreground mt-2 text-sm">
-            إليك نظرة عامة على أداء الأكاديمية ونشاط المشتركين اليوم.
+            إليك نظرة عامة على أداء الأكاديمية اليوم.
           </p>
         </div>
-        <div className="flex gap-3">
+        <Link to="/dashboard/athletes/add">
           <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-            className="glass-card px-5 py-2.5 rounded-xl text-sm font-semibold text-primary hover:bg-white transition-all flex items-center gap-2"
+            className="bg-gradient-to-r from-primary to-primary-container text-primary-foreground px-5 py-2.5 rounded-xl text-sm font-semibold shadow-lg shadow-primary/20 flex items-center gap-2"
           >
-            <Download className="w-4 h-4" />
-            تحميل التقرير
+            <Plus className="w-4 h-4" />
+            إضافة لاعب جديد
           </motion.button>
-          <Link to="/dashboard/athletes/add">
-            <motion.button whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.97 }}
-              className="bg-gradient-to-r from-primary to-primary-container text-primary-foreground px-5 py-2.5 rounded-xl text-sm font-semibold shadow-lg shadow-primary/20 flex items-center gap-2"
-            >
-              <Plus className="w-4 h-4" />
-              إضافة لاعب جديد
-            </motion.button>
-          </Link>
-        </div>
+        </Link>
       </motion.div>
 
+      {/* ── Glass KPI Cards ── */}
       <motion.div variants={cardVariants} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
         {statCards.map((card, idx) => {
           const Icon = card.icon
+          const BadgeIcon = card.badgeIcon
           return (
             <motion.div
               key={idx}
               whileHover={{ y: -4, transition: { duration: 0.2 } }}
-              className="relative overflow-hidden rounded-2xl bg-white dark:bg-card border border-border/30 shadow-sm hover:shadow-xl hover:shadow-primary/5 hover:border-primary/20 transition-all p-6 group"
+              className="glass-card rounded-2xl p-6 relative overflow-hidden group"
             >
-              <div className={`absolute inset-0 bg-gradient-to-br ${card.gradient} opacity-50`} />
-              <div className="relative z-10">
-                <div className="flex justify-between items-start mb-4">
-                  <span className="text-sm font-medium text-muted-foreground">{card.label}</span>
-                  <div className={`w-10 h-10 rounded-xl ${card.bg} flex items-center justify-center ${card.color} shadow-sm`}>
-                    <Icon className="w-5 h-5" />
-                  </div>
+              <div className="absolute -left-6 -top-6 w-24 h-24 rounded-full blur-xl opacity-60 group-hover:opacity-100 transition-opacity bg-primary/5" />
+              <div className="flex justify-between items-start mb-4">
+                <span className="text-sm font-medium text-muted-foreground">{card.label}</span>
+                <div className={`w-10 h-10 rounded-full ${card.iconBg} flex items-center justify-center shadow-sm`}>
+                  <Icon className="w-5 h-5" />
                 </div>
-                <div className="text-3xl font-extrabold text-foreground">
-                  {statsLoading ? (
-                    <span className="animate-pulse bg-muted rounded w-16 h-8 inline-block" />
-                  ) : (
-                    <CountUp end={card.value} />
-                  )}
-                </div>
-                {card.badge && (
-                  <div className={`flex items-center gap-1.5 mt-3 ${card.badgeColor} text-xs font-semibold`}>
-                    {card.badgeIcon && <card.badgeIcon className="w-3.5 h-3.5" />}
-                    <span>{card.badge}</span>
-                  </div>
+              </div>
+              <div className="text-3xl font-extrabold text-foreground tracking-tight">
+                {statsLoading ? (
+                  <span className="animate-pulse bg-muted rounded w-20 h-9 inline-block" />
+                ) : (
+                  <CountUp end={card.value} />
                 )}
               </div>
-              <div className="absolute -bottom-4 -right-4 w-16 h-16 rounded-full bg-gradient-to-br from-white/40 to-transparent blur-2xl group-hover:scale-150 transition-transform duration-500" />
+              {card.badge && (
+                <div className="flex items-center gap-1.5 mt-3 text-xs font-semibold text-muted-foreground">
+                  {BadgeIcon && <BadgeIcon className="w-3.5 h-3.5 text-primary" />}
+                  <span>{card.badge}</span>
+                  {String(card.trend) === "up" && <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />}
+                  {String(card.trend) === "down" && <TrendingDown className="w-3.5 h-3.5 text-rose-500" />}
+                </div>
+              )}
             </motion.div>
           )
         })}
       </motion.div>
 
-      <motion.div variants={cardVariants} className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-        <div className="relative overflow-hidden rounded-3xl bg-white dark:bg-card border border-border/30 shadow-sm p-6 lg:col-span-2 flex flex-col min-h-[400px] hover:shadow-lg transition-all">
-          <div className="absolute inset-0 bg-gradient-to-br from-primary/[0.02] to-transparent" />
-          <div className="relative">
-            <div className="flex justify-between items-center mb-6">
-              <h3 className="text-lg font-bold text-foreground">نمو الاشتراكات الشهري</h3>
-              <div className="flex gap-2">
-                <button className="px-3 py-1 rounded-full bg-primary text-primary-foreground text-xs font-medium shadow-sm">شهر</button>
+      {/* ── Quick Actions ── */}
+      <motion.div variants={cardVariants}>
+        <div className="flex items-center gap-2 mb-4">
+          <h2 className="section-header">إجراءات سريعة</h2>
+        </div>
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <Link to="/dashboard/athletes/add">
+            <Button size="lg"
+              className="w-full relative overflow-hidden rounded-2xl bg-gradient-to-br from-violet-500/10 to-violet-500/5 dark:from-violet-500/15 dark:to-violet-500/5 border border-violet-500/20 hover:border-violet-500/40 p-5 flex items-center gap-4 transition-all group justify-start h-auto"
+            >
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-violet-500 to-purple-600 flex items-center justify-center shadow-lg shadow-violet-500/30 text-white">
+                <UserPlus className="w-5 h-5" />
               </div>
-            </div>
-            <div className="w-full min-h-[280px]">
-              {growthLoading ? (
-                <div className="h-[280px] flex items-center justify-center">
-                  <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full" />
-                </div>
-              ) : (
-                <ResponsiveContainer width="100%" height={280}>
-                  <BarChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" />
-                    <XAxis dataKey="name" stroke="var(--outline)" fontSize={12} tickLine={false} />
-                    <YAxis stroke="var(--outline)" fontSize={12} tickLine={false} />
-                    <Tooltip
-                      contentStyle={{ backgroundColor: "var(--card)", borderColor: "var(--border)", borderRadius: "8px", boxShadow: "0 8px 24px rgba(0,0,0,0.08)" }}
-                      labelStyle={{ fontWeight: "bold" }}
-                    />
-                    <Bar dataKey="value" fill="var(--primary)" radius={[6, 6, 0, 0]} maxBarSize={48} />
-                  </BarChart>
-                </ResponsiveContainer>
-              )}
+              <div className="text-right flex-1">
+                <p className="font-bold text-foreground">إضافة لاعب</p>
+                <p className="text-xs text-muted-foreground mt-0.5">تسجيل رياضي جديد في النظام</p>
+              </div>
+              <ArrowLeft className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+            </Button>
+          </Link>
+          <Link to="/dashboard/memberships">
+            <Button size="lg"
+              className="w-full relative overflow-hidden rounded-2xl bg-gradient-to-br from-emerald-500/10 to-emerald-500/5 dark:from-emerald-500/15 dark:to-emerald-500/5 border border-emerald-500/20 hover:border-emerald-500/40 p-5 flex items-center gap-4 transition-all group justify-start h-auto"
+            >
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/30 text-white">
+                <CalendarPlus className="w-5 h-5" />
+              </div>
+              <div className="text-right flex-1">
+                <p className="font-bold text-foreground">اشتراك جديد</p>
+                <p className="text-xs text-muted-foreground mt-0.5">إضافة اشتراك للاعب موجود</p>
+              </div>
+              <ArrowLeft className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+            </Button>
+          </Link>
+          <Link to="/dashboard/verify">
+            <Button size="lg"
+              className="w-full relative overflow-hidden rounded-2xl bg-gradient-to-br from-amber-500/10 to-amber-500/5 dark:from-amber-500/15 dark:to-amber-500/5 border border-amber-500/20 hover:border-amber-500/40 p-5 flex items-center gap-4 transition-all group justify-start h-auto"
+            >
+              <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-amber-500 to-orange-600 flex items-center justify-center shadow-lg shadow-amber-500/30 text-white">
+                <ScanLine className="w-5 h-5" />
+              </div>
+              <div className="text-right flex-1">
+                <p className="font-bold text-foreground">مسح QR</p>
+                <p className="text-xs text-muted-foreground mt-0.5">التحقق من العضوية عبر الكود</p>
+              </div>
+              <ArrowLeft className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
+            </Button>
+          </Link>
+        </div>
+      </motion.div>
+
+      {/* ── Bento Grid: Chart + Branch Performance ── */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        {/* Monthly Growth — AreaChart, spans 2 cols */}
+        <motion.div variants={cardVariants} className="lg:col-span-2 glass-card rounded-3xl p-6 min-h-[400px] group">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="section-header">نمو الاشتراكات الشهرية</h2>
+            <div className="flex gap-2">
+              {["أسبوع", "شهر", "سنة"].map((p) => (
+                <button
+                  key={p}
+                  onClick={() => setPeriod(p)}
+                  className={`px-3 py-1 rounded-full text-xs font-semibold transition-all ${
+                    period === p
+                      ? "bg-primary text-primary-foreground shadow-sm"
+                      : "bg-surface-container-low text-muted-foreground hover:bg-white"
+                  }`}
+                >
+                  {p}
+                </button>
+              ))}
             </div>
           </div>
-        </div>
-
-        <div className="relative overflow-hidden rounded-3xl bg-white dark:bg-card border border-border/30 shadow-sm p-6 flex flex-col justify-between gap-6 hover:shadow-lg transition-all">
-          <div className="absolute inset-0 bg-gradient-to-br from-secondary/[0.02] to-transparent" />
-          <div className="relative space-y-6">
-            <h3 className="text-lg font-bold text-foreground">أداء الأقسام</h3>
-            {deptLoading ? (
-              <div className="flex items-center justify-center py-8">
+          <div className="w-full min-h-[280px]">
+            {growthLoading ? (
+              <div className="h-[280px] flex items-center justify-center">
                 <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full" />
               </div>
-            ) : branches.length === 0 ? (
-              <p className="text-muted-foreground text-sm text-center py-8">لا توجد بيانات</p>
             ) : (
-              <div className="space-y-4">
-                {branches.map((branch, index) => (
-                  <motion.div
-                    key={index}
-                    initial={{ opacity: 0, x: -20 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ delay: 0.3 + index * 0.1 }}
-                    className="p-4 rounded-2xl bg-gradient-to-br from-surface-container-low to-white dark:from-card dark:to-card border border-border/30 hover:border-primary/30 transition-all"
-                  >
-                    <div className="flex justify-between items-center mb-3">
-                      <div className="flex items-center gap-3">
-                        <div className={`w-8 h-8 rounded-lg ${branch.iconColor === "text-primary" ? "bg-primary/10" : "bg-secondary/10"} flex items-center justify-center ${branch.iconColor}`}>
-                          <Building2 className="w-4 h-4" />
-                        </div>
-                        <span className="text-sm font-bold text-foreground">{branch.name}</span>
-                      </div>
-                    </div>
-                    <div className="space-y-2">
-                      <div className="flex justify-between text-xs text-muted-foreground">
-                        <span>عدد اللاعبين</span>
-                        <span className="text-foreground font-semibold">{branch.revenue}</span>
-                      </div>
-                      <div className="w-full bg-muted rounded-full h-2.5 overflow-hidden">
-                        <motion.div
-                          initial={{ width: 0 }}
-                          animate={{ width: `${branch.percent}%` }}
-                          transition={{ duration: 1, delay: 0.5 + index * 0.1, ease: [0.22, 1, 0.36, 1] }}
-                          className={`${branch.color} h-full rounded-full shadow-sm`}
-                        />
-                      </div>
-                    </div>
-                  </motion.div>
-                ))}
-              </div>
+              <ResponsiveContainer width="100%" height={300}>
+                <AreaChart data={chartData} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
+                  <defs>
+                    <linearGradient id="growthGradient" x1="0" y1="0" x2="0" y2="1">
+                      <stop offset="5%" stopColor="var(--primary)" stopOpacity={0.3} />
+                      <stop offset="95%" stopColor="var(--primary)" stopOpacity={0} />
+                    </linearGradient>
+                  </defs>
+                  <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="var(--border)" opacity={0.5} />
+                  <XAxis dataKey="name" stroke="var(--outline)" fontSize={12} tickLine={false} axisLine={false} />
+                  <YAxis stroke="var(--outline)" fontSize={12} tickLine={false} axisLine={false} />
+                  <Tooltip
+                    contentStyle={{
+                      backgroundColor: "var(--card)",
+                      borderColor: "var(--border)",
+                      borderRadius: "12px",
+                      boxShadow: "0 8px 32px rgba(0,0,0,0.1)",
+                      padding: "8px 14px",
+                    }}
+                    labelStyle={{ fontWeight: "bold", marginBottom: 4 }}
+                  />
+                  <Area
+                    type="monotone"
+                    dataKey="value"
+                    stroke="var(--primary)"
+                    strokeWidth={3}
+                    fill="url(#growthGradient)"
+                    dot={false}
+                    activeDot={{ r: 6, fill: "var(--primary)", stroke: "white", strokeWidth: 2 }}
+                  />
+                </AreaChart>
+              </ResponsiveContainer>
             )}
           </div>
-          <Link to="/dashboard/reports">
-            <motion.button whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}
-              className="w-full py-3 rounded-xl border border-border/60 text-sm font-semibold text-muted-foreground hover:bg-surface-container hover:text-primary transition-all"
+        </motion.div>
+
+        {/* Branch Performance */}
+        <motion.div variants={cardVariants} className="glass-card rounded-3xl p-6 flex flex-col gap-6">
+          <h2 className="section-header">أداء الفروع</h2>
+          {branchData.map((branch, idx) => (
+            <div
+              key={idx}
+              className="p-4 rounded-2xl bg-surface-container-lowest border border-outline-variant/30 hover:border-primary/50 transition-colors"
             >
-              عرض التقارير التفصيلية
-            </motion.button>
+              <div className="flex justify-between items-center mb-3">
+                <div className="flex items-center gap-3">
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-sm">
+                    {branch.icon}
+                  </div>
+                  <span className="text-sm font-bold text-foreground">{branch.name}</span>
+                </div>
+                <span className="bg-secondary/10 text-secondary px-2 py-0.5 rounded text-[11px] font-semibold">
+                  {branch.trend}
+                </span>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm text-muted-foreground">
+                  <span>الإيرادات</span>
+                  <span className="text-foreground font-semibold">{branch.revenue} د.ل</span>
+                </div>
+                <div className="w-full bg-surface-variant rounded-full h-1.5 overflow-hidden">
+                  <div className={`${branch.color} h-full rounded-full transition-all duration-700`} style={{ width: `${branch.percentage}%` }} />
+                </div>
+              </div>
+            </div>
+          ))}
+          <Button variant="outline" size="lg"
+            className="mt-auto w-full py-3 rounded-xl border-border/60 text-sm font-semibold text-muted-foreground hover:bg-surface-container hover:text-primary"
+          >
+            عرض التفاصيل
+          </Button>
+        </motion.div>
+      </div>
+
+      {/* ── Recent Registrations Table ── */}
+      <motion.div variants={cardVariants} className="glass-card rounded-3xl p-6">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="section-header">التسجيلات الحديثة</h2>
+          <Link to="/dashboard/athletes">
+            <Button variant="ghost" size="xs" className="text-sm font-semibold text-primary">
+              عرض الكل
+              <ArrowLeft className="w-3 h-3 mr-1" />
+            </Button>
           </Link>
+        </div>
+        <div className="overflow-x-auto">
+          <table className="w-full text-right">
+            <thead>
+              <tr className="border-b border-outline-variant/20 text-muted-foreground text-xs font-semibold">
+                <th className="pb-4 pl-4 font-medium">اللاعب</th>
+                <th className="pb-4 pl-4 font-medium">تاريخ التسجيل</th>
+                <th className="pb-4 pl-4 font-medium">الفرع / الرياضة</th>
+                <th className="pb-4 pl-4 font-medium">الباقة</th>
+                <th className="pb-4 font-medium">الحالة</th>
+              </tr>
+            </thead>
+            <tbody className="text-sm text-foreground">
+              {recentAthletes.map((a, i) => (
+                <tr
+                  key={i}
+                  className="border-b border-outline-variant/10 hover:bg-surface-container-low/50 transition-colors"
+                >
+                  <td className="py-4 pl-4">
+                    <div className="flex items-center gap-3">
+                      <div className="w-9 h-9 rounded-full bg-surface-variant flex items-center justify-center text-primary font-bold text-xs">
+                        {a.name.charAt(0)}
+                      </div>
+                      <div>
+                        <div className="font-semibold text-sm">{a.name}</div>
+                        <div className="text-[11px] text-muted-foreground">{a.id}</div>
+                      </div>
+                    </div>
+                  </td>
+                  <td className="py-4 pl-4 text-muted-foreground text-xs">{a.date}</td>
+                  <td className="py-4 pl-4 text-xs">{a.sport}</td>
+                  <td className="py-4 pl-4 text-xs font-semibold">{a.package}</td>
+                  <td className="py-4">{statusBadge(a.status)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
         </div>
       </motion.div>
     </motion.div>

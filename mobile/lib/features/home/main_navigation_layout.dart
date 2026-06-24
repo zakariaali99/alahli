@@ -9,26 +9,20 @@ class MainNavigationLayout extends StatelessWidget {
 
   int _calculateSelectedIndex(BuildContext context) {
     final location = GoRouterState.of(context).uri.path;
-    if (location == '/card') return 1;
-    if (location == '/notifications') return 2;
-    if (location == '/profile') return 3;
-    return 0; // Default to /
+    if (location == '/membership-details') return 1;
+    if (location == '/card') return 2;
+    if (location == '/notifications') return 3;
+    if (location == '/profile') return 4;
+    return 0;
   }
 
   void _onItemTapped(int index, BuildContext context) {
     switch (index) {
-      case 0:
-        context.go('/');
-        break;
-      case 1:
-        context.go('/card');
-        break;
-      case 2:
-        context.go('/notifications');
-        break;
-      case 3:
-        context.go('/profile');
-        break;
+      case 0: context.go('/'); break;
+      case 1: context.go('/membership-details'); break;
+      case 2: context.go('/card'); break;
+      case 3: context.go('/notifications'); break;
+      case 4: context.go('/profile'); break;
     }
   }
 
@@ -36,28 +30,27 @@ class MainNavigationLayout extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final selectedIndex = _calculateSelectedIndex(context);
+    final bottomInset = MediaQuery.of(context).padding.bottom;
 
     return Scaffold(
       body: Stack(
         children: [
-          // Child Screen Content
           Positioned.fill(
             child: Padding(
-              padding: const EdgeInsets.only(bottom: 96.0),
+              padding: EdgeInsets.only(bottom: bottomInset + 80),
               child: child,
             ),
           ),
-          // Floating Bottom Navigation Glass Pill Bar
           Positioned(
-            left: 20,
-            right: 20,
-            bottom: 24,
+            left: 12,
+            right: 12,
+            bottom: bottomInset + 8,
             child: ClipRRect(
               borderRadius: BorderRadius.circular(24),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 12, sigmaY: 12),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 16),
+                  padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
                   decoration: BoxDecoration(
                     color: theme.colorScheme.surface.withValues(alpha: 0.85),
                     borderRadius: BorderRadius.circular(24),
@@ -76,39 +69,11 @@ class MainNavigationLayout extends StatelessWidget {
                   child: Row(
                     mainAxisAlignment: MainAxisAlignment.spaceAround,
                     children: [
-                      _buildNavItem(
-                        context,
-                        icon: Icons.home,
-                        activeIcon: Icons.home,
-                        label: 'الرئيسية',
-                        index: 0,
-                        currentIndex: selectedIndex,
-                      ),
-                      _buildNavItem(
-                        context,
-                        icon: Icons.qr_code_scanner,
-                        activeIcon: Icons.qr_code_scanner,
-                        label: 'بطاقتي',
-                        index: 1,
-                        currentIndex: selectedIndex,
-                      ),
-                      _buildNavItem(
-                        context,
-                        icon: Icons.notifications,
-                        activeIcon: Icons.notifications,
-                        label: 'التنبيهات',
-                        index: 2,
-                        currentIndex: selectedIndex,
-                        hasBadge: true,
-                      ),
-                      _buildNavItem(
-                        context,
-                        icon: Icons.person,
-                        activeIcon: Icons.person,
-                        label: 'حسابي',
-                        index: 3,
-                        currentIndex: selectedIndex,
-                      ),
+                      _buildNavItem(context, icon: Icons.home, activeIcon: Icons.home, label: 'الرئيسية', index: 0, currentIndex: selectedIndex),
+                      _buildNavItem(context, icon: Icons.card_membership, activeIcon: Icons.card_membership, label: 'الاشتراكات', index: 1, currentIndex: selectedIndex),
+                      _buildNavItem(context, icon: Icons.qr_code_scanner, activeIcon: Icons.qr_code_scanner, label: 'بطاقتي', index: 2, currentIndex: selectedIndex),
+                      _buildNavItem(context, icon: Icons.notifications, activeIcon: Icons.notifications, label: 'التنبيهات', index: 3, currentIndex: selectedIndex, hasBadge: true),
+                      _buildNavItem(context, icon: Icons.person, activeIcon: Icons.person, label: 'حسابي', index: 4, currentIndex: selectedIndex),
                     ],
                   ),
                 ),

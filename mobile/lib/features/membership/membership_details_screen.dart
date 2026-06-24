@@ -1,331 +1,68 @@
+import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/providers/providers.dart';
 
-class MembershipDetailsScreen extends StatelessWidget {
+class MembershipDetailsScreen extends ConsumerWidget {
   const MembershipDetailsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-
-    // Mock subscription history data
-    final historyItems = [
-      _SubscriptionItem(
-        package: 'باقة 12 شهر',
-        startDate: '20/05/2023',
-        endDate: '20/05/2024',
-        amount: '3,360 ر.س',
-        status: 'نشط',
-        isActive: true,
-      ),
-      _SubscriptionItem(
-        package: 'باقة 6 أشهر',
-        startDate: '20/11/2022',
-        endDate: '20/05/2023',
-        amount: '1,785 ر.س',
-        status: 'منتهي',
-        isActive: false,
-      ),
-      _SubscriptionItem(
-        package: 'باقة 3 أشهر',
-        startDate: '20/08/2022',
-        endDate: '20/11/2022',
-        amount: '945 ر.س',
-        status: 'منتهي',
-        isActive: false,
-      ),
-      _SubscriptionItem(
-        package: 'شهر واحد',
-        startDate: '01/07/2022',
-        endDate: '01/08/2022',
-        amount: '350 ر.س',
-        status: 'منتهي',
-        isActive: false,
-      ),
-    ];
+    final activeSubAsync = ref.watch(activeSubscriptionProvider);
+    final subscriptionsAsync = ref.watch(subscriptionsProvider);
 
     return Scaffold(
-      backgroundColor: theme.colorScheme.surface,
       appBar: AppBar(
-        title: const Text(
-          'تفاصيل الاشتراك',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
+        title: const Text('الاشتراكات', style: TextStyle(fontWeight: FontWeight.bold)),
         leading: IconButton(
           icon: const Icon(Icons.arrow_back_ios),
-          onPressed: () => context.pop(),
+          onPressed: () => context.canPop() ? context.pop() : context.go('/'),
         ),
       ),
       body: SingleChildScrollView(
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Active Membership Summary Card
-            Container(
-              margin: const EdgeInsets.all(20),
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    theme.colorScheme.primary,
-                    theme.colorScheme.primaryContainer,
-                  ],
-                  begin: Alignment.topRight,
-                  end: Alignment.bottomLeft,
-                ),
-                borderRadius: BorderRadius.circular(20),
-                boxShadow: [
-                  BoxShadow(
-                    color: theme.colorScheme.primary.withValues(alpha: 0.25),
-                    blurRadius: 20,
-                    offset: const Offset(0, 10),
-                  ),
-                ],
-              ),
-              child: Column(
-                children: [
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      const Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            'الاشتراك الحالي',
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 12,
-                            ),
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            'باقة 12 شهر',
-                            style: TextStyle(
-                              color: Colors.white,
-                              fontSize: 22,
-                              fontWeight: FontWeight.w800,
-                            ),
-                          ),
-                        ],
-                      ),
-                      Container(
-                        padding: const EdgeInsets.symmetric(
-                          horizontal: 12,
-                          vertical: 6,
-                        ),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFF2c694e),
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Row(
-                          children: [
-                            Container(
-                              width: 6,
-                              height: 6,
-                              decoration: const BoxDecoration(
-                                color: Color(0xFF95d4b3),
-                                shape: BoxShape.circle,
-                              ),
-                            ),
-                            const SizedBox(width: 6),
-                            const Text(
-                              'نشط',
-                              style: TextStyle(
-                                color: Colors.white,
-                                fontSize: 12,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 20),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      _infoColumn('تاريخ البدء', '20/05/2023'),
-                      _infoColumn('تاريخ الانتهاء', '20/05/2024'),
-                      _infoColumn('المبلغ', '3,360 ر.س'),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  // Progress bar
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Text(
-                            '165 يوم متبقي',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.9),
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                            ),
-                          ),
-                          Text(
-                            '54%',
-                            style: TextStyle(
-                              color: Colors.white.withValues(alpha: 0.7),
-                              fontSize: 12,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 8),
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(10),
-                        child: const LinearProgressIndicator(
-                          value: 0.54,
-                          backgroundColor: Colors.black12,
-                          valueColor: AlwaysStoppedAnimation<Color>(
-                            Color(0xFF95d4b3),
-                          ),
-                          minHeight: 8,
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-                  // Renew button
-                  SizedBox(
-                    width: double.infinity,
-                    child: ElevatedButton.icon(
-                      onPressed: () {},
-                      icon: const Icon(Icons.autorenew, size: 18),
-                      label: const Text('تجديد الاشتراك الآن'),
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: Colors.white,
-                        foregroundColor: theme.colorScheme.primary,
-                        padding: const EdgeInsets.symmetric(vertical: 14),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        elevation: 0,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+            activeSubAsync.when(
+              data: (sub) {
+                if (sub == null) return const SizedBox.shrink();
+                return _buildActiveCard(theme, sub);
+              },
+              loading: () => _buildSkeleton(theme),
+              error: (_, __) => _buildSkeleton(theme),
             ),
-
-            // History section
+            const SizedBox(height: 8),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 20),
               child: Text(
-                'سجل الاشتراكات',
-                style: theme.textTheme.titleMedium?.copyWith(
-                  fontWeight: FontWeight.bold,
-                ),
+                'سجل التجديدات',
+                style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
               ),
             ),
             const SizedBox(height: 12),
-
-            ListView.builder(
-              padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: historyItems.length,
-              itemBuilder: (context, index) {
-                final item = historyItems[index];
-                return Container(
-                  margin: const EdgeInsets.only(bottom: 12),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: theme.cardTheme.color,
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(
-                      color: item.isActive
-                          ? theme.colorScheme.primary.withValues(alpha: 0.3)
-                          : theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
-                      width: item.isActive ? 1.5 : 0.5,
-                    ),
+            subscriptionsAsync.when(
+              data: (items) => ListView.builder(
+                padding: const EdgeInsets.fromLTRB(20, 0, 20, 32),
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: items.length,
+                itemBuilder: (context, index) => _buildHistoryItem(theme, items[index]),
+              ),
+              loading: () => const Padding(
+                padding: EdgeInsets.all(32),
+                child: Center(child: CircularProgressIndicator()),
+              ),
+              error: (_, __) => Padding(
+                padding: const EdgeInsets.all(32),
+                child: Center(
+                  child: Text(
+                    'تعذر تحميل سجل الاشتراكات',
+                    style: TextStyle(color: theme.colorScheme.error),
                   ),
-                  child: Row(
-                    children: [
-                      // Icon
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: BoxDecoration(
-                          color: item.isActive
-                              ? theme.colorScheme.primary.withValues(alpha: 0.1)
-                              : theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
-                          borderRadius: BorderRadius.circular(12),
-                        ),
-                        child: Icon(
-                          item.isActive
-                              ? Icons.card_membership
-                              : Icons.history,
-                          color: item.isActive
-                              ? theme.colorScheme.primary
-                              : theme.colorScheme.outline,
-                          size: 22,
-                        ),
-                      ),
-                      const SizedBox(width: 14),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                Text(
-                                  item.package,
-                                  style: theme.textTheme.bodyLarge?.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                Container(
-                                  padding: const EdgeInsets.symmetric(
-                                    horizontal: 8,
-                                    vertical: 3,
-                                  ),
-                                  decoration: BoxDecoration(
-                                    color: item.isActive
-                                        ? const Color(0xFF92f5a4)
-                                        : const Color(0xFFe1e3e4),
-                                    borderRadius: BorderRadius.circular(20),
-                                  ),
-                                  child: Text(
-                                    item.status,
-                                    style: TextStyle(
-                                      fontSize: 11,
-                                      fontWeight: FontWeight.w700,
-                                      color: item.isActive
-                                          ? const Color(0xFF007233)
-                                          : const Color(0xFF44474f),
-                                    ),
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              '${item.startDate} ← ${item.endDate}',
-                              style: theme.textTheme.bodySmall?.copyWith(
-                                color: theme.colorScheme.outline,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              item.amount,
-                              style: theme.textTheme.bodyMedium?.copyWith(
-                                fontWeight: FontWeight.w600,
-                                color: theme.colorScheme.primary,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                );
-              },
+                ),
+              ),
             ),
           ],
         ),
@@ -333,42 +70,368 @@ class MembershipDetailsScreen extends StatelessWidget {
     );
   }
 
-  Widget _infoColumn(String label, String value) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(color: Colors.white70, fontSize: 11),
+  Widget _buildActiveCard(ThemeData theme, dynamic sub) {
+    final start = DateTime.tryParse(sub.startDate ?? '');
+    final end = DateTime.tryParse(sub.endDate ?? '');
+    final total = end != null && start != null ? end.difference(start).inDays : 365;
+    final remaining = end != null ? end.difference(DateTime.now()).inDays : 0;
+    final progress = total > 0 ? (remaining / total).clamp(0.0, 1.0) : 0.0;
+    final isExpired = remaining < 0;
+    final progressPercent = ((1 - progress) * 100).round();
+
+    return Container(
+      margin: const EdgeInsets.all(20),
+      clipBehavior: Clip.antiAlias,
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [theme.colorScheme.primary, theme.colorScheme.primaryContainer],
+          begin: Alignment.topRight,
+          end: Alignment.bottomLeft,
         ),
-        const SizedBox(height: 2),
-        Text(
-          value,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 13,
-            fontWeight: FontWeight.w700,
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: theme.colorScheme.primary.withValues(alpha: 0.25),
+            blurRadius: 20,
+            offset: const Offset(0, 10),
           ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          Positioned(
+            top: -30,
+            right: -30,
+            child: Container(
+              width: 140,
+              height: 140,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primaryFixed.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: -30,
+            left: -30,
+            child: Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.secondary.withValues(alpha: 0.15),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const SizedBox(height: 16),
+                      Text(
+                        sub.packageName ?? '—',
+                        style: const TextStyle(color: Colors.white, fontSize: 22, fontWeight: FontWeight.w800),
+                      ),
+                    ],
+                  ),
+                  Container(
+                    width: 36,
+                    height: 36,
+                    decoration: BoxDecoration(
+                      color: Colors.white.withValues(alpha: 0.15),
+                      borderRadius: BorderRadius.circular(18),
+                      border: Border.all(color: Colors.white.withValues(alpha: 0.2)),
+                    ),
+                    child: Icon(Icons.star, color: theme.colorScheme.secondaryContainer, size: 18),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('الأيام المتبقية', style: TextStyle(color: Colors.white70, fontSize: 12)),
+                      const SizedBox(height: 4),
+                      Row(
+                        crossAxisAlignment: CrossAxisAlignment.baseline,
+                        textBaseline: TextBaseline.alphabetic,
+                        children: [
+                          Text(
+                            '${isExpired ? 0 : remaining}',
+                            style: theme.textTheme.headlineLarge?.copyWith(
+                              color: Colors.white,
+                              fontSize: 36,
+                              fontWeight: FontWeight.w800,
+                            ),
+                          ),
+                          const SizedBox(width: 4),
+                          Text(
+                            'يوم',
+                            style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 16),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                  _buildProgressRing(theme, progressPercent),
+                ],
+              ),
+              const SizedBox(height: 20),
+              Row(
+                children: [
+                  Expanded(
+                    child: _buildDateCard(
+                      theme,
+                      icon: Icons.calendar_today,
+                      label: 'تاريخ البدء',
+                      date: sub.startDate ?? '—',
+                      iconColor: theme.colorScheme.secondaryContainer,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: _buildDateCard(
+                      theme,
+                      icon: Icons.event_busy,
+                      label: 'تاريخ الانتهاء',
+                      date: sub.endDate ?? '—',
+                      iconColor: theme.colorScheme.error,
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton.icon(
+                  onPressed: () {},
+                  icon: const Icon(Icons.autorenew, size: 18),
+                  label: const Text('تجديد الاشتراك الآن'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: Colors.white,
+                    foregroundColor: theme.colorScheme.primary,
+                    padding: const EdgeInsets.symmetric(vertical: 14),
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+                    elevation: 4,
+                    shadowColor: theme.colorScheme.primary.withValues(alpha: 0.3),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildProgressRing(ThemeData theme, int percent) {
+    return SizedBox(
+      width: 64,
+      height: 64,
+      child: CustomPaint(
+        painter: _ProgressRingPainter(
+          progress: percent / 100.0,
+          trackColor: theme.colorScheme.primaryFixed.withValues(alpha: 0.3),
+          progressColor: theme.colorScheme.secondaryContainer,
+          strokeWidth: 4,
         ),
-      ],
+        child: Center(
+          child: Icon(Icons.schedule, color: theme.colorScheme.secondaryContainer, size: 20),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildDateCard(
+    ThemeData theme, {
+    required IconData icon,
+    required String label,
+    required String date,
+    required Color iconColor,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLow.withValues(alpha: 0.15),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(icon, color: iconColor, size: 18),
+              const SizedBox(width: 6),
+              Text(label, style: TextStyle(color: Colors.white.withValues(alpha: 0.8), fontSize: 11)),
+            ],
+          ),
+          const SizedBox(height: 6),
+          Text(
+            date,
+            style: const TextStyle(color: Colors.white, fontSize: 14, fontWeight: FontWeight.w700),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildHistoryItem(ThemeData theme, dynamic item) {
+    final isActive = item.isActive;
+    final amount = '${item.amount} د.ل';
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: theme.cardTheme.color ?? theme.colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(
+          color: isActive
+              ? theme.colorScheme.primary.withValues(alpha: 0.3)
+              : theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+          width: isActive ? 1.5 : 0.5,
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: isActive
+                  ? theme.colorScheme.secondaryContainer.withValues(alpha: 0.3)
+                  : theme.colorScheme.outlineVariant.withValues(alpha: 0.2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Icon(
+              isActive ? Icons.check_circle : Icons.history,
+              color: isActive ? theme.colorScheme.secondary : theme.colorScheme.outline,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      item.packageName ?? '—',
+                      style: theme.textTheme.bodyLarge?.copyWith(fontWeight: FontWeight.bold),
+                    ),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: isActive
+                            ? theme.colorScheme.secondaryContainer.withValues(alpha: 0.3)
+                            : theme.colorScheme.outlineVariant.withValues(alpha: 0.3),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        isActive ? 'نشط' : 'منتهي',
+                        style: TextStyle(
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          color: isActive ? theme.colorScheme.secondary : theme.colorScheme.outline,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      '${item.startDate ?? ''} ← ${item.endDate ?? ''}',
+                      style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline),
+                    ),
+                    Text(
+                      amount,
+                      style: theme.textTheme.bodyMedium?.copyWith(
+                          fontWeight: FontWeight.w700,
+                          color: theme.colorScheme.secondary,
+                        ),
+                      ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildSkeleton(ThemeData theme) {
+    return Container(
+      margin: const EdgeInsets.all(20),
+      height: 280,
+      decoration: BoxDecoration(
+        color: theme.cardTheme.color ?? theme.colorScheme.surfaceContainerLow,
+        borderRadius: BorderRadius.circular(20),
+      ),
+      child: const Center(child: CircularProgressIndicator()),
     );
   }
 }
 
-class _SubscriptionItem {
-  final String package;
-  final String startDate;
-  final String endDate;
-  final String amount;
-  final String status;
-  final bool isActive;
+class _ProgressRingPainter extends CustomPainter {
+  final double progress;
+  final Color trackColor;
+  final Color progressColor;
+  final double strokeWidth;
 
-  _SubscriptionItem({
-    required this.package,
-    required this.startDate,
-    required this.endDate,
-    required this.amount,
-    required this.status,
-    required this.isActive,
+  _ProgressRingPainter({
+    required this.progress,
+    required this.trackColor,
+    required this.progressColor,
+    required this.strokeWidth,
   });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = (size.width - strokeWidth) / 2;
+
+    final trackPaint = Paint()
+      ..color = trackColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round;
+
+    canvas.drawCircle(center, radius, trackPaint);
+
+    final progressPaint = Paint()
+      ..color = progressColor
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round;
+
+    final sweepAngle = 2 * math.pi * progress;
+    canvas.drawArc(
+      Rect.fromCircle(center: center, radius: radius),
+      -math.pi / 2,
+      sweepAngle,
+      false,
+      progressPaint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _ProgressRingPainter oldDelegate) {
+    return oldDelegate.progress != progress;
+  }
 }

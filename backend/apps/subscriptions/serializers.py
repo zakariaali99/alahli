@@ -14,6 +14,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
     renewals = RenewalSerializer(many=True, read_only=True)
     athlete_name = serializers.CharField(source="athlete.full_name", read_only=True)
     membership_number = serializers.CharField(source="athlete.membership_number", read_only=True)
+    department_name = serializers.CharField(source="athlete.department.name_ar", read_only=True)
 
     class Meta:
         model = Subscription

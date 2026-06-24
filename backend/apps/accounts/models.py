@@ -16,6 +16,10 @@ class User(AbstractUser):
     first_name_ar = models.CharField(max_length=50)
     last_name_ar = models.CharField(max_length=50)
     role = models.CharField(max_length=20, choices=Role.choices, default=Role.VIEWER)
+    athlete = models.OneToOneField(
+        "athletes.Athlete", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="user_account",
+    )
     is_active = models.BooleanField(default=True)
 
     USERNAME_FIELD = "phone"

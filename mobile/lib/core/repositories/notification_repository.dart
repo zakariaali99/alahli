@@ -1,3 +1,4 @@
+import '../helpers/safe_json.dart';
 import '../network/api_client.dart';
 import '../models/notification_model.dart';
 
@@ -8,10 +9,14 @@ class NotificationRepository {
 
   Future<List<NotificationModel>> getNotifications() async {
     final res = await _client.dio.get('/notifications/');
-    final data = res.data as Map<String, dynamic>;
-    final results = data['results'] as List<dynamic>;
-    return results
-        .map((e) => NotificationModel.fromJson(e as Map<String, dynamic>))
+    final data = asMap(res.data);
+    if (data == null) return [];
+    return asList(data['results'])
+        .map((e) {
+          final m = asMap(e);
+          return m != null ? NotificationModel.fromJson(m) : null;
+        })
+        .whereType<NotificationModel>()
         .toList();
   }
 

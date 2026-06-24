@@ -6,6 +6,7 @@ class UserModel {
   final String fullNameAr;
   final String role;
   final bool isActive;
+  final Map<String, dynamic>? athleteDetail;
 
   const UserModel({
     required this.id,
@@ -15,7 +16,18 @@ class UserModel {
     required this.fullNameAr,
     required this.role,
     required this.isActive,
+    this.athleteDetail,
   });
+
+  factory UserModel.empty() => const UserModel(
+    id: 0,
+    phone: '',
+    firstNameAr: '',
+    lastNameAr: '',
+    fullNameAr: '',
+    role: '',
+    isActive: false,
+  );
 
   factory UserModel.fromJson(Map<String, dynamic> json) => UserModel(
         id: json['id'] as int,
@@ -25,6 +37,7 @@ class UserModel {
         fullNameAr: json['full_name_ar'] as String? ?? '',
         role: json['role'] as String? ?? 'viewer',
         isActive: json['is_active'] as bool? ?? true,
+        athleteDetail: json['athlete_detail'] as Map<String, dynamic>?,
       );
 
   Map<String, dynamic> toJson() => {
@@ -35,5 +48,6 @@ class UserModel {
         'full_name_ar': fullNameAr,
         'role': role,
         'is_active': isActive,
+        if (athleteDetail != null) 'athlete_detail': athleteDetail,
       };
 }

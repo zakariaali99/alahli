@@ -1,3 +1,4 @@
+import '../helpers/safe_json.dart';
 import '../network/api_client.dart';
 import '../models/auth_response.dart';
 import '../models/user_model.dart';
@@ -12,7 +13,9 @@ class AuthRepository {
       'phone': phone,
       'password': password,
     });
-    final authRes = AuthResponse.fromJson(res.data as Map<String, dynamic>);
+    final data = asMap(res.data);
+    if (data == null) throw Exception('استجابة غير صالحة من الخادم');
+    final authRes = AuthResponse.fromJson(data);
     _client.setTokens(
       access: authRes.access,
       refresh: authRes.refresh,
@@ -31,7 +34,9 @@ class AuthRepository {
 
   Future<UserModel> getMe() async {
     final res = await _client.dio.get('/auth/me/');
-    return UserModel.fromJson(res.data as Map<String, dynamic>);
+    final data = asMap(res.data);
+    if (data == null) throw Exception('استجابة غير صالحة من الخادم');
+    return UserModel.fromJson(data);
   }
 
   Future<void> changePassword(String oldPw, String newPw) async {

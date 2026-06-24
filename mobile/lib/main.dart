@@ -1,13 +1,32 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'core/providers/providers.dart';
 import 'core/router/app_router.dart';
 import 'core/theme/app_theme.dart';
 
-// Brand Provider to switch styling between Al Ahly (Blue) and AWS Academy (Green)
-final brandProvider = StateProvider<SportsBrand>((ref) => SportsBrand.alAhly);
-
 void main() {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  ErrorWidget.builder = (details) => const Center(
+    child: Padding(
+      padding: EdgeInsets.all(32),
+      child: Text(
+        'عذراً، حدث خطأ غير متوقع',
+        style: TextStyle(fontSize: 18),
+        textAlign: TextAlign.center,
+      ),
+    ),
+  );
+
+  SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
+    statusBarColor: Colors.transparent,
+    statusBarIconBrightness: Brightness.dark,
+    systemNavigationBarColor: Colors.transparent,
+    systemNavigationBarIconBrightness: Brightness.dark,
+  ));
+
   runApp(
     const ProviderScope(
       child: AlAhlyApp(),
@@ -22,10 +41,12 @@ class AlAhlyApp extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final activeBrand = ref.watch(brandProvider);
 
+    final router = ref.watch(goRouterProvider);
+
     return MaterialApp.router(
       title: 'مركز الأهلي الرياضي',
       debugShowCheckedModeBanner: false,
-      routerConfig: goRouter,
+      routerConfig: router,
       theme: AppTheme.themeData(activeBrand),
       locale: const Locale('ar', 'LY'), // Arabic (Libya) locale
       supportedLocales: const [

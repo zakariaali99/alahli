@@ -12,6 +12,7 @@ class Subscription(models.Model):
     athlete = models.ForeignKey(
         Athlete, on_delete=models.CASCADE, related_name="subscriptions"
     )
+    package_name = models.CharField(max_length=100, default="الباقة الأساسية")
     start_date = models.DateField()
     end_date = models.DateField()
     amount = models.DecimalField(max_digits=10, decimal_places=2)

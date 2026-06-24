@@ -41,7 +41,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Logo
                 Container(
                   width: 100,
                   height: 100,
@@ -77,8 +76,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   ),
                 ),
                 const SizedBox(height: 48),
-
-                // Phone field
                 TextField(
                   controller: _phoneController,
                   keyboardType: TextInputType.phone,
@@ -90,8 +87,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   enabled: authState.status != AuthStatus.loading,
                 ),
                 const SizedBox(height: 16),
-
-                // Password field
                 TextField(
                   controller: _passwordController,
                   obscureText: _obscurePassword,
@@ -109,8 +104,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   onSubmitted: (_) => _login(),
                 ),
                 const SizedBox(height: 8),
-
-                // Error message
                 if (authState.status == AuthStatus.error)
                   Padding(
                     padding: const EdgeInsets.only(top: 8),
@@ -131,8 +124,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                   ),
                 const SizedBox(height: 24),
-
-                // Login button
                 SizedBox(
                   width: double.infinity,
                   child: ElevatedButton(

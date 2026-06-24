@@ -18,6 +18,12 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
     filterset_fields = ["status", "athlete"]
     search_fields = ["athlete__full_name", "athlete__membership_number"]
 
+    def get_queryset(self):
+        user = self.request.user
+        if hasattr(user, "athlete") and user.athlete is not None:
+            return Subscription.objects.filter(athlete=user.athlete)
+        return Subscription.objects.all()
+
     def get_permissions(self):
         if self.action in ["create", "update", "partial_update", "destroy", "renew"]:
             return [IsReceptionOrAbove()]

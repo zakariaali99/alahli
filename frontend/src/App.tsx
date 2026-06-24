@@ -3,6 +3,7 @@ import { useState } from "react"
 import { AuthProvider } from "@/lib/auth"
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 import Login from "@/pages/Login"
+import Landing from "@/pages/Landing"
 import DashboardLayout from "@/pages/DashboardLayout"
 import DashboardHome from "@/pages/DashboardHome"
 import AthletesList from "@/pages/AthletesList"
@@ -27,8 +28,9 @@ export default function App() {
       <AuthProvider>
         <BrowserRouter>
           <Routes>
+            <Route path="/" element={<Landing />} />
             <Route path="/login" element={<Login />} />
-            <Route path="/" element={<DashboardLayout />}>
+            <Route path="/dashboard" element={<DashboardLayout />}>
               <Route index element={<DashboardHome />} />
               <Route path="athletes" element={<AthletesList />} />
               <Route path="athletes/add" element={<AddAthlete />} />

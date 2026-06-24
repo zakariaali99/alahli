@@ -1,4 +1,5 @@
 import 'package:dio/dio.dart';
+import '../helpers/safe_json.dart';
 
 class ApiClient {
   final Dio dio;
@@ -6,7 +7,7 @@ class ApiClient {
   String? _refreshToken;
   void Function()? _onUnauthorized;
 
-  ApiClient({String baseUrl = 'http://localhost:8000/api'})
+  ApiClient({String baseUrl = 'http://10.22.95.35:8000/api'})
       : dio = Dio(
           BaseOptions(
             baseUrl: baseUrl,
@@ -35,7 +36,10 @@ class ApiClient {
                 '/auth/token/refresh/',
                 data: {'refresh': _refreshToken},
               );
-              _accessToken = res.data['access'] as String;
+              final refreshData = asMap(res.data);
+              if (refreshData != null) {
+                _accessToken = asString(refreshData['access']);
+              }
               error.requestOptions.headers['Authorization'] = 'Bearer $_accessToken';
               final retryResponse = await dio.fetch(error.requestOptions);
               return handler.resolve(retryResponse);
@@ -44,7 +48,6 @@ class ApiClient {
               return handler.next(error);
             }
           }
-          _onUnauthorized?.call();
           return handler.next(error);
         },
       ),

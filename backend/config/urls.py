@@ -14,6 +14,10 @@ urlpatterns = [
     path("api/subscriptions/", include("apps.subscriptions.urls")),
     path("api/notifications/", include("apps.notifications.urls")),
     path("api/analytics/", include("apps.analytics.urls")),
+    path("api/sessions/", include("apps.workouts.urls")),
+    path("api/trainers/", include("apps.trainers.urls")),
+    path("api/store/", include("apps.store.urls")),
+    path("api/progress/", include("apps.progress.urls")),
 ]
 
 if settings.DEBUG:

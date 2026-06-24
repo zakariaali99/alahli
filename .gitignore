@@ -26,6 +26,13 @@ venv/
 # design reference files (not part of the project)
 design/
 
+# browser test artifacts
+.playwright-mcp/
+
+# browser snapshot exports (not project source files)
+login-page
+login-page-redesigned
+
 # frontend
 frontend/node_modules/
 frontend/.next/

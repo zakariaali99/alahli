@@ -30,6 +30,10 @@ INSTALLED_APPS = [
     "apps.subscriptions",
     "apps.notifications",
     "apps.analytics",
+    "apps.workouts",
+    "apps.trainers",
+    "apps.store",
+    "apps.progress",
 ]
 
 MIDDLEWARE = [

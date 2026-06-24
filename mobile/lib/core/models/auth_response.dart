@@ -1,8 +1,9 @@
+import '../helpers/safe_json.dart';
 import 'user_model.dart';
 
 class AuthResponse {
-  final String access;
-  final String refresh;
+  final String? access;
+  final String? refresh;
   final UserModel user;
 
   const AuthResponse({
@@ -11,11 +12,14 @@ class AuthResponse {
     required this.user,
   });
 
-  factory AuthResponse.fromJson(Map<String, dynamic> json) => AuthResponse(
-        access: json['access'] as String,
-        refresh: json['refresh'] as String,
-        user: UserModel.fromJson(json['user'] as Map<String, dynamic>),
-      );
+  factory AuthResponse.fromJson(Map<String, dynamic> json) {
+    final userData = asMap(json['user']);
+    return AuthResponse(
+      access: asString(json['access']),
+      refresh: asString(json['refresh']),
+      user: userData != null ? UserModel.fromJson(userData) : UserModel.empty(),
+    );
+  }
 
   Map<String, dynamic> toJson() => {
         'access': access,
