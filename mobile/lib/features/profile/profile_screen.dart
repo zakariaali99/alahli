@@ -223,7 +223,7 @@ class ProfileScreen extends ConsumerWidget {
             ),
             const SizedBox(height: 12),
             Text(
-              'الإصدار 2.4.1',
+              'مركز الأهلي الرياضي',
               style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.outline.withValues(alpha: 0.6)),
             ),
           ],

@@ -96,18 +96,18 @@ export default function AthleteProfilePage() {
           <span className="text-primary font-bold">ملف اللاعب</span>
         </div>
         <div className="flex items-center gap-3 w-full md:w-auto">
-          <Button variant="outline" size="lg">
-            <Printer className="w-4 h-4" />
-            طباعة البطاقة
-          </Button>
-          <Button variant="outline" size="lg">
-            <Edit className="w-4 h-4" />
-            تعديل البيانات
-          </Button>
-          <Button size="lg" className="bg-gradient-to-l from-primary to-primary/80 shadow-lg shadow-primary/20">
-            <RefreshCw className="w-4 h-4" />
-            تجديد الاشتراك
-          </Button>
+          <Link to={`/dashboard/athletes/add`}>
+            <Button variant="outline" size="lg">
+              <Edit className="w-4 h-4" />
+              تعديل البيانات
+            </Button>
+          </Link>
+          <Link to="/dashboard/memberships">
+            <Button size="lg" className="bg-gradient-to-l from-primary to-primary/80 shadow-lg shadow-primary/20">
+              <RefreshCw className="w-4 h-4" />
+              تجديد الاشتراك
+            </Button>
+          </Link>
         </div>
       </div>
 
@@ -215,7 +215,7 @@ export default function AthleteProfilePage() {
             <div className="relative z-10 w-full flex flex-col items-center">
               <div className="flex items-center justify-between w-full mb-4">
                 <h3 className="text-base font-bold text-foreground">بطاقة العضوية</h3>
-                <Button variant="ghost" size="icon-xs">
+                <Button variant="ghost" size="icon-xs" onClick={() => alert('طباعة البطاقة غير متوفرة حالياً')}>
                   <Printer className="w-4 h-4" />
                 </Button>
               </div>
@@ -349,7 +349,7 @@ export default function AthleteProfilePage() {
                   </div>
                   <div>
                     <p className="text-[11px] text-muted-foreground mb-0.5">قيمة الاشتراك</p>
-                    <p className="text-foreground font-bold">{Number(subs.amount).toLocaleString("ar-SA")} د.ل</p>
+                    <p className="text-foreground font-bold">{Number(subs.amount).toLocaleString("ar-SA-u-nu-latn")} د.ل</p>
                   </div>
                 </div>
               </div>
@@ -406,7 +406,7 @@ export default function AthleteProfilePage() {
                       <td className="py-4 px-4 font-semibold font-mono text-xs">{sub.membership_number}</td>
                       <td className="py-4 px-4 text-muted-foreground">{formatDate(sub.start_date)}</td>
                       <td className="py-4 px-4 text-muted-foreground">{formatDate(sub.end_date)}</td>
-                      <td className="py-4 px-4 font-bold">{Number(sub.amount).toLocaleString("ar-SA")} د.ل</td>
+                      <td className="py-4 px-4 font-bold">{Number(sub.amount).toLocaleString("ar-SA-u-nu-latn")} د.ل</td>
                       <td className="py-4 px-4">
                         <span className={`px-3 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1.5 border ${
                           sub.status === "active" ? "bg-secondary/10 text-secondary border-secondary/10" :

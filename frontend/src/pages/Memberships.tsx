@@ -204,6 +204,7 @@ export default function MembershipsPage() {
                   </ul>
 
                   <button
+                    onClick={() => alert('سيتم تفعيل التجديد قريباً')}
                     className={`w-full py-2.5 rounded-xl text-sm font-bold transition-all active:scale-[0.97] ${
                       pkg.featured
                         ? "bg-primary text-primary-foreground shadow-md shadow-primary/30 hover:shadow-lg hover:shadow-primary/40 hover:bg-primary/90"
@@ -308,7 +309,7 @@ export default function MembershipsPage() {
                         {formatDate(sub.end_date)}
                       </td>
                       <td className="px-6 py-4 font-bold text-foreground">
-                        {Number(sub.amount).toLocaleString("ar-SA")}
+                        {Number(sub.amount).toLocaleString("ar-SA-u-nu-latn")}
                         <span className="text-xs text-muted-foreground mr-0.5 font-normal"> د.ل</span>
                       </td>
                       <td className="px-6 py-4">

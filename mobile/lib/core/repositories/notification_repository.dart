@@ -25,7 +25,7 @@ class NotificationRepository {
   }
 
   Future<void> markAllAsRead() async {
-    await _client.dio.post('/notifications/mark-all-read/');
+    await _client.dio.post('/notifications/mark_all_read/');
   }
 
   Future<void> delete(int id) async {

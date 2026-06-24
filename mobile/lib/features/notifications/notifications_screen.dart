@@ -241,10 +241,6 @@ class _NotificationCard extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: Colors.grey[200],
                       borderRadius: BorderRadius.circular(12),
-                      image: const DecorationImage(
-                        image: NetworkImage('https://picsum.photos/100?random=1'),
-                        fit: BoxFit.cover,
-                      ),
                     ),
                     child: Container(
                       decoration: BoxDecoration(

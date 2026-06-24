@@ -1,8 +1,6 @@
 import React from "react"
 import { motion, type Variants } from "framer-motion"
 import {
-  TrendingDown,
-  TrendingUp,
   Users,
   DollarSign,
   Activity,
@@ -25,7 +23,7 @@ import {
 } from "recharts"
 import {
   useDashboardStats,
-  useMonthlyGrowth,
+  useRevenue,
   useDepartmentDistribution,
 } from "@/lib/hooks/useAnalytics"
 import { Button } from "@/components/ui/button"
@@ -40,73 +38,65 @@ const itemVariants: Variants = {
   visible: { opacity: 1, y: 0, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] } },
 }
 
+const monthNames = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"]
+
 function CustomTooltip({ active, payload, label }: any) {
   if (!active || !payload?.length) return null
   return (
     <div className="bg-card/90 backdrop-blur-md rounded-xl px-4 py-3 shadow-lg border border-border/50 text-sm">
       <p className="font-bold text-foreground">{label}</p>
-      <p className="text-primary font-extrabold mt-0.5">{payload[0].value.toLocaleString("ar-SA")} د.ل</p>
+      <p className="text-primary font-extrabold mt-0.5">{payload[0].value.toLocaleString("ar-SA-u-nu-latn")} د.ل</p>
     </div>
   )
 }
 
 export default function ReportsPage() {
   const { data: stats, isLoading: statsLoading } = useDashboardStats()
+  const { data: revenueData, isLoading: revenueLoading } = useRevenue()
   const { data: departments, isLoading: deptLoading } = useDepartmentDistribution()
 
-  const monthlyRevenueData = [
-    { name: "يناير", revenue: 450000 },
-    { name: "فبراير", revenue: 680000 },
-    { name: "مارس", revenue: 950000 },
-    { name: "أبريل", revenue: 580000 },
-    { name: "مايو", revenue: 820000 },
-    { name: "يونيو", revenue: 1020000 },
-  ]
+  const monthlyRevenueData = (revenueData || []).map((d) => {
+    const date = new Date(d.month)
+    return { name: monthNames[date.getMonth()], revenue: d.revenue }
+  })
 
   const distributionData = departments && departments.length > 0 
     ? departments.map((d) => ({
         name: d.department__name_ar,
         value: d.count
       }))
-    : [
-        { name: "أكاديمية كرة القدم", value: 65 },
-        { name: "مركز اللياقة البدنية", value: 35 }
-      ]
+    : []
 
   const totalDistribution = distributionData.reduce((acc, curr) => acc + curr.value, 0)
+
+  const totalRevenue = stats?.total_revenue ?? 0
+  const activeMemberships = stats?.active_memberships ?? 0
+  const renewalRate = stats?.renewal_rate ?? 0
 
   const kpiCards = [
     {
       label: "إجمالي الإيرادات",
-      value: "1.2M",
+      value: totalRevenue.toLocaleString("ar-SA-u-nu-latn"),
       icon: DollarSign,
       iconBg: "bg-primary/10 text-primary",
-      trend: "+12.5% من الشهر الماضي",
-      trendUp: true,
     },
     {
       label: "اللاعبين النشطين",
-      value: stats?.active_memberships?.toLocaleString("ar-SA") || "3,450",
+      value: activeMemberships.toLocaleString("ar-SA-u-nu-latn"),
       icon: Users,
       iconBg: "bg-secondary/10 text-secondary",
-      trend: "+5.2% من الشهر الماضي",
-      trendUp: true,
     },
     {
       label: "معدل التجديد",
-      value: "88%",
+      value: `${renewalRate}%`,
       icon: Percent,
       iconBg: "bg-amber-500/10 text-amber-600",
-      trend: "-1.1% من الشهر الماضي",
-      trendUp: false,
     },
     {
-      label: "الزيارات اليومية",
-      value: "845",
+      label: "إجمالي اللاعبين",
+      value: (stats?.total_athletes ?? 0).toLocaleString("ar-SA-u-nu-latn"),
       icon: Activity,
       iconBg: "bg-primary/10 text-primary",
-      trend: "معدل مستقر",
-      trendUp: true,
     },
   ]
 
@@ -152,17 +142,11 @@ export default function ReportsPage() {
                 </div>
               </div>
               <div className="text-3xl font-extrabold text-foreground">
-                {card.label === "اللاعبين النشطين" && statsLoading ? (
+                {statsLoading ? (
                   <span className="animate-pulse bg-muted rounded w-16 h-8 inline-block" />
                 ) : (
                   card.value
                 )}
-              </div>
-              <div className={`flex items-center gap-1 mt-3 text-xs font-semibold ${
-                card.trendUp ? "text-secondary" : "text-error"
-              }`}>
-                {card.trendUp ? <TrendingUp className="w-4 h-4" /> : <TrendingDown className="w-4 h-4" />}
-                <span>{card.trend}</span>
               </div>
             </motion.div>
           )
@@ -181,15 +165,25 @@ export default function ReportsPage() {
             </div>
           </div>
           <div className="flex-1 min-h-[300px]" dir="ltr">
-            <ResponsiveContainer width="100%" height="100%">
-              <BarChart data={monthlyRevenueData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} opacity={0.5} />
-                <XAxis dataKey="name" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: "var(--muted-fg)" }} />
-                <YAxis tickLine={false} axisLine={false} tickFormatter={(v) => `${v / 1000}k`} tick={{ fontSize: 12, fill: "var(--muted-fg)" }} />
-                <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(0, 40, 142, 0.02)" }} />
-                <Bar dataKey="revenue" fill="var(--primary)" radius={[6, 6, 0, 0]} maxBarSize={48} />
-              </BarChart>
-            </ResponsiveContainer>
+            {revenueLoading ? (
+              <div className="h-[300px] flex items-center justify-center">
+                <div className="w-8 h-8 border-[3px] border-primary border-t-transparent rounded-full animate-spin" />
+              </div>
+            ) : monthlyRevenueData.length === 0 ? (
+              <div className="h-[300px] flex items-center justify-center text-muted-foreground text-sm">
+                لا توجد بيانات إيرادات
+              </div>
+            ) : (
+              <ResponsiveContainer width="100%" height="100%">
+                <BarChart data={monthlyRevenueData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} opacity={0.5} />
+                  <XAxis dataKey="name" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: "var(--muted-fg)" }} />
+                  <YAxis tickLine={false} axisLine={false} tickFormatter={(v) => `${v / 1000}k`} tick={{ fontSize: 12, fill: "var(--muted-fg)" }} />
+                  <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(0, 40, 142, 0.02)" }} />
+                  <Bar dataKey="revenue" fill="var(--primary)" radius={[6, 6, 0, 0]} maxBarSize={48} />
+                </BarChart>
+              </ResponsiveContainer>
+            )}
           </div>
         </motion.div>
 
@@ -201,6 +195,10 @@ export default function ReportsPage() {
           {deptLoading ? (
             <div className="flex-1 flex items-center justify-center py-12">
               <div className="w-8 h-8 border-[3px] border-primary border-t-transparent rounded-full animate-spin" />
+            </div>
+          ) : distributionData.length === 0 ? (
+            <div className="flex-1 flex items-center justify-center py-12 text-muted-foreground text-sm">
+              لا توجد بيانات توزيع
             </div>
           ) : (
             <div className="w-full flex-1 flex flex-col items-center justify-center">
@@ -224,7 +222,7 @@ export default function ReportsPage() {
                 </ResponsiveContainer>
                 <div className="absolute flex flex-col items-center justify-center text-center">
                   <span className="text-3xl font-extrabold text-foreground leading-none">
-                    {totalDistribution.toLocaleString("ar-SA")}
+                    {totalDistribution.toLocaleString("ar-SA-u-nu-latn")}
                   </span>
                   <span className="text-xs text-muted-foreground mt-1">الإجمالي</span>
                 </div>
@@ -238,7 +236,7 @@ export default function ReportsPage() {
                       <span className="text-sm font-semibold text-muted-foreground">{d.name}</span>
                     </div>
                     <span className="text-sm font-extrabold text-foreground">
-                      {Math.round((d.value / totalDistribution) * 100)}%
+                      {totalDistribution > 0 ? `${Math.round((d.value / totalDistribution) * 100)}%` : '0%'}
                     </span>
                   </div>
                 ))}

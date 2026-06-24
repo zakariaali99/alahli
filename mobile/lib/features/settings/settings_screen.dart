@@ -94,7 +94,7 @@ class SettingsScreen extends StatelessWidget {
               theme,
               children: [
                 _settingsRow(theme, Icons.info_outline, 'عن التطبيق',
-                  onTap: () => _showSnack(context, 'مركز الأهلي الرياضي - الإصدار 2.4.1'),
+                  onTap: () => _showSnack(context, 'مركز الأهلي الرياضي'),
                   trailing: Icon(Icons.chevron_left, color: theme.colorScheme.outline)),
                 const Divider(height: 1, indent: 52),
                 _settingsRow(theme, Icons.policy_outlined, 'سياسة الخصوصية',
@@ -142,7 +142,7 @@ class SettingsScreen extends StatelessWidget {
             const SizedBox(height: 12),
             Center(
               child: Text(
-                'الإصدار 2.4.1',
+                'مركز الأهلي الرياضي',
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: theme.colorScheme.outline.withValues(alpha: 0.6),
                 ),

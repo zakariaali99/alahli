@@ -16,15 +16,13 @@ class SubscriptionVerificationScreen extends ConsumerWidget {
         width: double.infinity,
         height: double.infinity,
         decoration: BoxDecoration(
-          image: DecorationImage(
-            image: const NetworkImage(
-              'https://images.unsplash.com/photo-1534438327276-14e5300c3a48?w=800&q=80',
-            ),
-            fit: BoxFit.cover,
-            colorFilter: ColorFilter.mode(
-              theme.colorScheme.primary.withValues(alpha: 0.6),
-              BlendMode.darken,
-            ),
+          gradient: LinearGradient(
+            colors: [
+              theme.colorScheme.primary,
+              theme.colorScheme.primaryContainer,
+            ],
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
           ),
         ),
         child: SafeArea(

@@ -9,7 +9,8 @@ import { Button } from "@/components/ui/button"
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts"
-import { useDashboardStats, useMonthlyGrowth } from "@/lib/hooks/useAnalytics"
+import { useDashboardStats, useMonthlyGrowth, useDepartmentDistribution } from "@/lib/hooks/useAnalytics"
+import { useAthletes } from "@/lib/hooks/useAthletes"
 import { useAuth } from "@/lib/auth"
 
 function CountUp({ end, duration = 1500 }: { end: number; duration?: number }) {
@@ -40,7 +41,7 @@ function CountUp({ end, duration = 1500 }: { end: number; duration?: number }) {
     return () => observer.disconnect()
   }, [end, duration])
 
-  return <span ref={ref}>{count.toLocaleString("ar-SA")}</span>
+  return <span ref={ref}>{count.toLocaleString("ar-SA-u-nu-latn")}</span>
 }
 
 const containerVariants: Variants = {
@@ -60,6 +61,8 @@ export default function DashboardPage() {
   const { user } = useAuth()
   const { data: stats, isLoading: statsLoading } = useDashboardStats()
   const { data: growthData, isLoading: growthLoading } = useMonthlyGrowth()
+  const { data: departments } = useDepartmentDistribution()
+  const { data: athletesData } = useAthletes({ ordering: "-created_at", page_size: 3 })
   const [period, setPeriod] = useState<string>("شهر")
 
   const statCards = [
@@ -108,30 +111,14 @@ export default function DashboardPage() {
     return { name: months[date.getMonth()], value: d.count }
   })
 
-  const branchData = [
-    {
-      name: "الأهلي للياقة",
-      icon: "🏋️",
-      color: "bg-primary",
-      revenue: "850,000",
-      percentage: 75,
-      trend: "+8%",
-    },
-    {
-      name: "أكاديمية العوز",
-      icon: "⚽",
-      color: "bg-tertiary-container",
-      revenue: "420,000",
-      percentage: 45,
-      trend: "+12%",
-    },
-  ]
-
-  const recentAthletes = [
-    { name: "عمر عبدالله", id: "#4592", date: "12 مايو 2024", sport: "كرة القدم - العوز", package: "احترافي 6 شهور", status: "نشط" as const },
-    { name: "سارة محمد", id: "#4591", date: "11 مايو 2024", sport: "لياقة بدنية - الأهلي", package: "أساسي 3 شهور", status: "نشط" as const },
-    { name: "خالد سعيد", id: "#4590", date: "10 مايو 2024", sport: "سباحة - الأهلي", package: "شهر واحد", status: "قيد المراجعة" as const },
-  ]
+  const recentAthletes = (athletesData?.results || []).map((a) => ({
+    name: a.full_name,
+    id: a.membership_number,
+    date: new Date(a.created_at).toLocaleDateString("ar-SA-u-nu-latn", { year: "numeric", month: "long", day: "numeric" }),
+    sport: a.department_name || "—",
+    package: "—",
+    status: a.is_active ? "نشط" : "منتهي",
+  }))
 
   const statusBadge = (status: string) => {
     const styles: Record<string, string> = {
@@ -334,41 +321,31 @@ export default function DashboardPage() {
           </div>
         </motion.div>
 
-        {/* Branch Performance */}
+        {/* Department Distribution */}
         <motion.div variants={cardVariants} className="glass-card rounded-3xl p-6 flex flex-col gap-6">
-          <h2 className="section-header">أداء الفروع</h2>
-          {branchData.map((branch, idx) => (
-            <div
-              key={idx}
-              className="p-4 rounded-2xl bg-surface-container-lowest border border-outline-variant/30 hover:border-primary/50 transition-colors"
-            >
-              <div className="flex justify-between items-center mb-3">
-                <div className="flex items-center gap-3">
-                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-primary text-sm">
-                    {branch.icon}
-                  </div>
-                  <span className="text-sm font-bold text-foreground">{branch.name}</span>
-                </div>
-                <span className="bg-secondary/10 text-secondary px-2 py-0.5 rounded text-[11px] font-semibold">
-                  {branch.trend}
-                </span>
-              </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm text-muted-foreground">
-                  <span>الإيرادات</span>
-                  <span className="text-foreground font-semibold">{branch.revenue} د.ل</span>
-                </div>
-                <div className="w-full bg-surface-variant rounded-full h-1.5 overflow-hidden">
-                  <div className={`${branch.color} h-full rounded-full transition-all duration-700`} style={{ width: `${branch.percentage}%` }} />
-                </div>
-              </div>
+          <h2 className="section-header">توزيع اللاعبين</h2>
+          {(departments || []).length === 0 ? (
+            <div className="flex-1 flex items-center justify-center py-8 text-muted-foreground text-sm">
+              لا توجد بيانات
             </div>
-          ))}
-          <Button variant="outline" size="lg"
-            className="mt-auto w-full py-3 rounded-xl border-border/60 text-sm font-semibold text-muted-foreground hover:bg-surface-container hover:text-primary"
-          >
-            عرض التفاصيل
-          </Button>
+          ) : (
+            (departments || []).map((dept, idx) => {
+              const total = (departments || []).reduce((acc, d) => acc + d.count, 0)
+              const pct = total > 0 ? Math.round((dept.count / total) * 100) : 0
+              const colors = ["bg-primary", "bg-secondary", "bg-amber-500", "bg-sky-500", "bg-purple-500"]
+              return (
+                <div key={idx} className="p-4 rounded-2xl bg-surface-container-lowest border border-outline-variant/30">
+                  <div className="flex justify-between items-center mb-3">
+                    <span className="text-sm font-bold text-foreground">{dept.department__name_ar}</span>
+                    <span className="text-xs font-semibold text-muted-foreground">{dept.count} لاعب</span>
+                  </div>
+                  <div className="w-full bg-surface-variant rounded-full h-1.5 overflow-hidden">
+                    <div className={`${colors[idx % colors.length]} h-full rounded-full transition-all duration-700`} style={{ width: `${pct}%` }} />
+                  </div>
+                </div>
+              )
+            })
+          )}
         </motion.div>
       </div>
 

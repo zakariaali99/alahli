@@ -112,9 +112,9 @@ class HomeScreen extends ConsumerWidget {
               activeSubAsync.when(
                 data: (sub) => sub != null
                     ? _buildMembershipCard(theme, sub, context)
-                    : _buildNoSubscriptionCard(theme),
+                    : _buildNoSubscriptionCard(theme, context),
                 loading: () => _buildCardSkeleton(theme),
-                error: (_, __) => _buildNoSubscriptionCard(theme),
+                error: (_, __) => _buildNoSubscriptionCard(theme, context),
               ),
               const SizedBox(height: 24),
               Text(
@@ -303,7 +303,7 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildNoSubscriptionCard(ThemeData theme) {
+  Widget _buildNoSubscriptionCard(ThemeData theme, BuildContext context) {
     final cardColor = theme.cardTheme.color ?? theme.colorScheme.surfaceContainerLow;
     return Container(
       width: double.infinity,
@@ -328,7 +328,7 @@ class HomeScreen extends ConsumerWidget {
           ),
           const SizedBox(height: 8),
           ElevatedButton(
-            onPressed: () {},
+            onPressed: () => context.push('/membership-details'),
             child: const Text('اشترك الآن'),
           ),
         ],
