@@ -11,10 +11,11 @@ import {
   PlusCircle,
   ChevronLeft,
   ChevronRight,
-  CreditCard,
 } from "lucide-react"
 import { useSubscriptions } from "@/lib/hooks/useSubscriptions"
+import { usePackages } from "@/lib/hooks/usePackages"
 import { Button } from "@/components/ui/button"
+import { Link } from "react-router-dom"
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -61,58 +62,38 @@ export default function MembershipsPage() {
     status: statusFilter || undefined,
   })
 
+  const { data: packagesData } = usePackages()
+  const packages = packagesData?.results ?? []
+
   const subscriptions = data?.results || []
   const totalPages = data ? Math.ceil(data.count / 20) : 0
 
   const formatDate = (d: string) =>
     new Date(d).toLocaleDateString("ar-SA", { year: "numeric", month: "numeric", day: "numeric" })
 
-  const packages = [
-    {
-      id: 1,
-      title: "شهر واحد",
-      price: "350",
-      perMonth: "350",
-      icon: CalendarDays,
-      badge: "شائع",
-      badgeCls: "bg-secondary/10 text-secondary border border-secondary/10",
-      features: ["دخول يومي للمرافق", "حصة تدريبية واحدة"],
-      featured: false,
-    },
-    {
-      id: 2,
-      title: "3 أشهر",
-      price: "900",
-      perMonth: "300",
-      icon: CalendarRange,
-      badge: "الأكثر طلباً",
-      badgeCls: "bg-primary/10 text-primary border border-primary/10",
-      features: ["جميع مميزات الشهر", "تقييم بدني شهري", "خصم 10%"],
-      featured: true,
-    },
-    {
-      id: 3,
-      title: "6 أشهر",
-      price: "1,600",
-      perMonth: "266",
-      icon: CalendarRange,
-      badge: "توفير 15%",
-      badgeCls: "bg-amber-500/10 text-amber-600 border border-amber-500/10",
-      features: ["دخول حصص جماعية", "برنامج غذائي مبدئي", "خصم 15%"],
-      featured: false,
-    },
-    {
-      id: 4,
-      title: "12 شهر",
-      price: "3,000",
-      perMonth: "250",
-      icon: Crown,
-      badge: "الأفضل قيمة",
-      badgeCls: "bg-gold/10 text-gold border border-gold/10",
-      features: ["جميع المميزات", "تجميد الاشتراك (شهر)", "خصم 33%"],
-      featured: false,
-    },
-  ]
+  const iconMap: Record<string, React.ElementType> = {
+    CalendarDays, CalendarRange, Crown,
+  }
+
+  const pkgList = (packages || []).map((pkg) => {
+    const Icon = iconMap[pkg.icon_name] || CalendarDays
+    const priceNum = Number(pkg.price)
+    const monthly = Math.round(priceNum / (pkg.duration_days / 30))
+    const isFeatured = pkg.color_class?.includes("featured") || pkg.id === 2
+    return {
+      id: pkg.id,
+      title: pkg.name,
+      price: priceNum.toLocaleString("ar-SA-u-nu-latn"),
+      perMonth: monthly.toLocaleString("ar-SA-u-nu-latn"),
+      icon: Icon,
+      badge: isFeatured ? "الأكثر طلباً" : "شائع",
+      badgeCls: isFeatured
+        ? "bg-primary/10 text-primary border border-primary/10"
+        : "bg-secondary/10 text-secondary border border-secondary/10",
+      features: pkg.features?.length ? pkg.features : ["دخول يومي للمرافق"],
+      featured: isFeatured,
+    }
+  })
 
   const getPageNumbers = () => {
     const pages: (number | string)[] = []
@@ -138,10 +119,12 @@ export default function MembershipsPage() {
           <h1 className="text-3xl font-extrabold gradient-text">إدارة الاشتراكات</h1>
           <p className="text-muted-foreground mt-1 text-sm">تجديد، متابعة، وإدارة الباقات المالية للاعبين.</p>
         </div>
-        <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/25">
-          <PlusCircle className="w-5 h-5" />
-          اشتراك جديد
-        </Button>
+        <Link to="/dashboard/athletes/add">
+          <Button size="lg" className="bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/25">
+            <PlusCircle className="w-5 h-5" />
+            اشتراك جديد
+          </Button>
+        </Link>
       </motion.div>
 
       {/* ── Quick Renewal Packages ── */}
@@ -150,7 +133,7 @@ export default function MembershipsPage() {
           باقات التجديد السريع
         </motion.div>
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-5">
-          {packages.map((pkg, index) => {
+          {pkgList.map((pkg, index) => {
             const Icon = pkg.icon
             return (
               <motion.div
@@ -263,7 +246,6 @@ export default function MembershipsPage() {
                   <th scope="col" className="px-6 py-4">تاريخ البدء</th>
                   <th scope="col" className="px-6 py-4">تاريخ الانتهاء</th>
                   <th scope="col" className="px-6 py-4">المبلغ</th>
-                  <th scope="col" className="px-6 py-4">طريقة الدفع</th>
                   <th scope="col" className="px-6 py-4">الحالة</th>
                   <th scope="col" className="px-6 py-4 text-center">إجراءات</th>
                 </tr>
@@ -271,7 +253,7 @@ export default function MembershipsPage() {
               <tbody>
                 {isLoading ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-16 text-center text-muted-foreground">
+                    <td colSpan={6} className="px-6 py-16 text-center text-muted-foreground">
                       <div className="flex flex-col items-center gap-3">
                         <div className="w-8 h-8 border-[3px] border-primary border-t-transparent rounded-full animate-spin" />
                         <span className="text-sm">جاري التحميل...</span>
@@ -280,7 +262,7 @@ export default function MembershipsPage() {
                   </tr>
                 ) : subscriptions.length === 0 ? (
                   <tr>
-                    <td colSpan={7} className="px-6 py-16 text-center text-muted-foreground">
+                    <td colSpan={6} className="px-6 py-16 text-center text-muted-foreground">
                       <div className="flex flex-col items-center gap-2">
                         <Search className="w-6 h-6 text-muted-foreground/40" />
                         <span className="text-sm">لا توجد نتائج</span>
@@ -311,12 +293,6 @@ export default function MembershipsPage() {
                       <td className="px-6 py-4 font-bold text-foreground">
                         {Number(sub.amount).toLocaleString("ar-SA-u-nu-latn")}
                         <span className="text-xs text-muted-foreground mr-0.5 font-normal"> د.ل</span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className="flex items-center gap-1.5 text-xs text-muted-foreground">
-                          <CreditCard className="w-3.5 h-3.5" />
-                          {(sub as any).payment_method || "بطاقة ائتمان"}
-                        </span>
                       </td>
                       <td className="px-6 py-4">
                         <span className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-full ${statusMap[sub.status]?.cls || ""}`}>

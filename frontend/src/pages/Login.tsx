@@ -21,9 +21,13 @@ export default function LoginPage() {
   const [showPassword, setShowPassword] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [phone, setPhone] = useState("")
+  const [phone, setPhone] = useState(() => {
+    try { return localStorage.getItem("remembered_phone") || "" } catch { return "" }
+  })
   const [password, setPassword] = useState("")
-  const [rememberMe, setRememberMe] = useState(false)
+  const [rememberMe, setRememberMe] = useState(() => {
+    try { return localStorage.getItem("remember_me") === "true" } catch { return false }
+  })
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -34,6 +38,13 @@ export default function LoginPage() {
     setIsLoading(true)
     setErrorMessage(null)
     try {
+      if (rememberMe) {
+        localStorage.setItem("remembered_phone", phone.trim())
+        localStorage.setItem("remember_me", "true")
+      } else {
+        localStorage.removeItem("remembered_phone")
+        localStorage.setItem("remember_me", "false")
+      }
       await login(phone.trim(), password)
       navigate("/dashboard")
     } catch (err: any) {

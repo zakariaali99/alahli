@@ -26,6 +26,8 @@ class WorkoutRepository {
 
   Future<ExerciseModel> getExercise(int id) async {
     final res = await _client.dio.get('/sessions/exercises/$id/');
-    return ExerciseModel.fromJson(asMap(res.data)!);
+    final data = asMap(res.data);
+    if (data == null) throw Exception('فشل تحميل التمرين');
+    return ExerciseModel.fromJson(data);
   }
 }

@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Trainer, TrainerClass
+from .models import Trainer, TrainerClass, TrainerReview
 
 
 class TrainerClassSerializer(serializers.ModelSerializer):
@@ -15,6 +15,15 @@ class TrainerClassSerializer(serializers.ModelSerializer):
 
     def get_price_display(self, obj):
         return f"{obj.price} د.ل"
+
+
+class TrainerReviewSerializer(serializers.ModelSerializer):
+    athlete_name = serializers.CharField(source="athlete.full_name", read_only=True)
+
+    class Meta:
+        model = TrainerReview
+        fields = "__all__"
+        read_only_fields = ["athlete", "created_at"]
 
 
 class TrainerSerializer(serializers.ModelSerializer):

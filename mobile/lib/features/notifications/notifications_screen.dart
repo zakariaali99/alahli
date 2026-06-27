@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/providers.dart';
+import '../../core/models/announcement_model.dart';
+import '../../core/models/notification_model.dart';
+import '../../core/widgets/widgets.dart';
 
 class NotificationsScreen extends ConsumerWidget {
   const NotificationsScreen({super.key});
@@ -9,6 +12,7 @@ class NotificationsScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final notificationsAsync = ref.watch(notificationsProvider);
+    final announcementsAsync = ref.watch(announcementsProvider);
 
     return Scaffold(
       appBar: AppBar(
@@ -23,7 +27,9 @@ class NotificationsScreen extends ConsumerWidget {
       ),
       body: notificationsAsync.when(
         data: (notifications) {
-          if (notifications.isEmpty) {
+          final announcements = announcementsAsync.asData?.value ?? [];
+          final allItems = [...announcements, ...notifications];
+          if (allItems.isEmpty) {
             return Center(
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -44,34 +50,45 @@ class NotificationsScreen extends ConsumerWidget {
               ),
             );
           }
-          final unreadCount = notifications.where((n) => !n.isRead).length;
-          final bottomPad = MediaQuery.of(context).padding.bottom + 100;
-          return ListView.builder(
-            padding: EdgeInsets.fromLTRB(16, 8, 16, bottomPad),
-            itemCount: notifications.length + 1,
-            itemBuilder: (context, index) {
-              if (index == 0) {
-                return _buildHeader(theme, ref, unreadCount);
-              }
-              final item = notifications[index - 1];
-              final type = _classifyNotification(item.title, item.body);
-              return _NotificationCard(
-                title: item.title,
-                body: item.body,
-                time: _formatTime(item.createdAt),
-                isRead: item.isRead,
-                type: type,
-                onTap: () {
-                  if (!item.isRead) {
-                    ref.read(notificationRepositoryProvider).markAsRead(item.id);
-                    ref.invalidate(notificationsProvider);
-                  }
-                },
-              );
-            },
-          );
+            final unreadCount = allItems.whereType<NotificationModel>().where((n) => !n.isRead).length;
+            final bottomPad = MediaQuery.of(context).padding.bottom + 100;
+            return ListView.builder(
+              padding: EdgeInsets.fromLTRB(16, 8, 16, bottomPad),
+              itemCount: allItems.length + 1,
+              itemBuilder: (context, index) {
+                if (index == 0) {
+                  return _buildHeader(theme, ref, unreadCount);
+                }
+                final item = allItems[index - 1];
+                if (item is AnnouncementModel) {
+                  return _NotificationCard(
+                    title: item.title,
+                    body: item.body,
+                    time: _formatTime(item.createdAt),
+                    isRead: true,
+                    type: NotificationType.management,
+                    onTap: () {},
+                  );
+                }
+                final notif = item as NotificationModel;
+                final type = _classifyNotification(notif.title, notif.body);
+                return _NotificationCard(
+                  title: notif.title,
+                  body: notif.body,
+                  time: _formatTime(notif.createdAt),
+                  isRead: notif.isRead,
+                  type: type,
+                  onTap: () async {
+                    if (!notif.isRead) {
+                      await ref.read(notificationRepositoryProvider).markAsRead(notif.id);
+                      ref.invalidate(notificationsProvider);
+                    }
+                  },
+                );
+              },
+            );
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const ShimmerList(),
         error: (_, __) => Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
@@ -102,8 +119,8 @@ class NotificationsScreen extends ConsumerWidget {
           ),
           if (unreadCount > 0)
             TextButton(
-              onPressed: () {
-                ref.read(notificationRepositoryProvider).markAllAsRead();
+              onPressed: () async {
+                await ref.read(notificationRepositoryProvider).markAllAsRead();
                 ref.invalidate(notificationsProvider);
               },
               child: const Text('تحديد الكل كمقروء', style: TextStyle(fontSize: 12)),

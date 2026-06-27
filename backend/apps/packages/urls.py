@@ -1,0 +1,11 @@
+from django.urls import include, path
+from rest_framework.routers import DefaultRouter
+
+from .views import SubscriptionPackageViewSet
+
+router = DefaultRouter()
+router.register("", SubscriptionPackageViewSet)
+
+urlpatterns = [
+    path("", include(router.urls)),
+]

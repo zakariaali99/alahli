@@ -1,4 +1,6 @@
+import 'dart:io';
 import 'package:dio/dio.dart';
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../network/api_client.dart';
 import '../repositories/auth_repository.dart';
@@ -9,6 +11,15 @@ import '../repositories/trainer_repository.dart';
 import '../repositories/store_repository.dart';
 import '../repositories/progress_repository.dart';
 import '../repositories/booking_repository.dart';
+import '../repositories/faq_repository.dart';
+import '../repositories/announcement_repository.dart';
+import '../repositories/package_repository.dart';
+import '../repositories/review_repository.dart';
+import '../repositories/preference_repository.dart';
+import '../repositories/device_repository.dart';
+import '../repositories/admin_repository.dart';
+import '../repositories/subscription_repository.dart' show SubscriptionRepository, AthleteRepository;
+import '../services/push_service.dart';
 import '../models/user_model.dart';
 import '../models/membership_model.dart';
 import '../models/notification_model.dart';
@@ -16,10 +27,17 @@ import '../models/workout_session_model.dart';
 import '../models/trainer_model.dart';
 import '../models/product_model.dart';
 import '../models/progress_model.dart';
+import '../models/faq_model.dart';
+import '../models/announcement_model.dart';
+import '../models/package_model.dart';
+import '../models/review_model.dart';
+import '../models/preference_model.dart';
+import '../models/dashboard_stats.dart';
 import '../helpers/secure_storage.dart';
 import '../theme/app_theme.dart';
 
 final brandProvider = StateProvider<SportsBrand>((ref) => SportsBrand.alAhly);
+final themeModeProvider = StateProvider<ThemeMode>((ref) => ThemeMode.system);
 
 final secureStorageProvider = Provider<SecureStorage>((ref) => SecureStorage());
 
@@ -38,6 +56,10 @@ final authRepositoryProvider = Provider<AuthRepository>((ref) {
 
 final subscriptionRepositoryProvider = Provider<SubscriptionRepository>((ref) {
   return SubscriptionRepository(ref.watch(apiClientProvider));
+});
+
+final athleteRepositoryProvider = Provider<AthleteRepository>((ref) {
+  return AthleteRepository(ref.watch(apiClientProvider));
 });
 
 final notificationRepositoryProvider = Provider<NotificationRepository>((ref) {
@@ -74,10 +96,15 @@ class AuthNotifier extends StateNotifier<AuthState> {
   final AuthRepository _repo;
   final ApiClient _client;
   final SecureStorage _storage;
+  final DeviceRepository _deviceRepo;
+  final PushService _pushService;
 
-  AuthNotifier(this._repo, this._client, this._storage) : super(const AuthState()) {
+  AuthNotifier(this._repo, this._client, this._storage, this._deviceRepo, this._pushService) : super(const AuthState()) {
     _client.setOnUnauthorized(() {
       if (mounted) _clearAuth();
+    });
+    _client.setOnTokensRefreshed((access, refresh) {
+      _storage.saveTokens(access, refresh);
     });
     _tryRestoreSession();
   }
@@ -92,6 +119,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
     try {
       final user = await _repo.getMe();
       state = AuthState(status: AuthStatus.authenticated, user: user);
+      _registerDevice();
     } catch (_) {
       await _storage.clearTokens();
       _client.clearTokens();
@@ -108,6 +136,7 @@ class AuthNotifier extends StateNotifier<AuthState> {
         status: AuthStatus.authenticated,
         user: authRes.user,
       );
+      _registerDevice();
     } on Exception catch (e) {
       state = AuthState(
         status: AuthStatus.error,
@@ -116,16 +145,26 @@ class AuthNotifier extends StateNotifier<AuthState> {
     }
   }
 
+  Future<void> _registerDevice() async {
+    final token = _pushService.fcmToken;
+    if (token != null) {
+      await _deviceRepo.registerToken(token, Platform.isAndroid ? 'android' : 'ios');
+    }
+  }
+
   Future<void> _clearAuth() async {
     _client.clearTokens();
-    await _storage.clearTokens();
     state = const AuthState(status: AuthStatus.unauthenticated);
+    await _storage.clearTokens();
   }
 
   Future<void> logout() async {
-    await _repo.logout();
-    await _storage.clearTokens();
+    _client.clearTokens();
     state = const AuthState(status: AuthStatus.unauthenticated);
+    await Future.wait([
+      _storage.clearTokens(),
+      _repo.logout(),
+    ]);
   }
 
   String _formatError(Exception e) {
@@ -148,7 +187,9 @@ final authStateProvider =
   final repo = ref.watch(authRepositoryProvider);
   final client = ref.watch(apiClientProvider);
   final storage = ref.watch(secureStorageProvider);
-  return AuthNotifier(repo, client, storage);
+  final deviceRepo = ref.watch(deviceRepositoryProvider);
+  final pushService = ref.watch(pushServiceProvider);
+  return AuthNotifier(repo, client, storage, deviceRepo, pushService);
 });
 
 final subscriptionsProvider = FutureProvider<List<MembershipModel>>((ref) async {
@@ -209,4 +250,77 @@ final weeklyProgressProvider = FutureProvider<WeeklyProgressSummary>((ref) async
 final achievementsProvider = FutureProvider<List<AchievementModel>>((ref) async {
   ref.watch(authStateProvider);
   return ref.watch(progressRepositoryProvider).getAchievements();
+});
+
+final faqRepositoryProvider = Provider<FaqRepository>((ref) {
+  return FaqRepository(ref.watch(apiClientProvider));
+});
+
+final announcementRepositoryProvider = Provider<AnnouncementRepository>((ref) {
+  return AnnouncementRepository(ref.watch(apiClientProvider));
+});
+
+final packageRepositoryProvider = Provider<PackageRepository>((ref) {
+  return PackageRepository(ref.watch(apiClientProvider));
+});
+
+final reviewRepositoryProvider = Provider<ReviewRepository>((ref) {
+  return ReviewRepository(ref.watch(apiClientProvider));
+});
+
+final preferenceRepositoryProvider = Provider<PreferenceRepository>((ref) {
+  return PreferenceRepository(ref.watch(apiClientProvider));
+});
+
+final pushServiceProvider = Provider<PushService>((ref) {
+  return PushService();
+});
+
+final deviceRepositoryProvider = Provider<DeviceRepository>((ref) {
+  return DeviceRepository(ref.watch(apiClientProvider));
+});
+
+final faqsProvider = FutureProvider<List<FaqModel>>((ref) async {
+  ref.watch(authStateProvider);
+  return ref.watch(faqRepositoryProvider).getFaqs();
+});
+
+final announcementsProvider = FutureProvider<List<AnnouncementModel>>((ref) async {
+  ref.watch(authStateProvider);
+  return ref.watch(announcementRepositoryProvider).getAnnouncements();
+});
+
+final packagesProvider = FutureProvider<List<PackageModel>>((ref) async {
+  ref.watch(authStateProvider);
+  return ref.watch(packageRepositoryProvider).getPackages();
+});
+
+final reviewsProvider = FutureProvider<List<ReviewModel>>((ref) async {
+  ref.watch(authStateProvider);
+  return ref.watch(reviewRepositoryProvider).getReviews();
+});
+
+final preferencesProvider = FutureProvider<PreferenceModel>((ref) async {
+  ref.watch(authStateProvider);
+  return ref.watch(preferenceRepositoryProvider).getPreferences();
+});
+
+final adminRepositoryProvider = Provider<AdminRepository>((ref) {
+  return AdminRepository(ref.watch(apiClientProvider));
+});
+
+final dashboardStatsProvider = FutureProvider<DashboardStats>((ref) async {
+  return ref.watch(adminRepositoryProvider).getDashboardStats();
+});
+
+final monthlyGrowthProvider = FutureProvider<List<MonthlyGrowth>>((ref) async {
+  return ref.watch(adminRepositoryProvider).getMonthlyGrowth();
+});
+
+final revenueProvider = FutureProvider<List<RevenueData>>((ref) async {
+  return ref.watch(adminRepositoryProvider).getRevenue();
+});
+
+final departmentDistProvider = FutureProvider<List<DepartmentDist>>((ref) async {
+  return ref.watch(adminRepositoryProvider).getDepartmentDistribution();
 });

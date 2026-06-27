@@ -26,8 +26,17 @@ const itemVariants: Variants = {
 export default function AthleteProfilePage() {
   const params = useParams()
   const id = Number(params.id)
-  const { data: athlete, isLoading } = useAthlete(id)
-  const { data: subsData } = useSubscriptions({ athlete: String(id) })
+  const isValidId = !isNaN(id) && id > 0
+  const { data: athlete, isLoading } = useAthlete(isValidId ? id : 0)
+  const { data: subsData } = useSubscriptions(isValidId ? { athlete: String(id) } : {})
+
+  if (isNaN(id) || id <= 0) {
+    return (
+      <div className="text-center py-20 text-muted-foreground">
+        لم يتم العثور على اللاعب
+      </div>
+    )
+  }
 
   if (isLoading) {
     return (

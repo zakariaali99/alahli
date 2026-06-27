@@ -34,4 +34,27 @@ class SubscriptionRepository {
     final first = asMap(results.first);
     return first != null ? MembershipModel.fromJson(first) : null;
   }
+
+  Future<Map<String, dynamic>> renew(int subscriptionId, {required int months, required double amount}) async {
+    final res = await _client.dio.post('/subscriptions/$subscriptionId/renew/', data: {
+      'months': months,
+      'amount': amount.toStringAsFixed(2),
+    });
+    final data = asMap(res.data);
+    if (data == null) throw Exception('فشل التجديد');
+    return data;
+  }
+}
+
+class AthleteRepository {
+  final ApiClient _client;
+
+  AthleteRepository(this._client);
+
+  Future<Map<String, dynamic>> update(int athleteId, Map<String, dynamic> data) async {
+    final res = await _client.dio.patch('/athletes/$athleteId/', data: data);
+    final body = asMap(res.data);
+    if (body == null) throw Exception('فشل تحديث البيانات');
+    return body;
+  }
 }

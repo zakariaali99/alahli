@@ -33,6 +33,32 @@ class AppTheme {
         shadow: Colors.black12,
       );
 
+  static ColorScheme get alAhlyDarkColorScheme => const ColorScheme(
+        brightness: Brightness.dark,
+        primary: Color(0xFF87A0D9),
+        onPrimary: Color(0xFF001A41),
+        primaryContainer: Color(0xFF002966),
+        onPrimaryContainer: Color(0xFFB0C4FF),
+        secondary: Color(0xFF73D2A8),
+        onSecondary: Color(0xFF003824),
+        secondaryContainer: Color(0xFF1A523A),
+        onSecondaryContainer: Color(0xFFAEEECB),
+        tertiary: Color(0xFFF5C542),
+        onTertiary: Color(0xFF3B2E00),
+        tertiaryContainer: Color(0xFF574400),
+        onTertiaryContainer: Color(0xFFFDE070),
+        error: Color(0xFFFFB4AB),
+        onError: Color(0xFF690005),
+        errorContainer: Color(0xFF93000A),
+        onErrorContainer: Color(0xFFFFDAD6),
+        surface: Color(0xFF121212),
+        onSurface: Color(0xFFE2E2E6),
+        onSurfaceVariant: Color(0xFFC4C6D0),
+        outline: Color(0xFF8E9099),
+        outlineVariant: Color(0xFF44474F),
+        shadow: Colors.black38,
+      );
+
   static ColorScheme get awsColorScheme => const ColorScheme(
         brightness: Brightness.light,
         primary: Color(0xFF1E7A43),
@@ -59,8 +85,11 @@ class AppTheme {
         shadow: Colors.black12,
       );
 
-  static ThemeData themeData(SportsBrand brand) {
-    final colorScheme = brand == SportsBrand.alAhly ? alAhlyColorScheme : awsColorScheme;
+  static ThemeData themeData(SportsBrand brand, {Brightness brightness = Brightness.light}) {
+    final isDark = brightness == Brightness.dark;
+    final colorScheme = brand == SportsBrand.alAhly
+        ? (isDark ? alAhlyDarkColorScheme : alAhlyColorScheme)
+        : (isDark ? awsColorScheme : awsColorScheme);
 
     return ThemeData(
       useMaterial3: true,

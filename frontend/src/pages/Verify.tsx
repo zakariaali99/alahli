@@ -22,6 +22,7 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { useVerifyAthlete } from "@/lib/hooks/useAthletes"
 import { QRScanner } from "@/components/ui/qr-scanner"
 import { ErrorDisplay } from "@/components/ui/error-display"
+import { useLogAttendance } from "@/lib/hooks/useAttendance"
 
 type SearchState = "idle" | "loading" | "found" | "notfound"
 
@@ -127,10 +128,12 @@ function NotFoundState({ query }: { query: string }) {
 
 type AthleteVerify = {
   active: boolean
+  athlete_id: number
   athlete_name: string
   department: string
   expiry_date: string | null
   membership_number: string
+  subscription_id: number | null
 }
 
 function MemberFound({ member }: { member: AthleteVerify }) {
@@ -220,6 +223,7 @@ export default function VerifyPage() {
   const [query, setQuery] = useState("")
   const [searchState, setSearchState] = useState<SearchState>("idle")
   const verifyMutation = useVerifyAthlete()
+  const logAttendance = useLogAttendance()
   const member = verifyMutation.data
 
   const handleSearch = useCallback(() => {
@@ -227,10 +231,15 @@ export default function VerifyPage() {
     if (!trimmed) return
     setSearchState("loading")
     verifyMutation.mutate(trimmed, {
-      onSuccess: () => setSearchState("found"),
+      onSuccess: (data) => {
+        setSearchState("found")
+        if (data.athlete_id) {
+          logAttendance.mutate({ athlete: data.athlete_id, subscription: data.subscription_id ?? undefined })
+        }
+      },
       onError: () => setSearchState("notfound"),
     })
-  }, [query, verifyMutation])
+  }, [query, verifyMutation, logAttendance])
 
   const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
     if (e.key === "Enter") handleSearch()
@@ -241,11 +250,16 @@ export default function VerifyPage() {
       setQuery(code)
       setSearchState("loading")
       verifyMutation.mutate(code, {
-        onSuccess: () => setSearchState("found"),
+        onSuccess: (data) => {
+          setSearchState("found")
+          if (data.athlete_id) {
+            logAttendance.mutate({ athlete: data.athlete_id, subscription: data.subscription_id ?? undefined })
+          }
+        },
         onError: () => setSearchState("notfound"),
       })
     },
-    [verifyMutation],
+    [verifyMutation, logAttendance],
   )
 
   return (

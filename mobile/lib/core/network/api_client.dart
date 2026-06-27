@@ -6,8 +6,9 @@ class ApiClient {
   String? _accessToken;
   String? _refreshToken;
   void Function()? _onUnauthorized;
+  void Function(String access, String refresh)? _onTokensRefreshed;
 
-  ApiClient({String baseUrl = 'http://10.22.95.35:8000/api'})
+  ApiClient({required String baseUrl})
       : dio = Dio(
           BaseOptions(
             baseUrl: baseUrl,
@@ -39,6 +40,8 @@ class ApiClient {
               final refreshData = asMap(res.data);
               if (refreshData != null) {
                 _accessToken = asString(refreshData['access']);
+                _refreshToken = asString(refreshData['refresh']);
+                _onTokensRefreshed?.call(_accessToken!, _refreshToken!);
               }
               error.requestOptions.headers['Authorization'] = 'Bearer $_accessToken';
               final retryResponse = await dio.fetch(error.requestOptions);
@@ -61,6 +64,10 @@ class ApiClient {
 
   void setOnUnauthorized(void Function() callback) {
     _onUnauthorized = callback;
+  }
+
+  void setOnTokensRefreshed(void Function(String access, String refresh) callback) {
+    _onTokensRefreshed = callback;
   }
 
   void clearTokens() {

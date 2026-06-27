@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Renewal, Subscription
+from .models import AttendanceLog, Renewal, Subscription
 
 
 class RenewalInline(admin.TabularInline):
@@ -20,3 +20,9 @@ class SubscriptionAdmin(admin.ModelAdmin):
 @admin.register(Renewal)
 class RenewalAdmin(admin.ModelAdmin):
     list_display = ["subscription", "amount", "months", "renewal_date", "created_by"]
+
+
+@admin.register(AttendanceLog)
+class AttendanceLogAdmin(admin.ModelAdmin):
+    list_display = ["athlete", "checked_in_at", "verified_by"]
+    list_filter = ["checked_in_at"]

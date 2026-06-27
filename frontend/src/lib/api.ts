@@ -35,22 +35,30 @@ class ApiError extends Error {
   }
 }
 
+let refreshPromise: Promise<boolean> | null = null
+
 async function refreshTokens(): Promise<boolean> {
+  if (refreshPromise) return refreshPromise
   const tokens = getTokens()
   if (!tokens) return false
-  try {
-    const res = await fetch(`${API_BASE}/auth/token/refresh/`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ refresh: tokens.refresh }),
-    })
-    if (!res.ok) return false
-    const data = await res.json()
-    setTokens(data.access, data.refresh)
-    return true
-  } catch {
-    return false
-  }
+  refreshPromise = (async () => {
+    try {
+      const res = await fetch(`${API_BASE}/auth/token/refresh/`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refresh: tokens.refresh }),
+      })
+      if (!res.ok) return false
+      const data = await res.json()
+      setTokens(data.access, data.refresh)
+      return true
+    } catch {
+      return false
+    } finally {
+      refreshPromise = null
+    }
+  })()
+  return refreshPromise
 }
 
 async function request<T = any>(
@@ -61,7 +69,9 @@ async function request<T = any>(
 ): Promise<T> {
   const url = new URL(`${API_BASE}${path}`)
   if (opts.params) {
-    Object.entries(opts.params).forEach(([k, v]) => url.searchParams.set(k, v))
+    Object.entries(opts.params).forEach(([k, v]) => {
+      if (v != null) url.searchParams.set(k, v)
+    })
   }
 
   const headers: Record<string, string> = {}
@@ -98,7 +108,12 @@ async function request<T = any>(
 
   if (res.status === 204) return undefined as T
 
-  const data = await res.json()
+  let data: any
+  try {
+    data = await res.json()
+  } catch {
+    throw new ApiError(`Server returned ${res.status} with non-JSON response`, res.status)
+  }
 
   if (!res.ok) {
     const detail = data.detail || Object.values(data).flat().join(", ") || "Unknown error"

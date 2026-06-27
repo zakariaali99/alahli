@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api"
+import type { PaginatedResponse } from "@/lib/types"
 
 interface Notification {
   id: number
@@ -15,13 +16,6 @@ interface NotificationListParams {
   page_size?: number
   is_read?: string
   ordering?: string
-}
-
-interface PaginatedResponse<T> {
-  count: number
-  next: string | null
-  previous: string | null
-  results: T[]
 }
 
 export function useNotifications(params: NotificationListParams = {}) {

@@ -22,6 +22,7 @@ import {
   useMarkAllNotificationsRead,
   useDeleteNotification,
 } from "@/lib/hooks/useNotifications"
+import { useAnnouncements } from "@/lib/hooks/useAnnouncements"
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -55,6 +56,8 @@ export default function NotificationsPage() {
   const { data, isLoading } = useNotifications({
     is_read: filter === "unread" ? "false" : undefined,
   })
+  const { data: announcementsData } = useAnnouncements()
+  const announcements = announcementsData?.results ?? []
   const markRead = useMarkNotificationRead()
   const markAllRead = useMarkAllNotificationsRead()
   const deleteNotif = useDeleteNotification()
@@ -67,7 +70,6 @@ export default function NotificationsPage() {
 
   const notifications: Notification[] = data?.results || []
 
-  // Filter notifications based on tabs
   const filteredNotifications = useMemo(() => {
     return notifications.filter((n) => {
       if (filter === "unread") return !n.is_read
@@ -79,7 +81,7 @@ export default function NotificationsPage() {
       }
       return true
     })
-  }, [notifications, filter])
+  }, [data, filter])
 
   const formatRelativeTime = (d: string): string => {
     const date = new Date(d)
@@ -254,27 +256,22 @@ export default function NotificationsPage() {
               <h3 className="font-extrabold text-[#0b1c30]">إعلانات الإدارة</h3>
             </div>
             <div className="space-y-4">
-              <div className="bg-white/50 p-4 rounded-xl border border-gray-100 hover:border-[#00288e]/20 transition-all cursor-pointer">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-[10px] font-bold text-[#006d30] bg-[#006d30]/10 px-2.5 py-0.5 rounded-full">تحديث جديد</span>
-                  <span className="text-[10px] text-muted-foreground">12 مايو</span>
-                </div>
-                <h4 className="font-bold text-sm text-[#0b1c30] mb-1">إطلاق ميزة التقارير المتقدمة</h4>
-                <p className="text-xs text-[#444653] leading-relaxed line-clamp-2">
-                  تم تفعيل نظام التقارير المتقدمة لجميع المدربين. يمكنك الآن تتبع أداء اللاعبين بدقة أكبر.
-                </p>
-              </div>
-
-              <div className="bg-white/50 p-4 rounded-xl border border-gray-100 hover:border-[#00288e]/20 transition-all cursor-pointer">
-                <div className="flex justify-between items-center mb-2">
-                  <span className="text-[10px] font-bold text-[#00288e] bg-[#00288e]/10 px-2.5 py-0.5 rounded-full">فعالية</span>
-                  <span className="text-[10px] text-muted-foreground">05 مايو</span>
-                </div>
-                <h4 className="font-bold text-sm text-[#0b1c30] mb-1">بطولة الأكاديمية الصيفية</h4>
-                <p className="text-xs text-[#444653] leading-relaxed line-clamp-2">
-                  بدأ التسجيل في البطولة الصيفية الداخلية. يرجى حث اللاعبين على المشاركة.
-                </p>
-              </div>
+              {(announcements || []).length === 0 ? (
+                <p className="text-xs text-muted-foreground text-center py-4">لا توجد إعلانات حالياً</p>
+              ) : (
+                (announcements || []).slice(0, 5).map((ann) => (
+                  <div key={ann.id} className="bg-white/50 p-4 rounded-xl border border-gray-100 hover:border-[#00288e]/20 transition-all cursor-pointer">
+                    <div className="flex justify-between items-center mb-2">
+                      <span className="text-[10px] font-bold text-[#006d30] bg-[#006d30]/10 px-2.5 py-0.5 rounded-full">إعلان</span>
+                      <span className="text-[10px] text-muted-foreground">
+                        {new Date(ann.created_at).toLocaleDateString("ar-SA", { month: "short", day: "numeric" })}
+                      </span>
+                    </div>
+                    <h4 className="font-bold text-sm text-[#0b1c30] mb-1">{ann.title}</h4>
+                    <p className="text-xs text-[#444653] leading-relaxed line-clamp-2">{ann.body}</p>
+                  </div>
+                ))
+              )}
             </div>
           </div>
 

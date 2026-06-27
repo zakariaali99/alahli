@@ -1,0 +1,50 @@
+{% extends "admin/base_site.html" %}
+{% block content %}
+<form action="{% url 'admin:send-whatsapp-submit' %}" method="post">
+  {% csrf_token %}
+  <input type="hidden" name="athlete_ids" value="{{ athlete_ids }}">
+
+  <fieldset style="margin-bottom: 20px;">
+    <legend><h2>Recipients ({{ athletes|length }})</h2></legend>
+    <table>
+      <thead><tr><th>Name</th><th>Phone</th><th>Membership</th><th>Department</th></tr></thead>
+      <tbody>
+        {% for a in athletes %}
+        <tr>
+          <td>{{ a.full_name }}</td>
+          <td>{{ a.phone }}</td>
+          <td>{{ a.membership_number }}</td>
+          <td>{{ a.department }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </fieldset>
+
+  <fieldset style="margin-bottom: 20px;">
+    <legend><h2>Message</h2></legend>
+    <table>
+      <tr>
+        <td><label for="template_name">Template Name</label></td>
+        <td><input type="text" name="template_name" id="template_name" value="notification_alert" style="width:300px"></td>
+      </tr>
+      <tr>
+        <td><label for="title">Title</label></td>
+        <td><input type="text" name="title" id="title" style="width:300px" placeholder="e.g. Membership Expiring Soon"></td>
+      </tr>
+      <tr>
+        <td style="vertical-align:top"><label for="body">Message Body</label></td>
+        <td><textarea name="body" id="body" rows="4" style="width:300px" placeholder="Your membership will expire soon. Please renew."></textarea></td>
+      </tr>
+    </table>
+    <p style="color:#666;font-size:0.85em">
+      Template parameters passed: <code>{{1}} = athlete name</code>, <code>{{2}} = title</code>, <code>{{3}} = body</code>
+    </p>
+  </fieldset>
+
+  <div>
+    <input type="submit" value="Send via WhatsApp" style="padding:8px 20px;font-weight:bold;background:#075e54;color:white;border:none;cursor:pointer">
+    <a href="{% url 'admin:notifications_whatsappmessage_changelist' %}" style="margin-left:15px">Cancel</a>
+  </div>
+</form>
+{% endblock %}

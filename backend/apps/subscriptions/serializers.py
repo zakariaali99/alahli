@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import Renewal, Subscription
+from .models import AttendanceLog, Renewal, Subscription
 
 
 class RenewalSerializer(serializers.ModelSerializer):
@@ -25,3 +25,12 @@ class SubscriptionSerializer(serializers.ModelSerializer):
 class RenewSubscriptionSerializer(serializers.Serializer):
     months = serializers.ChoiceField(choices=[1, 3, 6, 12])
     amount = serializers.DecimalField(max_digits=10, decimal_places=2)
+
+
+class AttendanceLogSerializer(serializers.ModelSerializer):
+    athlete_name = serializers.CharField(source="athlete.full_name", read_only=True)
+
+    class Meta:
+        model = AttendanceLog
+        fields = "__all__"
+        read_only_fields = ["checked_in_at", "verified_by"]

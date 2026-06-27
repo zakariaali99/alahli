@@ -19,7 +19,7 @@ class WorkoutSession(models.Model):
     category = models.ForeignKey(
         SessionCategory, on_delete=models.SET_NULL, null=True, related_name="sessions"
     )
-    date = models.DateField()
+    date = models.DateField(db_index=True)
     time = models.TimeField()
     duration_minutes = models.PositiveIntegerField()
     location = models.CharField(max_length=200)
@@ -93,7 +93,7 @@ class Booking(models.Model):
     date = models.DateField()
     time = models.TimeField()
     status = models.CharField(
-        max_length=20, choices=Status.choices, default=Status.PENDING
+        max_length=20, choices=Status.choices, default=Status.PENDING, db_index=True
     )
     confirmed_at = models.DateTimeField(auto_now_add=True)
 

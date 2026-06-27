@@ -3,7 +3,7 @@ from django.db import models
 
 class WeeklyProgress(models.Model):
     user = models.ForeignKey(
-        "accounts.User", on_delete=models.CASCADE, related_name="weekly_progress"
+        "accounts.User", on_delete=models.CASCADE, related_name="weekly_progress", db_index=True
     )
     week_start = models.DateField()
     sessions_count = models.PositiveIntegerField(default=0)
@@ -36,14 +36,18 @@ class DailyStat(models.Model):
 
 
 class Achievement(models.Model):
+    class Status(models.TextChoices):
+        LOCKED = "locked", "Locked"
+        UNLOCKED = "unlocked", "Unlocked"
+        COMPLETED = "completed", "Completed"
+
     user = models.ForeignKey(
         "accounts.User", on_delete=models.CASCADE, related_name="achievements"
     )
     icon = models.CharField(max_length=50)
     title = models.CharField(max_length=200)
     subtitle = models.CharField(max_length=200, blank=True)
-    is_completed = models.BooleanField(default=False)
-    is_locked = models.BooleanField(default=True)
+    status = models.CharField(max_length=20, choices=Status.choices, default=Status.LOCKED)
     unlocked_at = models.DateTimeField(null=True, blank=True)
 
     class Meta:

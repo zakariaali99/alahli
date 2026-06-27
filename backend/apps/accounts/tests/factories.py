@@ -6,7 +6,7 @@ from django.contrib.auth.hashers import make_password
 from apps.accounts.models import User
 from apps.athletes.models import Athlete
 from apps.departments.models import Department
-from apps.subscriptions.models import Subscription, Renewal
+from apps.subscriptions.models import Renewal, Subscription
 
 
 class UserFactory(factory.django.DjangoModelFactory):

@@ -1,19 +1,48 @@
-from rest_framework import status
-from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import AllowAny, IsAuthenticated
-from rest_framework.response import Response
-from rest_framework_simplejwt.tokens import RefreshToken
+from datetime import timedelta
 
-from .serializers import ChangePasswordSerializer, LoginSerializer, UserSerializer
+from django.contrib.auth import authenticate
+from rest_framework import status, viewsets
+from rest_framework.decorators import api_view, permission_classes, throttle_classes
+from rest_framework.permissions import AllowAny
+from rest_framework.response import Response
+from rest_framework.throttling import AnonRateThrottle
+from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
+from rest_framework_simplejwt.tokens import OutstandingToken, RefreshToken
+
+from .models import User
+from .serializers import (
+    ChangePasswordSerializer,
+    LoginSerializer,
+    UserSerializer,
+    UserCreateSerializer,
+    UserUpdateSerializer,
+)
+from .permissions import IsSuperAdmin, IsReceptionOrAbove
+
+
+class LoginRateThrottle(AnonRateThrottle):
+    rate = "10/minute"
+
+
+class UserViewSet(viewsets.ModelViewSet):
+    queryset = User.objects.all().order_by("-id")
+    permission_classes = [IsSuperAdmin]
+
+    def get_serializer_class(self):
+        if self.action == "create":
+            return UserCreateSerializer
+        if self.action in ["update", "partial_update"]:
+            return UserUpdateSerializer
+        return UserSerializer
 
 
 @api_view(["POST"])
 @permission_classes([AllowAny])
+@throttle_classes([LoginRateThrottle])
 def login_view(request):
     serializer = LoginSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
 
-    from django.contrib.auth import authenticate
     user = authenticate(
         username=serializer.validated_data["phone"],
         password=serializer.validated_data["password"],
@@ -25,33 +54,48 @@ def login_view(request):
             status=status.HTTP_401_UNAUTHORIZED,
         )
 
+    user = User.objects.select_related("athlete__department").get(pk=user.pk)
     refresh = RefreshToken.for_user(user)
+    if serializer.validated_data.get("remember_me"):
+        refresh.set_exp(lifetime=timedelta(days=30))
     return Response({
         "access": str(refresh.access_token),
         "refresh": str(refresh),
         "user": UserSerializer(user).data,
+        "remember_me": serializer.validated_data.get("remember_me", False),
     })
 
 
 @api_view(["POST"])
 def logout_view(request):
-    try:
-        refresh_token = request.data.get("refresh")
-        if refresh_token:
+    refresh_token = request.data.get("refresh")
+    if refresh_token:
+        try:
             token = RefreshToken(refresh_token)
             token.blacklist()
-        return Response({"detail": "Logged out successfully"})
-    except Exception:
-        return Response({"detail": "Invalid token"}, status=status.HTTP_400_BAD_REQUEST)
+        except Exception:
+            return Response(
+                {"detail": "Invalid or expired refresh token"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+    else:
+        user = request.user
+        for token in OutstandingToken.objects.filter(user=user):
+            BlacklistedToken.objects.get_or_create(token=token)
+    return Response({"detail": "Logged out successfully"})
 
 
 @api_view(["GET"])
 def me_view(request):
-    return Response(UserSerializer(request.user).data)
+    user = User.objects.select_related("athlete__department").get(pk=request.user.pk)
+    return Response(UserSerializer(user).data)
 
 
 @api_view(["POST"])
 def change_password_view(request):
+    from django.contrib.auth.password_validation import validate_password
+    from django.core.exceptions import ValidationError
+
     serializer = ChangePasswordSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
 
@@ -61,6 +105,16 @@ def change_password_view(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    request.user.set_password(serializer.validated_data["new_password"])
+    new_password = serializer.validated_data["new_password"]
+    try:
+        validate_password(new_password, user=request.user)
+    except ValidationError as e:
+        return Response({"new_password": list(e.messages)}, status=status.HTTP_400_BAD_REQUEST)
+
+    request.user.set_password(new_password)
     request.user.save()
-    return Response({"detail": "Password changed successfully"})
+
+    for token in OutstandingToken.objects.filter(user=request.user):
+        BlacklistedToken.objects.get_or_create(token=token)
+
+    return Response({"detail": "Password changed successfully. Please log in again."})

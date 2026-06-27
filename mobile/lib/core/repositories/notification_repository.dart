@@ -31,4 +31,11 @@ class NotificationRepository {
   Future<void> delete(int id) async {
     await _client.dio.delete('/notifications/$id/');
   }
+
+  Future<Map<String, dynamic>> sendNotification({required String title, required String body}) async {
+    final res = await _client.dio.post('/notifications/', data: {'title': title, 'body': body});
+    final data = asMap(res.data);
+    if (data == null) throw Exception('فشل إرسال الإشعار');
+    return data;
+  }
 }

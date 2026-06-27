@@ -1,11 +1,13 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import '../../core/providers/providers.dart';
 
-class SettingsScreen extends StatelessWidget {
+class SettingsScreen extends ConsumerWidget {
   const SettingsScreen({super.key});
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
 
     return Scaffold(
@@ -53,8 +55,8 @@ class SettingsScreen extends StatelessWidget {
                 _settingsRow(
                   theme, Icons.dark_mode, 'الوضع الليلي',
                   trailing: Switch(
-                    value: false,
-                    onChanged: (_) => _showSnack(context, 'الوضع الليلي قيد التطوير'),
+                    value: ref.watch(themeModeProvider) == ThemeMode.dark,
+                    onChanged: (v) => ref.read(themeModeProvider.notifier).state = v ? ThemeMode.dark : ThemeMode.light,
                     activeColor: theme.colorScheme.primary,
                   ),
                 ),
@@ -121,7 +123,7 @@ class SettingsScreen extends StatelessWidget {
                         TextButton(
                           onPressed: () {
                             Navigator.pop(ctx);
-                            context.go('/login');
+                            ref.read(authStateProvider.notifier).logout();
                           },
                           child: const Text('تسجيل الخروج'),
                         ),

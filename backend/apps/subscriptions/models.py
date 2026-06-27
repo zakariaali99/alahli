@@ -14,9 +14,9 @@ class Subscription(models.Model):
     )
     package_name = models.CharField(max_length=100, default="الباقة الأساسية")
     start_date = models.DateField()
-    end_date = models.DateField()
+    end_date = models.DateField(db_index=True)
     amount = models.DecimalField(max_digits=10, decimal_places=2)
-    status = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING)
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING, db_index=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -44,3 +44,24 @@ class Renewal(models.Model):
 
     def __str__(self):
         return f"Renewal: {self.subscription.athlete.full_name} ({self.months}m)"
+
+
+class AttendanceLog(models.Model):
+    athlete = models.ForeignKey(
+        Athlete, on_delete=models.CASCADE, related_name="attendance_logs", db_index=True
+    )
+    subscription = models.ForeignKey(
+        Subscription, on_delete=models.CASCADE, related_name="attendance_logs", null=True, blank=True
+    )
+    checked_in_at = models.DateTimeField(auto_now_add=True)
+    verified_by = models.ForeignKey(
+        "accounts.User", on_delete=models.SET_NULL, null=True, blank=True
+    )
+
+    class Meta:
+        ordering = ["-checked_in_at"]
+        verbose_name = "Attendance Log"
+        verbose_name_plural = "Attendance Logs"
+
+    def __str__(self):
+        return f"{self.athlete.full_name} - {self.checked_in_at}"

@@ -5,6 +5,6 @@ from .serializers import DepartmentSerializer
 
 
 class DepartmentViewSet(viewsets.ModelViewSet):
-    queryset = Department.objects.filter(is_active=True)
+    queryset = Department.objects.all()
     serializer_class = DepartmentSerializer
     search_fields = ["name", "name_ar"]

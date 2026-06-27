@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:go_router/go_router.dart';
 import '../../core/providers/providers.dart';
+import '../../core/widgets/animations.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -27,12 +27,6 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     final theme = Theme.of(context);
     final authState = ref.watch(authStateProvider);
 
-    ref.listen<AuthState>(authStateProvider, (prev, next) {
-      if (next.status == AuthStatus.authenticated) {
-        context.go('/');
-      }
-    });
-
     return Scaffold(
       body: SafeArea(
         child: Center(
@@ -41,27 +35,37 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Container(
-                  width: 100,
-                  height: 100,
-                  decoration: BoxDecoration(
-                    color: theme.colorScheme.primaryContainer,
-                    borderRadius: BorderRadius.circular(24),
-                    boxShadow: [
-                      BoxShadow(
-                        color: theme.colorScheme.primary.withValues(alpha: 0.2),
-                        blurRadius: 20,
-                        offset: const Offset(0, 8),
+                TweenAnimationBuilder<double>(
+                  tween: Tween(begin: 0.0, end: 1.0),
+                  duration: const Duration(milliseconds: 800),
+                  curve: Curves.elasticOut,
+                  builder: (ctx, value, child) => Transform.scale(scale: value, child: child),
+                  child: Container(
+                    width: 100,
+                    height: 100,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(24),
+                      boxShadow: [
+                        BoxShadow(
+                          color: theme.colorScheme.primary.withValues(alpha: 0.2),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
+                    child: Center(
+                      child: Image.asset(
+                        'assets/logo.png',
+                        width: 60,
+                        height: 60,
+                        fit: BoxFit.contain,
                       ),
-                    ],
-                  ),
-                  child: Icon(
-                    Icons.fitness_center,
-                    size: 48,
-                    color: theme.colorScheme.onPrimaryContainer,
+                    ),
                   ),
                 ),
-                const SizedBox(height: 32),
+                FadeInSlide(index: 0, offset: 20, child: Column(
+                  children: [
                 Text(
                   'مركز الأهلي الرياضي',
                   style: theme.textTheme.headlineLarge?.copyWith(
@@ -140,6 +144,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         : const Text('تسجيل الدخول', style: TextStyle(fontSize: 16)),
                   ),
                 ),
+              ],
+              ),
+            ),
               ],
             ),
           ),

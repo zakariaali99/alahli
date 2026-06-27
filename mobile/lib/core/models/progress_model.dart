@@ -73,16 +73,18 @@ class AchievementModel {
     this.unlockedAt,
   });
 
-  factory AchievementModel.fromJson(Map<String, dynamic> json) =>
-      AchievementModel(
-        id: json['id'] as int,
-        icon: json['icon'] as String? ?? '',
-        title: json['title'] as String? ?? '',
-        subtitle: json['subtitle'] as String? ?? '',
-        isCompleted: json['is_completed'] as bool? ?? false,
-        isLocked: json['is_locked'] as bool? ?? true,
-        unlockedAt: json['unlocked_at'] as String?,
-      );
+  factory AchievementModel.fromJson(Map<String, dynamic> json) {
+    final status = json['status'] as String? ?? 'locked';
+    return AchievementModel(
+      id: json['id'] as int,
+      icon: json['icon'] as String? ?? '',
+      title: json['title'] as String? ?? '',
+      subtitle: json['subtitle'] as String? ?? '',
+      isCompleted: status == 'completed',
+      isLocked: status == 'locked',
+      unlockedAt: json['unlocked_at'] as String?,
+    );
+  }
 }
 
 class WeeklyProgressSummary {

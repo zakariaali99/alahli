@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/providers/providers.dart';
 import '../../core/models/workout_session_model.dart';
+import '../../core/widgets/widgets.dart';
 
 class ExerciseSchedulesScreen extends ConsumerStatefulWidget {
   const ExerciseSchedulesScreen({super.key});
@@ -29,7 +30,7 @@ class _ExerciseSchedulesScreenState extends ConsumerState<ExerciseSchedulesScree
       ),
       body: workoutsAsync.when(
         data: (sessions) => _buildContent(theme, sessions),
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const ShimmerList(),
         error: (_, __) => _buildError(theme),
       ),
     );

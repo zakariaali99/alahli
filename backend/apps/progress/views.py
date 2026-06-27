@@ -1,3 +1,4 @@
+import contextlib
 from datetime import date, timedelta
 
 from django.utils.timezone import now
@@ -14,7 +15,7 @@ class WeeklyProgressViewSet(viewsets.ModelViewSet):
     serializer_class = WeeklyProgressSerializer
 
     def get_queryset(self):
-        return WeeklyProgress.objects.filter(user=self.request.user)
+        return WeeklyProgress.objects.filter(user=self.request.user).prefetch_related('daily_stats')
 
     @action(detail=False, methods=["get"])
     def weekly(self, request):
@@ -22,10 +23,8 @@ class WeeklyProgressViewSet(viewsets.ModelViewSet):
         week_start = today - timedelta(days=today.weekday())
         week_param = request.query_params.get("week")
         if week_param:
-            try:
+            with contextlib.suppress(ValueError):
                 week_start = date.fromisoformat(week_param)
-            except ValueError:
-                pass
         qs = WeeklyProgress.objects.filter(
             user=request.user, week_start=week_start
         ).first()

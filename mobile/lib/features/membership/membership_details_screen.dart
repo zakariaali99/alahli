@@ -3,12 +3,81 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/providers/providers.dart';
+import '../../core/widgets/widgets.dart';
 
-class MembershipDetailsScreen extends ConsumerWidget {
+class MembershipDetailsScreen extends ConsumerStatefulWidget {
   const MembershipDetailsScreen({super.key});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<MembershipDetailsScreen> createState() => _MembershipDetailsScreenState();
+}
+
+class _MembershipDetailsScreenState extends ConsumerState<MembershipDetailsScreen> {
+  bool _isRenewing = false;
+  int _selectedMonths = 1;
+
+  Future<void> _handleRenew(int subId) async {
+    final months = await _showMonthPicker();
+    if (months == null || !mounted) return;
+    setState(() => _isRenewing = true);
+    try {
+      await ref.read(subscriptionRepositoryProvider).renew(subId, months: months, amount: 150.0 * months);
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('تم تجديد الاشتراك بنجاح'), backgroundColor: Colors.green),
+      );
+      ref.invalidate(activeSubscriptionProvider);
+      ref.invalidate(subscriptionsProvider);
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('فشل التجديد: $e'), backgroundColor: Colors.red),
+      );
+    } finally {
+      if (mounted) setState(() => _isRenewing = false);
+    }
+  }
+
+  Future<int?> _showMonthPicker() {
+    return showDialog<int>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setDialogState) => AlertDialog(
+          title: const Text('مدة التجديد'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              const Text('اختر عدد الأشهر'),
+              const SizedBox(height: 16),
+              Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                children: [1, 3, 6, 12].map((m) {
+                  final selected = _selectedMonths == m;
+                  return ChoiceChip(
+                    label: Text(m == 1 ? 'شهر' : '$m أشهر'),
+                    selected: selected,
+                    onSelected: (_) {
+                      setDialogState(() => _selectedMonths = m);
+                    },
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 16),
+              Text('المبلغ: ${150 * _selectedMonths} د.ل', style: const TextStyle(fontWeight: FontWeight.bold)),
+            ],
+          ),
+          actions: [
+            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
+            ElevatedButton(onPressed: () => Navigator.pop(ctx, _selectedMonths), child: const Text('تأكيد')),
+          ],
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final theme = Theme.of(context);
     final activeSubAsync = ref.watch(activeSubscriptionProvider);
     final subscriptionsAsync = ref.watch(subscriptionsProvider);
@@ -28,10 +97,29 @@ class MembershipDetailsScreen extends ConsumerWidget {
             activeSubAsync.when(
               data: (sub) {
                 if (sub == null) return const SizedBox.shrink();
-                return _buildActiveCard(theme, sub);
+                return _buildActiveCard(context, theme, sub);
               },
-              loading: () => _buildSkeleton(theme),
-              error: (_, __) => _buildSkeleton(theme),
+              loading: () => Padding(
+                padding: const EdgeInsets.all(20),
+                child: ShimmerLoading(height: 280),
+              ),
+              error: (err, _) => Center(
+                child: Padding(
+                  padding: const EdgeInsets.all(32),
+                  child: Column(
+                    children: [
+                      Icon(Icons.cloud_off, size: 48, color: theme.colorScheme.error),
+                      const SizedBox(height: 12),
+                      Text('تعذر تحميل الاشتراك', style: theme.textTheme.bodyLarge),
+                      const SizedBox(height: 8),
+                      ElevatedButton(
+                        onPressed: () => ref.invalidate(activeSubscriptionProvider),
+                        child: const Text('إعادة المحاولة'),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
             const SizedBox(height: 8),
             Padding(
@@ -51,8 +139,8 @@ class MembershipDetailsScreen extends ConsumerWidget {
                 itemBuilder: (context, index) => _buildHistoryItem(theme, items[index]),
               ),
               loading: () => const Padding(
-                padding: EdgeInsets.all(32),
-                child: Center(child: CircularProgressIndicator()),
+                padding: EdgeInsets.all(20),
+                child: ShimmerList(itemCount: 3, itemHeight: 72),
               ),
               error: (_, __) => Padding(
                 padding: const EdgeInsets.all(32),
@@ -70,7 +158,7 @@ class MembershipDetailsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildActiveCard(ThemeData theme, dynamic sub) {
+  Widget _buildActiveCard(BuildContext context, ThemeData theme, dynamic sub) {
     final start = DateTime.tryParse(sub.startDate ?? '');
     final end = DateTime.tryParse(sub.endDate ?? '');
     final total = end != null && start != null ? end.difference(start).inDays : 365;
@@ -78,6 +166,7 @@ class MembershipDetailsScreen extends ConsumerWidget {
     final progress = total > 0 ? (remaining / total).clamp(0.0, 1.0) : 0.0;
     final isExpired = remaining < 0;
     final progressPercent = ((1 - progress) * 100).round();
+    final subId = sub.id as int? ?? 0;
 
     return Container(
       margin: const EdgeInsets.all(20),
@@ -215,9 +304,11 @@ class MembershipDetailsScreen extends ConsumerWidget {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton.icon(
-                  onPressed: () {},
-                  icon: const Icon(Icons.autorenew, size: 18),
-                  label: const Text('تجديد الاشتراك الآن'),
+                  onPressed: _isRenewing ? null : () => _handleRenew(subId),
+                  icon: _isRenewing
+                      ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white))
+                      : const Icon(Icons.autorenew, size: 18),
+                  label: Text(_isRenewing ? 'جاري التجديد...' : 'تجديد الاشتراك الآن'),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.white,
                     foregroundColor: theme.colorScheme.primary,
@@ -375,17 +466,6 @@ class MembershipDetailsScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildSkeleton(ThemeData theme) {
-    return Container(
-      margin: const EdgeInsets.all(20),
-      height: 280,
-      decoration: BoxDecoration(
-        color: theme.cardTheme.color ?? theme.colorScheme.surfaceContainerLow,
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: const Center(child: CircularProgressIndicator()),
-    );
-  }
 }
 
 class _ProgressRingPainter extends CustomPainter {

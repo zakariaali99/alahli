@@ -1,13 +1,20 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'core/providers/providers.dart';
 import 'core/router/app_router.dart';
+import 'core/services/push_service.dart';
 import 'core/theme/app_theme.dart';
 
-void main() {
+void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  await Firebase.initializeApp();
+
+  final pushService = PushService();
+  await pushService.initialize();
 
   ErrorWidget.builder = (details) => const Center(
     child: Padding(
@@ -28,8 +35,11 @@ void main() {
   ));
 
   runApp(
-    const ProviderScope(
-      child: AlAhlyApp(),
+    ProviderScope(
+      overrides: [
+        pushServiceProvider.overrideWithValue(pushService),
+      ],
+      child: const AlAhlyApp(),
     ),
   );
 }
@@ -42,13 +52,16 @@ class AlAhlyApp extends ConsumerWidget {
     final activeBrand = ref.watch(brandProvider);
 
     final router = ref.watch(goRouterProvider);
+    final themeMode = ref.watch(themeModeProvider);
 
     return MaterialApp.router(
       title: 'مركز الأهلي الرياضي',
       debugShowCheckedModeBanner: false,
       routerConfig: router,
       theme: AppTheme.themeData(activeBrand),
-      locale: const Locale('ar', 'LY'), // Arabic (Libya) locale
+      darkTheme: AppTheme.themeData(activeBrand, brightness: Brightness.dark),
+      themeMode: themeMode,
+      locale: const Locale('ar', 'LY'),
       supportedLocales: const [
         Locale('ar', 'LY'),
         Locale('en', 'US'),

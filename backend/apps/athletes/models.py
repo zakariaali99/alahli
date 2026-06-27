@@ -3,6 +3,7 @@ import uuid
 
 import qrcode
 from django.core.files.base import ContentFile
+from django.core.validators import FileExtensionValidator
 from django.db import models
 
 
@@ -20,19 +21,24 @@ class Athlete(models.Model):
     membership_number = models.CharField(
         max_length=20, unique=True, default=generate_membership_number, editable=False
     )
-    full_name = models.CharField(max_length=100)
-    phone = models.CharField(max_length=20)
+    full_name = models.CharField(max_length=100, db_index=True)
+    phone = models.CharField(max_length=20, unique=True, db_index=True)
     parent_phone = models.CharField(max_length=20, blank=True)
     birth_date = models.DateField()
     gender = models.CharField(max_length=10, choices=Gender.choices)
     department = models.ForeignKey(
         "departments.Department", on_delete=models.SET_NULL, null=True, related_name="athletes"
     )
-    photo = models.ImageField(upload_to="athletes/", blank=True, null=True)
+    photo = models.ImageField(
+        upload_to="athletes/",
+        blank=True,
+        null=True,
+        validators=[FileExtensionValidator(allowed_extensions=["jpg", "jpeg", "png", "webp"])],
+    )
     qr_code = models.ImageField(upload_to="qrcodes/", blank=True, null=True)
     notes = models.TextField(blank=True)
-    is_active = models.BooleanField(default=True)
-    created_at = models.DateTimeField(auto_now_add=True)
+    is_active = models.BooleanField(default=True, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:

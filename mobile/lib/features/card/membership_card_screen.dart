@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import '../../core/providers/providers.dart';
+import '../../core/widgets/widgets.dart';
 
 
 class MembershipCardScreen extends ConsumerWidget {
@@ -283,15 +284,9 @@ class MembershipCardScreen extends ConsumerWidget {
   }
 
   Widget _buildCardSkeleton(ThemeData theme) {
-    final cardColor = theme.cardTheme.color ?? theme.colorScheme.surfaceContainerLow;
-    return Container(
-      width: double.infinity,
-      height: 400,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        color: cardColor,
-      ),
-      child: const Center(child: CircularProgressIndicator()),
+    return const Padding(
+      padding: EdgeInsets.all(20),
+      child: ShimmerLoading(height: 400),
     );
   }
 }

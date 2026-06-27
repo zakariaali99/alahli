@@ -51,7 +51,7 @@ export default function AthletesPage() {
   const { data, isLoading } = useAthletes({
     page,
     page_size: 20,
-    search: searchQuery || undefined,
+    ...(searchQuery ? { search: searchQuery } : {}),
     ...(statusFilter !== "all" ? { is_active: statusFilter === "active" ? "true" : "false" } : {}),
   })
 
@@ -280,19 +280,22 @@ export default function AthletesPage() {
                               <Eye className="w-4 h-4" />
                             </motion.button>
                           </Link>
-                          <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary-container/20 transition-colors"
-                            title="تعديل"
-                          >
-                            <Edit2 className="w-4 h-4" />
-                          </motion.button>
+                          <Link to={`/dashboard/athletes/${athlete.id}`}>
+                            <motion.button
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                              className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary-container/20 transition-colors"
+                              title="تعديل"
+                            >
+                              <Edit2 className="w-4 h-4" />
+                            </motion.button>
+                          </Link>
                           <motion.button
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
                             className="p-2 rounded-lg text-muted-foreground hover:text-error hover:bg-error-container/30 transition-colors"
                             title="المزيد"
+                            onClick={() => alert('سيتم إضافة المزيد من الخيارات قريباً')}
                           >
                             <MoreVertical className="w-4 h-4" />
                           </motion.button>

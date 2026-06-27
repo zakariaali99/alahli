@@ -3,13 +3,12 @@ from rest_framework import status
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from apps.subscriptions.models import Subscription
 from apps.accounts.tests.factories import (
     AthleteFactory,
     SubscriptionFactory,
-    RenewalFactory,
     UserFactory,
 )
+from apps.subscriptions.models import Subscription
 
 
 @pytest.fixture

@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/providers/providers.dart';
 import '../../core/models/progress_model.dart';
+import '../../core/widgets/widgets.dart';
 
 class ProgressTrackingScreen extends ConsumerWidget {
   const ProgressTrackingScreen({super.key});
@@ -24,7 +25,7 @@ class ProgressTrackingScreen extends ConsumerWidget {
       ),
       body: progressAsync.when(
         data: (progress) => _buildContent(theme, progress, achievementsAsync),
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const ShimmerList(),
         error: (_, __) => _buildError(theme),
       ),
     );
@@ -170,7 +171,7 @@ class ProgressTrackingScreen extends ConsumerWidget {
         children: List.generate(7, (i) {
           final dayAbbr = arabicDayAbbr[i]!;
           final stat = stats.where((s) => s.dayAbbr == dayAbbr).firstOrNull;
-              final height = (stat != null ? (stat.value * 80).clamp(4, 80) : 4.0).toDouble();
+              final height = (stat != null ? (stat.value * 80 / 100).clamp(4, 80) : 4.0).toDouble();
           return Column(
             mainAxisAlignment: MainAxisAlignment.end,
             children: [

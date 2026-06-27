@@ -3,8 +3,8 @@ from rest_framework import status
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 
-from apps.athletes.models import Athlete
 from apps.accounts.tests.factories import AthleteFactory, DepartmentFactory, UserFactory
+from apps.athletes.models import Athlete
 
 
 @pytest.fixture

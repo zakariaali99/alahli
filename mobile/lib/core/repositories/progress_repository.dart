@@ -11,7 +11,9 @@ class ProgressRepository {
     final params = <String, dynamic>{};
     if (week != null) params['week'] = week;
     final res = await _client.dio.get('/progress/weekly/', queryParameters: params);
-    return WeeklyProgressSummary.fromJson(asMap(res.data)!);
+    final data = asMap(res.data);
+    if (data == null) throw Exception('استجابة غير صالحة من الخادم');
+    return WeeklyProgressSummary.fromJson(data);
   }
 
   Future<List<AchievementModel>> getAchievements() async {

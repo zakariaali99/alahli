@@ -1,8 +1,11 @@
+import 'package:dio/dio.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/providers/providers.dart';
 import '../../core/models/membership_model.dart';
+import '../../core/widgets/widgets.dart';
+import '../../core/widgets/animations.dart';
 
 
 class HomeScreen extends ConsumerWidget {
@@ -112,9 +115,9 @@ class HomeScreen extends ConsumerWidget {
               activeSubAsync.when(
                 data: (sub) => sub != null
                     ? _buildMembershipCard(theme, sub, context)
-                    : _buildNoSubscriptionCard(theme, context),
+                    : _buildEmptyCard(theme, context),
                 loading: () => _buildCardSkeleton(theme),
-                error: (_, __) => _buildNoSubscriptionCard(theme, context),
+                error: (err, _) => _buildErrorCard(ref, theme, err, context),
               ),
               const SizedBox(height: 24),
               Text(
@@ -130,27 +133,12 @@ class HomeScreen extends ConsumerWidget {
                 mainAxisSpacing: 16,
                 childAspectRatio: 1.25,
                 children: [
-                  _buildBentoButton(
-                    context,
-                    icon: Icons.autorenew,
-                    label: 'تجديد الاشتراك',
-                    color: theme.colorScheme.primary,
-                    onTap: () => context.push('/membership-details'),
-                  ),
-                  _buildBentoButton(
-                    context,
-                    icon: Icons.calendar_today,
-                    label: 'جداول التمارين',
-                    color: theme.colorScheme.secondary,
-                    onTap: () => context.push('/exercise-schedules'),
-                  ),
-                  _buildBentoButton(
-                    context,
-                    icon: Icons.newspaper,
-                    label: 'أخبار الأكاديمية',
-                    color: Colors.amber[700]!,
-                    onTap: () => context.push('/notifications'),
-                  ),
+                  _buildBentoButton(context, icon: Icons.autorenew, label: 'تجديد الاشتراك', color: theme.colorScheme.primary, onTap: () => context.push('/membership-details'), index: 0),
+                  _buildBentoButton(context, icon: Icons.calendar_today, label: 'جداول التمارين', color: theme.colorScheme.secondary, onTap: () => context.push('/exercise-schedules'), index: 1),
+                  _buildBentoButton(context, icon: Icons.newspaper, label: 'أخبار الأكاديمية', color: Colors.amber[700]!, onTap: () => context.push('/notifications'), index: 2),
+                  _buildBentoButton(context, icon: Icons.trending_up, label: 'تتبع التقدم', color: Colors.purple, onTap: () => context.push('/progress'), index: 3),
+                  _buildBentoButton(context, icon: Icons.person, label: 'المدرب', color: Colors.teal, onTap: () => context.push('/coach-profile'), index: 4),
+                  _buildBentoButton(context, icon: Icons.store, label: 'المتجر', color: Colors.indigo, onTap: () => context.push('/store'), index: 5),
                 ],
               ),
             ],
@@ -263,11 +251,13 @@ class HomeScreen extends ConsumerWidget {
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Text(
-                    isExpired ? 'منتهي' : '$remaining يوم متبقي',
-                    style: theme.textTheme.headlineLarge?.copyWith(
-                      color: theme.colorScheme.secondaryContainer,
-                      fontWeight: FontWeight.w800,
+                  Flexible(
+                    child: Text(
+                      isExpired ? 'منتهي' : '$remaining يوم متبقي',
+                      style: theme.textTheme.headlineLarge?.copyWith(
+                        color: theme.colorScheme.secondaryContainer,
+                        fontWeight: FontWeight.w800,
+                      ),
                     ),
                   ),
                   ElevatedButton.icon(
@@ -303,33 +293,148 @@ class HomeScreen extends ConsumerWidget {
     );
   }
 
-  Widget _buildNoSubscriptionCard(ThemeData theme, BuildContext context) {
-    final cardColor = theme.cardTheme.color ?? theme.colorScheme.surfaceContainerLow;
+  Widget _buildEmptyCard(ThemeData theme, BuildContext context) {
     return Container(
       width: double.infinity,
+      clipBehavior: Clip.antiAlias,
       padding: const EdgeInsets.all(24),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
-        color: cardColor,
+        gradient: LinearGradient(
+          colors: [
+            theme.colorScheme.surfaceContainerHigh,
+            theme.colorScheme.surfaceContainerLow,
+          ],
+          begin: Alignment.topRight,
+          end: Alignment.bottomLeft,
+        ),
         border: Border.all(
           color: theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
         ),
       ),
+      child: Stack(
+        children: [
+          Positioned(
+            top: -40,
+            left: -40,
+            child: Container(
+              width: 120,
+              height: 120,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.primary.withValues(alpha: 0.05),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+          Positioned(
+            bottom: -30,
+            right: -30,
+            child: Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                color: theme.colorScheme.secondary.withValues(alpha: 0.05),
+                shape: BoxShape.circle,
+              ),
+            ),
+          ),
+          Column(
+            children: [
+              Icon(
+                Icons.card_membership_outlined,
+                size: 48,
+                color: theme.colorScheme.onSurfaceVariant,
+              ),
+              const SizedBox(height: 16),
+              Text(
+                'لا يوجد اشتراك نشط',
+                style: theme.textTheme.titleMedium?.copyWith(
+                  fontWeight: FontWeight.bold,
+                  color: theme.colorScheme.onSurfaceVariant,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'اشترك في إحدى الباقات للاستفادة من خدمات النادي',
+                textAlign: TextAlign.center,
+                style: theme.textTheme.bodySmall?.copyWith(
+                  color: theme.colorScheme.outline,
+                ),
+              ),
+              const SizedBox(height: 20),
+              ElevatedButton(
+                onPressed: () => context.push('/membership-details'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: theme.colorScheme.primary,
+                  foregroundColor: theme.colorScheme.onPrimary,
+                  padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+                child: const Text('اشترك الآن'),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildErrorCard(WidgetRef ref, ThemeData theme, Object error, BuildContext context) {
+    final isConnectionError = error is DioException && [
+      DioExceptionType.connectionTimeout,
+      DioExceptionType.connectionError,
+      DioExceptionType.receiveTimeout,
+    ].contains(error.type);
+
+    return Container(
+      width: double.infinity,
+      clipBehavior: Clip.antiAlias,
+      padding: const EdgeInsets.all(24),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        color: theme.colorScheme.surfaceContainerLow,
+        border: Border.all(
+          color: theme.colorScheme.error.withValues(alpha: 0.3),
+        ),
+      ),
       child: Column(
         children: [
-          Icon(Icons.card_membership_outlined, size: 48, color: theme.colorScheme.outline),
-          const SizedBox(height: 12),
+          Icon(
+            isConnectionError ? Icons.wifi_off : Icons.error_outline,
+            size: 48,
+            color: theme.colorScheme.error,
+          ),
+          const SizedBox(height: 16),
           Text(
-            'لا يوجد اشتراك نشط',
-            style: theme.textTheme.bodyLarge?.copyWith(
+            isConnectionError ? 'تعذر الاتصال بالخادم' : 'حدث خطأ في تحميل البيانات',
+            style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
-              color: theme.colorScheme.outline,
+              color: theme.colorScheme.error,
             ),
           ),
           const SizedBox(height: 8),
-          ElevatedButton(
-            onPressed: () => context.push('/membership-details'),
-            child: const Text('اشترك الآن'),
+          Text(
+            'يرجى التحقق من اتصالك بالإنترنت والمحاولة مرة أخرى',
+            textAlign: TextAlign.center,
+            style: theme.textTheme.bodySmall?.copyWith(
+              color: theme.colorScheme.outline,
+            ),
+          ),
+          const SizedBox(height: 20),
+          ElevatedButton.icon(
+            onPressed: () => ref.invalidate(activeSubscriptionProvider),
+            icon: const Icon(Icons.refresh, size: 18),
+            label: const Text('إعادة المحاولة'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: theme.colorScheme.error,
+              foregroundColor: theme.colorScheme.onError,
+              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+            ),
           ),
         ],
       ),
@@ -337,15 +442,7 @@ class HomeScreen extends ConsumerWidget {
   }
 
   Widget _buildCardSkeleton(ThemeData theme) {
-    final cardColor = theme.cardTheme.color ?? theme.colorScheme.surfaceContainerLow;
-    return Container(
-      height: 180,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        color: cardColor,
-      ),
-      child: const Center(child: CircularProgressIndicator()),
-    );
+    return const ShimmerLoading(height: 180);
   }
 
   Widget _buildBentoButton(
@@ -354,10 +451,13 @@ class HomeScreen extends ConsumerWidget {
     required String label,
     required Color color,
     required VoidCallback onTap,
+    int index = 0,
   }) {
     final theme = Theme.of(context);
     final cardColor = theme.cardTheme.color ?? theme.colorScheme.surfaceContainerLow;
-    return InkWell(
+    return FadeInSlide(
+      index: index,
+      child: InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(16),
       child: Container(
@@ -388,6 +488,7 @@ class HomeScreen extends ConsumerWidget {
             ),
           ],
         ),
+      ),
       ),
     );
   }

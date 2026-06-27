@@ -26,6 +26,7 @@ import { Button } from "@/components/ui/button"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { useAuth } from "@/lib/auth"
 import { api } from "@/lib/api"
+import { usePreferences, useUpdatePreferences } from "@/lib/hooks/usePreferences"
 
 type SettingsTab = "profile" | "notifications" | "security" | "appearance"
 
@@ -70,10 +71,10 @@ const roleGradient: Record<string, string> = {
 }
 
 const notificationItems = [
-  { label: "انتهاء الاشتراكات", desc: "تنبيه عند اقتراب موعد انتهاء اشتراك أي لاعب", icon: AlertTriangle },
-  { label: "التسجيلات الجديدة", desc: "تنبيه عند تسجيل لاعب جديد في النظام", icon: UserPlus },
-  { label: "المدفوعات", desc: "تنبيه عند تأكيد عملية دفع أو تجديد", icon: CreditCard },
-  { label: "النظام", desc: "تنبيهات الصيانة والتحديثات الأسبوعية", icon: Smartphone },
+  { label: "انتهاء الاشتراكات", desc: "تنبيه عند اقتراب موعد انتهاء اشتراك أي لاعب", icon: AlertTriangle, field: "notifications_enabled" as const },
+  { label: "التسجيلات الجديدة", desc: "تنبيه عند تسجيل لاعب جديد في النظام", icon: UserPlus, field: "notifications_enabled" as const },
+  { label: "المدفوعات", desc: "تنبيه عند تأكيد عملية دفع أو تجديد", icon: CreditCard, field: "email_enabled" as const },
+  { label: "النظام", desc: "تنبيهات الصيانة والتحديثات الأسبوعية", icon: Smartphone, field: "sms_enabled" as const },
 ]
 
 function Toggle({ checked, onChange, id }: { checked: boolean; onChange: () => void; id?: string }) {
@@ -126,6 +127,13 @@ export default function SettingsPage() {
   const [showNewPw, setShowNewPw] = useState(false)
   const [passwordForm, setPasswordForm] = useState({ oldPassword: "", newPassword: "" })
 
+  const { data: prefs } = usePreferences()
+  const updatePrefs = useUpdatePreferences()
+
+  const toggleNotif = (key: "notifications_enabled" | "sms_enabled" | "email_enabled") => {
+    updatePrefs.mutate({ [key]: !(prefs ? prefs[key] : true) })
+  }
+
   const [darkMode, setDarkMode] = useState(() => localStorage.getItem("theme") === "dark")
   const [reduceMotion, setReduceMotion] = useState(false)
 
@@ -153,7 +161,7 @@ export default function SettingsPage() {
       setPasswordForm({ oldPassword: "", newPassword: "" })
     } catch (err: any) {
       setMessageType("error")
-      setMessage(err?.response?.data?.old_password?.[0] || err?.message || "فشل تغيير كلمة المرور")
+      setMessage(err?.data?.old_password?.[0] || err?.message || "فشل تغيير كلمة المرور")
     } finally {
       setSaving(false)
     }
@@ -341,7 +349,7 @@ export default function SettingsPage() {
                         <p className="text-xs text-muted-foreground mt-0.5">{item.desc}</p>
                       </div>
                     </div>
-                    <Toggle checked={true} onChange={() => {}} />
+                    <Toggle checked={prefs ? prefs[item.field] : true} onChange={() => toggleNotif(item.field)} />
                   </motion.div>
                 )
               })}

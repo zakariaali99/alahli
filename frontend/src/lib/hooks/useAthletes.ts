@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api"
+import type { PaginatedResponse } from "@/lib/types"
 
 interface Athlete {
   id: number
@@ -27,13 +28,6 @@ interface AthleteListParams {
   gender?: string
   is_active?: string
   ordering?: string
-}
-
-interface PaginatedResponse<T> {
-  count: number
-  next: string | null
-  previous: string | null
-  results: T[]
 }
 
 export function useAthletes(params: AthleteListParams = {}) {
@@ -87,10 +81,12 @@ export function useVerifyAthlete() {
     mutationFn: (membershipNumber: string) =>
       api.get<{
         active: boolean
+        athlete_id: number
         athlete_name: string
         department: string
         expiry_date: string | null
         membership_number: string
+        subscription_id: number | null
       }>(`/athletes/verify/${membershipNumber}/`),
   })
 }

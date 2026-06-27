@@ -17,11 +17,15 @@ class BookingRepository {
       'date': date,
       'time': time,
     });
-    return BookingModel.fromJson(asMap(res.data)!);
+    final data = asMap(res.data);
+    if (data == null) throw Exception('استجابة غير صالحة من الخادم');
+    return BookingModel.fromJson(data);
   }
 
   Future<BookingModel> getBooking(int id) async {
     final res = await _client.dio.get('/sessions/bookings/$id/');
-    return BookingModel.fromJson(asMap(res.data)!);
+    final data = asMap(res.data);
+    if (data == null) throw Exception('استجابة غير صالحة من الخادم');
+    return BookingModel.fromJson(data);
   }
 }

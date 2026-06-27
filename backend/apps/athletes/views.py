@@ -10,7 +10,7 @@ from .serializers import AthleteDetailSerializer, AthleteListSerializer
 
 
 class AthleteViewSet(viewsets.ModelViewSet):
-    queryset = Athlete.objects.filter(is_active=True)
+    queryset = Athlete.objects.filter(is_active=True).select_related('department')
     filterset_class = AthleteFilter
     search_fields = ["full_name", "membership_number", "phone"]
 
@@ -27,7 +27,7 @@ class AthleteViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["get"], url_path="verify/(?P<membership_number>[^/.]+)")
     def verify(self, request, membership_number=None):
         try:
-            athlete = Athlete.objects.get(membership_number=membership_number, is_active=True)
+            athlete = Athlete.objects.select_related('department').prefetch_related('subscriptions').get(membership_number=membership_number, is_active=True)
         except Athlete.DoesNotExist:
             return Response(
                 {"active": False, "detail": "Membership not found"},
@@ -37,8 +37,10 @@ class AthleteViewSet(viewsets.ModelViewSet):
         subscription = athlete.subscriptions.filter(status="active").first()
         return Response({
             "active": bool(subscription),
+            "athlete_id": athlete.id,
             "athlete_name": athlete.full_name,
             "department": athlete.department.name_ar if athlete.department else "",
             "expiry_date": subscription.end_date if subscription else None,
             "membership_number": athlete.membership_number,
+            "subscription_id": subscription.id if subscription else None,
         })

@@ -3,23 +3,21 @@ from decimal import Decimal
 
 from dateutil.relativedelta import relativedelta
 from django.core.management.base import BaseCommand
-from django.utils import timezone
 
 from apps.accounts.models import User
 from apps.athletes.models import Athlete
 from apps.departments.models import Department
+from apps.progress.models import Achievement, DailyStat, WeeklyProgress
+from apps.store.models import Product, ProductCategory
 from apps.subscriptions.models import Renewal, Subscription
 from apps.trainers.models import Trainer, TrainerClass
 from apps.workouts.models import (
-    Booking,
     Exercise,
     ExerciseEquipment,
     ExerciseMovement,
     SessionCategory,
     WorkoutSession,
 )
-from apps.store.models import Product, ProductCategory
-from apps.progress.models import Achievement, DailyStat, WeeklyProgress
 
 DEPARTMENTS = [
     {"name": "Al Ahly Sports Center", "name_ar": "مركز الأهلي الرياضي", "color": "#1487D4"},
@@ -295,14 +293,14 @@ class Command(BaseCommand):
 
         if not Achievement.objects.exists():
             achievements_data = [
-                ("🏆", "أول تمرين", "أكمل أول تمرين في النادي", True, False),
-                ("🔥", "5 أيام متتالية", "حافظ على التمرين 5 أيام متتالية", True, False),
-                ("💪", "10 ساعات تدريب", "أكمل 10 ساعات تدريب", False, False),
-                ("⭐", "المثابرة", "أكمل 30 يوم تدريب", False, True),
+                ("🏆", "أول تمرين", "أكمل أول تمرين في النادي", Achievement.Status.COMPLETED),
+                ("🔥", "5 أيام متتالية", "حافظ على التمرين 5 أيام متتالية", Achievement.Status.COMPLETED),
+                ("💪", "10 ساعات تدريب", "أكمل 10 ساعات تدريب", Achievement.Status.UNLOCKED),
+                ("⭐", "المثابرة", "أكمل 30 يوم تدريب", Achievement.Status.LOCKED),
             ]
-            for icon, title, subtitle, completed, locked in achievements_data:
+            for icon, title, subtitle, status_value in achievements_data:
                 Achievement.objects.create(
                     user=user, icon=icon, title=title, subtitle=subtitle,
-                    is_completed=completed, is_locked=locked,
+                    status=status_value,
                 )
             self.stdout.write("  Created achievements")

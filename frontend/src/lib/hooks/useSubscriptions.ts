@@ -1,5 +1,6 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api"
+import type { PaginatedResponse } from "@/lib/types"
 
 interface Renewal {
   id: number
@@ -15,11 +16,13 @@ interface Subscription {
   id: number
   athlete: number
   athlete_name: string
+  department_name: string
   membership_number: string
   start_date: string
   end_date: string
   amount: string
   status: "active" | "expired" | "pending"
+  package_name: string
   renewals: Renewal[]
   created_at: string
   updated_at: string
@@ -32,13 +35,6 @@ interface SubscriptionListParams {
   athlete?: string
   search?: string
   ordering?: string
-}
-
-interface PaginatedResponse<T> {
-  count: number
-  next: string | null
-  previous: string | null
-  results: T[]
 }
 
 export function useSubscriptions(params: SubscriptionListParams = {}) {

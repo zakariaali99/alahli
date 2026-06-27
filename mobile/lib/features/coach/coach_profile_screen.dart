@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/providers/providers.dart';
 import '../../core/models/trainer_model.dart';
+import '../../core/widgets/widgets.dart';
+import '../../core/models/review_model.dart';
 
 class CoachProfileScreen extends ConsumerWidget {
   const CoachProfileScreen({super.key});
@@ -23,15 +25,16 @@ class CoachProfileScreen extends ConsumerWidget {
       body: trainerAsync.when(
         data: (trainer) {
           if (trainer == null) return _buildNoData(theme);
-          return _buildContent(context, theme, trainer);
+          return _buildContent(context, theme, trainer, ref);
         },
-        loading: () => const Center(child: CircularProgressIndicator()),
+        loading: () => const ShimmerList(),
         error: (_, __) => _buildError(theme),
       ),
     );
   }
 
-  Widget _buildContent(BuildContext ctx, ThemeData theme, TrainerModel trainer) {
+  Widget _buildContent(BuildContext ctx, ThemeData theme, TrainerModel trainer, WidgetRef ref) {
+    final reviewsAsync = ref.watch(reviewsProvider);
     return SingleChildScrollView(
       padding: const EdgeInsets.all(20),
       child: Column(
@@ -75,6 +78,27 @@ class CoachProfileScreen extends ConsumerWidget {
             const SizedBox(height: 12),
             ...trainer.classes.map((c) => _buildClassCard(theme, c)),
           ],
+          const SizedBox(height: 24),
+          // Reviews section
+          Align(
+            alignment: Alignment.centerRight,
+            child: Text('التقييمات', style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
+          ),
+          const SizedBox(height: 12),
+          reviewsAsync.when(
+            data: (reviews) => reviews.isEmpty
+                ? Padding(
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    child: Center(
+                      child: Text('لا توجد تقييمات بعد', style: TextStyle(color: theme.colorScheme.outline)),
+                    ),
+                  )
+                : Column(
+                    children: reviews.map((r) => _buildReviewCard(theme, r)).toList(),
+                  ),
+            loading: () => const Center(child: CircularProgressIndicator(strokeWidth: 2)),
+            error: (_, __) => const SizedBox.shrink(),
+          ),
           const SizedBox(height: 24),
           SizedBox(
             width: double.infinity,
@@ -188,6 +212,42 @@ class CoachProfileScreen extends ConsumerWidget {
           Icon(Icons.error_outline, size: 48, color: theme.colorScheme.error),
           const SizedBox(height: 16),
           Text('تعذر تحميل بيانات المدرب', style: TextStyle(color: theme.colorScheme.error)),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildReviewCard(ThemeData theme, ReviewModel review) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: theme.colorScheme.surfaceContainerLowest.withValues(alpha: 0.85),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.3)),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    ...List.generate(5, (i) => Icon(
+                      i < review.rating ? Icons.star : Icons.star_border,
+                      size: 16,
+                      color: Colors.amber,
+                    )),
+                  ],
+                ),
+                if (review.comment.isNotEmpty) ...[
+                  const SizedBox(height: 4),
+                  Text(review.comment, style: TextStyle(color: theme.colorScheme.onSurfaceVariant, fontSize: 13)),
+                ],
+              ],
+            ),
+          ),
         ],
       ),
     );

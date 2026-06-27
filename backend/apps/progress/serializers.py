@@ -25,5 +25,5 @@ class AchievementSerializer(serializers.ModelSerializer):
         model = Achievement
         fields = [
             "id", "icon", "title", "subtitle",
-            "is_completed", "is_locked", "unlocked_at",
+            "status", "unlocked_at",
         ]
