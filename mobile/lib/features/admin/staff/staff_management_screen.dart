@@ -117,7 +117,7 @@ class _StaffManagementScreenState extends ConsumerState<StaffManagementScreen> {
                   if (!ctx.mounted) return;
                   Navigator.pop(ctx);
                   ref.invalidate(_usersProvider(_searchQuery));
-                  ScaffoldMessenger.of(context).showSnackBar(
+                  ScaffoldMessenger.of(ctx).showSnackBar(
                     SnackBar(content: Text(isEditing ? 'تم تحديث الموظف' : 'تم إضافة الموظف'), backgroundColor: Colors.green),
                   );
                 } catch (e) {
@@ -211,7 +211,7 @@ class _StaffManagementScreenState extends ConsumerState<StaffManagementScreen> {
                   padding: const EdgeInsets.all(16),
                   itemCount: users.length,
                   itemBuilder: (ctx, i) {
-                    final u = users[i] as Map<String, dynamic>;
+                    final u = users[i];
                     final name = '${u['first_name_ar']} ${u['last_name_ar']}';
                     final role = u['role'] as String? ?? 'viewer';
                     final isActive = u['is_active'] as bool? ?? true;
@@ -269,7 +269,8 @@ class _StaffManagementScreenState extends ConsumerState<StaffManagementScreen> {
                                 await ref.read(adminRepositoryProvider).updateUser(u['id'] as int, {'is_active': v});
                                 ref.invalidate(_usersProvider(_searchQuery));
                               } catch (e) {
-                                if (mounted) ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('فشل التحديث: $e'), backgroundColor: Colors.red));
+                                if (!context.mounted) return;
+                                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text('فشل التحديث: $e'), backgroundColor: Colors.red));
                               }
                             },
                             activeColor: theme.colorScheme.primary,

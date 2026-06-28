@@ -76,7 +76,7 @@ export default function Landing() {
             <a className="hidden md:inline-flex items-center justify-center px-6 py-2.5 rounded-xl bg-[#00288e] text-white text-sm font-bold hover:bg-[#00288e]/90 transition-colors shadow-lg shadow-[#00288e]/20" href="#register">
               انضم الآن
             </a>
-            <a className="hidden md:inline-flex items-center justify-center px-4 py-2.5 rounded-xl border border-[#00288e]/35 text-[#00288e] text-sm font-bold hover:bg-[#00288e]/5 transition-colors" href="/login">
+            <a className="hidden md:inline-flex items-center justify-center px-4 py-2.5 rounded-xl border border-[#00288e]/35 text-[#00288e] text-sm font-bold hover:bg-[#00288e]/5 transition-colors" href="#/login">
               لوحة الإدارة
             </a>
             <button className="md:hidden text-[#0b1c30] p-2 hover:bg-black/5 rounded-lg" onClick={() => setMobileMenuOpen(!mobileMenuOpen)}>
@@ -95,7 +95,7 @@ export default function Landing() {
             <a className="w-full py-3 rounded-xl bg-[#00288e] text-white font-bold text-center" href="#register" onClick={() => setMobileMenuOpen(false)}>
               انضم الآن
             </a>
-            <a className="w-full py-3 rounded-xl border border-[#00288e]/30 text-[#00288e] font-bold text-center" href="/login" onClick={() => setMobileMenuOpen(false)}>
+            <a className="w-full py-3 rounded-xl border border-[#00288e]/30 text-[#00288e] font-bold text-center" href="#/login" onClick={() => setMobileMenuOpen(false)}>
               لوحة الإدارة
             </a>
           </div>

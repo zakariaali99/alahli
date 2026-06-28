@@ -1,6 +1,6 @@
+
 from django.db import models
 from django.utils import timezone
-from typing import Optional
 
 
 class Notification(models.Model):

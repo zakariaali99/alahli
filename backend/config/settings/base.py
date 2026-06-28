@@ -2,11 +2,15 @@ import os
 from datetime import timedelta
 from pathlib import Path
 
+from config.sentry import init_sentry
+
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
 SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
 if not SECRET_KEY:
     raise RuntimeError("DJANGO_SECRET_KEY environment variable is not set.")
+
+init_sentry()
 
 DEBUG = False
 

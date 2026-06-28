@@ -5,6 +5,7 @@ from django.urls import include, path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework.routers import DefaultRouter
 
+from apps.accounts.health import health_check
 from apps.subscriptions.views import AttendanceLogViewSet
 
 router = DefaultRouter()
@@ -12,6 +13,7 @@ router.register(r"attendance", AttendanceLogViewSet, basename="attendance")
 
 urlpatterns = [
     path("admin/", admin.site.urls),
+    path("api/health/", health_check, name="health-check"),
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
     path("api/auth/", include("apps.accounts.urls")),
@@ -20,7 +22,7 @@ urlpatterns = [
     path("api/subscriptions/", include("apps.subscriptions.urls")),
     path("api/notifications/", include("apps.notifications.urls")),
     path("api/analytics/", include("apps.analytics.urls")),
-    path("api/sessions/", include("apps.workouts.urls")),
+    path("api/", include("apps.workouts.urls")),
     path("api/trainers/", include("apps.trainers.urls")),
     path("api/store/", include("apps.store.urls")),
     path("api/progress/", include("apps.progress.urls")),

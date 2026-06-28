@@ -7,7 +7,7 @@ on:
     branches: [main, master, develop]
 
 jobs:
-  lint:
+  backend-lint:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -29,7 +29,7 @@ jobs:
       - name: Run ruff
         run: ruff check .
 
-  test:
+  backend-test:
     runs-on: ubuntu-latest
     defaults:
       run:
@@ -75,3 +75,47 @@ jobs:
 
       - name: Type check
         run: npx tsc --noEmit
+
+  flutter-analyze:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "stable"
+          channel: "stable"
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Analyze
+        run: flutter analyze --fatal-infos --fatal-warnings
+
+  flutter-test:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: mobile
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          flutter-version: "stable"
+          channel: "stable"
+          cache: true
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Run tests
+        run: flutter test --coverage

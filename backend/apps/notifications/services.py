@@ -116,7 +116,7 @@ class FCMService:
             return 0
 
         try:
-            app = firebase_admin.get_app()
+            firebase_admin.get_app()
         except ValueError:
             cred_path = getattr(settings, "FCM_CREDENTIALS_PATH", None)
             if not cred_path:
