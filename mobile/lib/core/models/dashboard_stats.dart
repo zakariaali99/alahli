@@ -1,3 +1,5 @@
+import '../helpers/safe_json.dart';
+
 class DashboardStats {
   final int totalAthletes;
   final int activeMemberships;
@@ -7,7 +9,7 @@ class DashboardStats {
   final double totalRevenue;
   final int renewalRate;
 
-  const DashboardStats({
+  DashboardStats({
     required this.totalAthletes,
     required this.activeMemberships,
     required this.expiredMemberships,
@@ -17,49 +19,15 @@ class DashboardStats {
     required this.renewalRate,
   });
 
-  factory DashboardStats.fromJson(Map<String, dynamic> json) => DashboardStats(
-    totalAthletes: json['total_athletes'] as int? ?? 0,
-    activeMemberships: json['active_memberships'] as int? ?? 0,
-    expiredMemberships: json['expired_memberships'] as int? ?? 0,
-    expiringSoon: json['expiring_soon'] as int? ?? 0,
-    newThisMonth: json['new_this_month'] as int? ?? 0,
-    totalRevenue: (json['total_revenue'] as num?)?.toDouble() ?? 0,
-    renewalRate: json['renewal_rate'] as int? ?? 0,
-  );
-}
-
-class MonthlyGrowth {
-  final String month;
-  final int count;
-
-  const MonthlyGrowth({required this.month, required this.count});
-
-  factory MonthlyGrowth.fromJson(Map<String, dynamic> json) => MonthlyGrowth(
-    month: json['month'] as String? ?? '',
-    count: json['count'] as int? ?? 0,
-  );
-}
-
-class RevenueData {
-  final String month;
-  final double revenue;
-
-  const RevenueData({required this.month, required this.revenue});
-
-  factory RevenueData.fromJson(Map<String, dynamic> json) => RevenueData(
-    month: json['month'] as String? ?? '',
-    revenue: (json['revenue'] as num?)?.toDouble() ?? 0,
-  );
-}
-
-class DepartmentDist {
-  final String departmentName;
-  final int count;
-
-  const DepartmentDist({required this.departmentName, required this.count});
-
-  factory DepartmentDist.fromJson(Map<String, dynamic> json) => DepartmentDist(
-    departmentName: json['department_name'] as String? ?? '',
-    count: json['count'] as int? ?? 0,
-  );
+  factory DashboardStats.fromJson(Map<String, dynamic> json) {
+    return DashboardStats(
+      totalAthletes: asInt(json['total_athletes']) ?? 0,
+      activeMemberships: asInt(json['active_memberships']) ?? 0,
+      expiredMemberships: asInt(json['expired_memberships']) ?? 0,
+      expiringSoon: asInt(json['expiring_soon']) ?? 0,
+      newThisMonth: asInt(json['new_this_month']) ?? 0,
+      totalRevenue: asDouble(json['total_revenue']) ?? 0.0,
+      renewalRate: asInt(json['renewal_rate']) ?? 0,
+    );
+  }
 }

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "248217600928",
+    "project_id": "alahli-16614",
+    "storage_bucket": "alahli-16614.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:248217600928:android:7fcbb7225d921b21e51ac5",
+        "android_client_info": {
+          "package_name": "ly.alahli.al_ahly_sports_center"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyCvLnxvDI8EBzvJvGuHAp9jyWKg4-sw8yw"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

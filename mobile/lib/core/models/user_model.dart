@@ -1,3 +1,5 @@
+import '../helpers/safe_json.dart';
+
 class UserModel {
   final int id;
   final String phone;
@@ -6,9 +8,11 @@ class UserModel {
   final String fullNameAr;
   final String role;
   final bool isActive;
-  final Map<String, dynamic>? athleteDetail;
+  final String? photo;
+  final int? academy;
+  final String? academyName;
 
-  const UserModel({
+  UserModel({
     required this.id,
     required this.phone,
     required this.firstNameAr,
@@ -16,38 +20,42 @@ class UserModel {
     required this.fullNameAr,
     required this.role,
     required this.isActive,
-    this.athleteDetail,
+    this.photo,
+    this.academy,
+    this.academyName,
   });
 
-  factory UserModel.empty() => const UserModel(
-    id: 0,
-    phone: '',
-    firstNameAr: '',
-    lastNameAr: '',
-    fullNameAr: '',
-    role: '',
-    isActive: false,
-  );
+  factory UserModel.fromJson(Map<String, dynamic> json) {
+    return UserModel(
+      id: asInt(json['id']) ?? 0,
+      phone: asString(json['phone']) ?? '',
+      firstNameAr: asString(json['first_name_ar']) ?? '',
+      lastNameAr: asString(json['last_name_ar']) ?? '',
+      fullNameAr: asString(json['full_name_ar']) ?? '',
+      role: asString(json['role']) ?? '',
+      isActive: asBool(json['is_active']) ?? false,
+      photo: asString(json['photo']),
+      academy: asInt(json['academy']),
+      academyName: asString(json['academy_name']),
+    );
+  }
 
-  factory UserModel.fromJson(Map<String, dynamic> json) => UserModel(
-        id: json['id'] as int,
-        phone: json['phone'] as String,
-        firstNameAr: json['first_name_ar'] as String? ?? '',
-        lastNameAr: json['last_name_ar'] as String? ?? '',
-        fullNameAr: json['full_name_ar'] as String? ?? '',
-        role: json['role'] as String? ?? 'viewer',
-        isActive: json['is_active'] as bool? ?? true,
-        athleteDetail: json['athlete_detail'] as Map<String, dynamic>?,
-      );
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'phone': phone,
+      'first_name_ar': firstNameAr,
+      'last_name_ar': lastNameAr,
+      'full_name_ar': fullNameAr,
+      'role': role,
+      'is_active': isActive,
+      'photo': photo,
+      'academy': academy,
+      'academy_name': academyName,
+    };
+  }
 
-  Map<String, dynamic> toJson() => {
-        'id': id,
-        'phone': phone,
-        'first_name_ar': firstNameAr,
-        'last_name_ar': lastNameAr,
-        'full_name_ar': fullNameAr,
-        'role': role,
-        'is_active': isActive,
-        if (athleteDetail != null) 'athlete_detail': athleteDetail,
-      };
+  bool get isSuperAdmin => role == 'super_admin';
+  bool get isReception => role == 'reception';
+  bool get isAcademyManager => role == 'academy_manager';
 }

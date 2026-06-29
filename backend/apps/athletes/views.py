@@ -42,10 +42,19 @@ def register_view(request):
             role=serializer.validated_data["role"],
         )
 
-        RegistrationRequest.objects.create(
+        registration = RegistrationRequest.objects.create(
             user=user,
             role_choice=serializer.validated_data["role"],
         )
+
+    from apps.notifications.tasks import send_admin_push_notification
+
+    send_admin_push_notification.delay(
+        title="تسجيل لاعب جديد",
+        body=f"طلب تسجيل جديد من {serializer.validated_data['full_name']} - {serializer.validated_data['phone']}",
+        notification_type="new_registration",
+        entity_id=registration.id,
+    )
 
     return Response(
         {"message": "Registration submitted. Awaiting admin review and profile creation."},

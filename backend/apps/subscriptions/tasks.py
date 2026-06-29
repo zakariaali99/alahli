@@ -14,7 +14,18 @@ def expire_memberships():
     expired = Subscription.objects.filter(
         status=Subscription.Status.ACTIVE, end_date__lt=today
     )
+    expired_ids = list(expired.values_list("id", flat=True))
     count = expired.update(status=Subscription.Status.EXPIRED)
+
+    if count > 0:
+        from apps.notifications.tasks import send_admin_push_notification
+
+        send_admin_push_notification.delay(
+            title="انتهاء اشتراكات",
+            body=f"انتهى {count} اشتراك اليوم. يرجى مراجعة قائمة الاشتراكات المنتهية.",
+            notification_type="subscription_expired",
+        )
+
     return f"Expired {count} memberships"
 
 

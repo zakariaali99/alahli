@@ -1,22 +1,24 @@
-import '../helpers/safe_json.dart';
+import 'package:dio/dio.dart';
 import '../network/api_client.dart';
 import '../models/package_model.dart';
+import '../constants/api_endpoints.dart';
+import '../helpers/safe_json.dart';
 
 class PackageRepository {
-  final ApiClient _client;
+  final ApiClient apiClient;
 
-  PackageRepository(this._client);
+  PackageRepository({required this.apiClient});
 
-  Future<List<PackageModel>> getPackages() async {
-    final res = await _client.dio.get('/packages/');
-    final data = asMap(res.data);
-    if (data == null) return [];
-    return asList(data['results'])
-        .map((e) {
-          final m = asMap(e);
-          return m != null ? PackageModel.fromJson(m) : null;
-        })
-        .whereType<PackageModel>()
-        .toList();
+  Future<List<PackageModel>> fetchPackages() async {
+    try {
+      final res = await apiClient.dio.get(ApiEndpoints.packages);
+      dynamic resultsList = res.data;
+      if (res.data is Map && res.data['results'] != null) {
+        resultsList = res.data['results'];
+      }
+      return asList(resultsList, (e) => PackageModel.fromJson(asMap(e) ?? {})) ?? [];
+    } on DioException catch (e) {
+      throw Exception(e.response?.data?['detail'] ?? 'فشل تحميل الباقات');
+    }
   }
 }

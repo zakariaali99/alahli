@@ -1,4 +1,6 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -8,24 +10,54 @@ import 'core/router/app_router.dart';
 import 'core/services/push_service.dart';
 import 'core/theme/app_theme.dart';
 
+@pragma('vm:entry-point')
+Future<void> _firebaseBackgroundHandler(RemoteMessage message) async {
+  await Firebase.initializeApp();
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   await Firebase.initializeApp();
+  FirebaseMessaging.onBackgroundMessage(_firebaseBackgroundHandler);
 
   final pushService = PushService();
   await pushService.initialize();
 
-  ErrorWidget.builder = (details) => const Center(
-    child: Padding(
-      padding: EdgeInsets.all(32),
-      child: Text(
-        'عذراً، حدث خطأ غير متوقع',
-        style: TextStyle(fontSize: 18),
-        textAlign: TextAlign.center,
-      ),
-    ),
-  );
+  if (kDebugMode) {
+    ErrorWidget.builder = (details) => Scaffold(
+          body: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(32),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.error_outline, size: 48, color: Colors.red),
+                  const SizedBox(height: 12),
+                  Text(
+                    details.exception.toString(),
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(fontSize: 14),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
+  } else {
+    ErrorWidget.builder = (details) => const Scaffold(
+          body: Center(
+            child: Padding(
+              padding: EdgeInsets.all(32),
+              child: Text(
+                'عذراً، حدث خطأ غير متوقع في النظام',
+                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+            ),
+          ),
+        );
+  }
 
   SystemChrome.setSystemUIOverlayStyle(const SystemUiOverlayStyle(
     statusBarColor: Colors.transparent,
@@ -36,9 +68,6 @@ void main() async {
 
   runApp(
     ProviderScope(
-      overrides: [
-        pushServiceProvider.overrideWithValue(pushService),
-      ],
       child: const AlAhlyApp(),
     ),
   );
@@ -49,20 +78,17 @@ class AlAhlyApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final activeBrand = ref.watch(brandProvider);
-
     final router = ref.watch(goRouterProvider);
-    final themeMode = ref.watch(themeModeProvider);
 
-    PushService().setRouter(router);
+    ref.read(pushServiceProvider).setRouter(router);
 
     return MaterialApp.router(
-      title: 'مركز الأهلي الرياضي',
+      title: 'مركز الأهلي الرياضي - الإدارة',
       debugShowCheckedModeBanner: false,
       routerConfig: router,
-      theme: AppTheme.themeData(activeBrand),
-      darkTheme: AppTheme.themeData(activeBrand, brightness: Brightness.dark),
-      themeMode: themeMode,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.system,
       locale: const Locale('ar', 'LY'),
       supportedLocales: const [
         Locale('ar', 'LY'),

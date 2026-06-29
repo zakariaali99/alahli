@@ -170,6 +170,15 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
             subscription.invoice_pdf = data["invoice_pdf"]
             subscription.save(update_fields=["invoice_pdf"])
 
+        from apps.notifications.tasks import send_admin_push_notification
+
+        send_admin_push_notification.delay(
+            title="اشتراك جديد بانتظار الموافقة",
+            body=f"طلب اشتراك جديد لـ {athlete.full_name} - باقة {package.name}",
+            notification_type="new_subscription",
+            entity_id=subscription.id,
+        )
+
         bank_details = None
         if data["payment_method"] == "bank_transfer":
             department = group.sport.department

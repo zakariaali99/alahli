@@ -1,35 +1,49 @@
 import 'package:flutter/material.dart';
+import '../constants/app_colors.dart';
 
 class AppErrorWidget extends StatelessWidget {
-  final String message;
+  final String errorMessage;
   final VoidCallback? onRetry;
-  final String? retryLabel;
 
   const AppErrorWidget({
-    super.key,
-    this.message = 'حدث خطأ غير متوقع',
+    required this.errorMessage,
     this.onRetry,
-    this.retryLabel,
+    super.key,
   });
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
     return Center(
       child: Padding(
-        padding: const EdgeInsets.all(32),
+        padding: const EdgeInsets.all(24.0),
         child: Column(
-          mainAxisSize: MainAxisSize.min,
+          mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Icon(Icons.cloud_off, size: 56, color: theme.colorScheme.error.withValues(alpha: 0.7)),
-            const SizedBox(height: 16),
-            Text(message, style: theme.textTheme.bodyLarge, textAlign: TextAlign.center),
+            const Icon(
+              Icons.error_outline,
+              size: 48,
+              color: AppColors.destructive,
+            ),
+            const SizedBox(height: 12),
+            Text(
+              errorMessage,
+              textAlign: TextAlign.center,
+              style: const TextStyle(
+                fontSize: 14,
+                color: AppColors.destructive,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
             if (onRetry != null) ...[
               const SizedBox(height: 16),
               ElevatedButton.icon(
                 onPressed: onRetry,
-                icon: const Icon(Icons.refresh, size: 18),
-                label: Text(retryLabel ?? 'إعادة المحاولة'),
+                icon: const Icon(Icons.refresh),
+                label: const Text('إعادة المحاولة'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primary,
+                  foregroundColor: Colors.white,
+                ),
               ),
             ],
           ],

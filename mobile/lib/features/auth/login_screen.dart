@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/providers.dart';
-import '../../core/widgets/animations.dart';
-import '../../core/widgets/widgets.dart';
+import '../../core/constants/app_colors.dart';
+import '../../core/constants/app_strings.dart';
 import '../../core/helpers/numeral_converter.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -15,7 +15,10 @@ class LoginScreen extends ConsumerStatefulWidget {
 class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
-  bool _obscurePassword = true;
+  final _formKey = GlobalKey<FormState>();
+  bool _rememberMe = false;
+  bool _isLoading = false;
+  String? _errorMessage;
 
   @override
   void dispose() {
@@ -24,130 +27,229 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
     super.dispose();
   }
 
+  Future<void> _handleLogin() async {
+    if (!_formKey.currentState!.validate()) return;
+    
+    setState(() {
+      _isLoading = true;
+      _errorMessage = null;
+    });
+
+    try {
+      final phone = _phoneController.text.trim().toWesternDigits();
+      final password = _passwordController.text;
+      
+      await ref.read(authProvider.notifier).login(phone, password, _rememberMe);
+      
+      // Verification logic: check role
+      final user = ref.read(authProvider);
+      if (user != null) {
+        if (user.role != 'super_admin' && user.role != 'reception' && user.role != 'academy_manager') {
+          // Gated
+          ref.read(authProvider.notifier).clearSession();
+          setState(() {
+            _errorMessage = 'عذراً، هذا التطبيق مخصص للإدارة فقط';
+          });
+        }
+      }
+    } catch (e) {
+      setState(() {
+        _errorMessage = e.toString().replaceAll('Exception: ', '');
+      });
+    } finally {
+      if (mounted) {
+        setState(() {
+          _isLoading = false;
+        });
+      }
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final authState = ref.watch(authStateProvider);
+    final size = MediaQuery.of(context).size;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
       body: SafeArea(
         child: Center(
           child: SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 32),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                TweenAnimationBuilder<double>(
-                  tween: Tween(begin: 0.0, end: 1.0),
-                  duration: const Duration(milliseconds: 800),
-                  curve: Curves.elasticOut,
-                  builder: (ctx, value, child) => Transform.scale(scale: value, child: child),
-                  child: GlassContainer(
-                    borderRadius: 24,
-                    padding: const EdgeInsets.all(20),
-                    child: Image.asset(
-                      'assets/logo.png',
-                      width: 60,
-                      height: 60,
-                      fit: BoxFit.contain,
-                    ),
-                  ),
-                ),
-                FadeInSlide(index: 0, offset: 20, child: Column(
-                  children: [
-                Text(
-                  'مركز الأهلي الرياضي',
-                  style: theme.textTheme.headlineLarge?.copyWith(
-                    fontWeight: FontWeight.bold,
-                  ),
-                ),
-                const SizedBox(height: 8),
-                Text(
-                  'نظام إدارة الأداء الرياضي',
-                  style: theme.textTheme.bodyMedium?.copyWith(
-                    color: theme.colorScheme.outline,
-                  ),
-                ),
-                const SizedBox(height: 48),
-                TextField(
-                  controller: _phoneController,
-                  keyboardType: TextInputType.phone,
-                  textDirection: TextDirection.ltr,
-                  decoration: const InputDecoration(
-                    labelText: 'رقم الهاتف',
-                    prefixIcon: Icon(Icons.phone_android),
-                  ),
-                  enabled: authState.status != AuthStatus.loading,
-                ),
-                const SizedBox(height: 16),
-                TextField(
-                  controller: _passwordController,
-                  obscureText: _obscurePassword,
-                  decoration: InputDecoration(
-                    labelText: 'كلمة المرور',
-                    prefixIcon: const Icon(Icons.lock_outline),
-                    suffixIcon: IconButton(
-                      icon: Icon(
-                        _obscurePassword ? Icons.visibility_off : Icons.visibility,
+            padding: const EdgeInsets.symmetric(horizontal: 24.0),
+            child: Form(
+              key: _formKey,
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  // Logo
+                  Center(
+                    child: Container(
+                      height: 120,
+                      width: 120,
+                      decoration: BoxDecoration(
+                        color: isDark ? AppColors.darkCard : Colors.white,
+                        borderRadius: BorderRadius.circular(24),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Colors.black.withOpacity(0.08),
+                            blurRadius: 20,
+                            offset: const Offset(0, 10),
+                          )
+                        ],
                       ),
-                      onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                      padding: const EdgeInsets.all(16),
+                      child: Image.asset(
+                        'assets/logo.png',
+                        fit: BoxFit.contain,
+                      ),
                     ),
                   ),
-                  enabled: authState.status != AuthStatus.loading,
-                  onSubmitted: (_) => _login(),
-                ),
-                const SizedBox(height: 8),
-                if (authState.status == AuthStatus.error)
-                  Padding(
-                    padding: const EdgeInsets.only(top: 8),
-                    child: Row(
-                      children: [
-                        Icon(Icons.error_outline, size: 16, color: theme.colorScheme.error),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: Text(
-                            authState.errorMessage ?? 'حدث خطأ',
-                            style: TextStyle(
-                              color: theme.colorScheme.error,
-                              fontSize: 13,
-                            ),
-                          ),
+                  const SizedBox(height: 24),
+                  // App Title
+                  Text(
+                    AppStrings.appTitle,
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w800,
+                      color: isDark ? Colors.white : AppColors.foreground,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    'لوحة تحكم المدير والموظفين',
+                    textAlign: TextAlign.center,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: isDark ? AppColors.darkMutedForeground : AppColors.mutedForeground,
+                    ),
+                  ),
+                  const SizedBox(height: 36),
+                  
+                  if (_errorMessage != null) ...[
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                      decoration: BoxDecoration(
+                        color: AppColors.destructive.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: AppColors.destructive.withOpacity(0.3)),
+                      ),
+                      child: Text(
+                        _errorMessage!,
+                        textAlign: TextAlign.center,
+                        style: const TextStyle(
+                          color: AppColors.destructive,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
                         ),
-                      ],
+                      ),
                     ),
+                    const SizedBox(height: 16),
+                  ],
+
+                  // Phone field
+                  TextFormField(
+                    controller: _phoneController,
+                    keyboardType: TextInputType.phone,
+                    textAlign: TextAlign.right,
+                    textDirection: TextDirection.ltr,
+                    decoration: InputDecoration(
+                      hintText: '09xxxxxxxx',
+                      labelText: AppStrings.phone,
+                      alignLabelWithHint: true,
+                      prefixIcon: const Icon(Icons.phone_android),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    validator: (val) {
+                      if (val == null || val.isEmpty) {
+                        return 'يرجى إدخال رقم الهاتف';
+                      }
+                      return null;
+                    },
                   ),
-                const SizedBox(height: 24),
-                SizedBox(
-                  width: double.infinity,
-                  child: ElevatedButton(
-                    onPressed: authState.status == AuthStatus.loading ? null : _login,
-                    child: authState.status == AuthStatus.loading
+                  const SizedBox(height: 20),
+                  // Password field
+                  TextFormField(
+                    controller: _passwordController,
+                    obscureText: true,
+                    textAlign: TextAlign.right,
+                    textDirection: TextDirection.ltr,
+                    decoration: InputDecoration(
+                      hintText: '••••••••',
+                      labelText: AppStrings.password,
+                      alignLabelWithHint: true,
+                      prefixIcon: const Icon(Icons.lock_outline),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    validator: (val) {
+                      if (val == null || val.isEmpty) {
+                        return 'يرجى إدخال كلمة المرور';
+                      }
+                      return null;
+                    },
+                  ),
+                  const SizedBox(height: 16),
+                  // Remember Me checkbox
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.end,
+                    children: [
+                      Text(
+                        'تذكرني',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: isDark ? AppColors.darkMutedForeground : AppColors.mutedForeground,
+                        ),
+                      ),
+                      Checkbox(
+                        value: _rememberMe,
+                        onChanged: (val) {
+                          setState(() {
+                            _rememberMe = val ?? false;
+                          });
+                        },
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 24),
+                  // Submit Button
+                  ElevatedButton(
+                    onPressed: _isLoading ? null : _handleLogin,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                      padding: const EdgeInsets.symmetric(vertical: 16),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      elevation: 0,
+                    ),
+                    child: _isLoading
                         ? const SizedBox(
-                            width: 20,
                             height: 20,
+                            width: 20,
                             child: CircularProgressIndicator(
-                              strokeWidth: 2,
                               color: Colors.white,
+                              strokeWidth: 2,
                             ),
                           )
-                        : const Text('تسجيل الدخول', style: TextStyle(fontSize: 16)),
+                        : const Text(
+                            AppStrings.login,
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
                   ),
-                ),
-              ],
+                ],
               ),
-            ),
-              ],
             ),
           ),
         ),
       ),
     );
-  }
-
-  void _login() {
-    final phone = NumeralConverter.convert(_phoneController.text.trim());
-    final password = _passwordController.text;
-    if (phone.isEmpty || password.isEmpty) return;
-    ref.read(authStateProvider.notifier).login(phone, password);
   }
 }

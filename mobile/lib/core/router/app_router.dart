@@ -1,124 +1,162 @@
 import 'package:flutter/material.dart';
-import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
-
-import '../../features/auth/login_screen.dart';
-import '../../features/admin/admin_shell_screen.dart';
-import '../../features/admin/dashboard/admin_dashboard_screen.dart';
-import '../../features/admin/subscribers/subscriber_management_screen.dart';
-import '../../features/admin/groups/group_management_screen.dart';
-import '../../features/admin/accounts/account_management_screen.dart';
-import '../../features/admin/notifications/admin_notifications_screen.dart';
-import '../../features/admin/sessions/session_management_screen.dart';
-import '../../features/admin/financial/financial_dashboard_screen.dart';
-import '../../features/admin/performance/trainer_performance_screen.dart';
-import '../../features/admin/exercises/exercise_builder_screen.dart';
-import '../../features/admin/trainer/trainer_dashboard_screen.dart';
-import '../../features/admin/packages/package_management_screen.dart';
-import '../../features/admin/staff/staff_management_screen.dart';
-import '../../features/admin/athlete/athlete_detail_screen.dart';
-import '../../features/admin/approvals/approvals_screen.dart';
-import '../models/user_model.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/providers.dart';
+import '../../features/auth/login_screen.dart';
+import '../../features/auth/splash_screen.dart';
+import '../../features/admin/shell/admin_shell.dart';
+import '../../features/admin/dashboard/dashboard_screen.dart';
+import '../../features/admin/athletes/athletes_list_screen.dart';
+import '../../features/admin/athletes/athlete_profile_screen.dart';
+import '../../features/admin/athletes/add_athlete_screen.dart';
+import '../../features/admin/approvals/approvals_screen.dart';
+import '../../features/admin/subscriptions/subscriptions_screen.dart';
+import '../../features/admin/academies/academies_screen.dart';
+import '../../features/admin/coaches/coaches_screen.dart';
+import '../../features/admin/staff/staff_screen.dart';
+import '../../features/admin/reports/reports_screen.dart';
+import '../../features/admin/verify/verify_screen.dart';
+import '../../features/admin/notifications/notifications_screen.dart';
+import '../../features/admin/settings/settings_screen.dart';
 
-Page _pageBuilder(Widget child) => CustomTransitionPage(
-      child: child,
-      transitionsBuilder: (context, animation, secondaryAnimation, child) {
-        const begin = Offset(0.05, 0.0);
-        const end = Offset.zero;
-        const curve = Curves.easeInOut;
-        var tween = Tween(begin: begin, end: end).chain(CurveTween(curve: curve));
-        return SlideTransition(position: animation.drive(tween), child: child);
-      },
-    );
+final _rootNavigatorKey = GlobalKey<NavigatorState>();
+final _shellNavigatorKey = GlobalKey<NavigatorState>();
 
-final _rootNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'root');
-final _adminShellNavigatorKey = GlobalKey<NavigatorState>(debugLabel: 'adminShell');
+CustomTransitionPage _slideTransitionPage({
+  required Widget child,
+  required GoRouterState state,
+}) {
+  return CustomTransitionPage(
+    key: state.pageKey,
+    transitionDuration: const Duration(milliseconds: 300),
+    reverseTransitionDuration: const Duration(milliseconds: 300),
+    transitionsBuilder: (context, animation, secondaryAnimation, child) {
+      return SlideTransition(
+        position: Tween<Offset>(
+          begin: const Offset(1, 0),
+          end: Offset.zero,
+        ).animate(CurvedAnimation(parent: animation, curve: Curves.easeInOut)),
+        child: child,
+      );
+    },
+    child: child,
+  );
+}
 
 final goRouterProvider = Provider<GoRouter>((ref) {
-  final notifier = _GoRouterNotifier(ref);
+  final authState = ref.watch(authProvider);
+  final isInitialized = ref.watch(authInitializedProvider);
 
   return GoRouter(
+    initialLocation: '/',
     navigatorKey: _rootNavigatorKey,
-    initialLocation: '/login',
-    refreshListenable: notifier,
     redirect: (context, state) {
-      final status = notifier._status;
-      final user = notifier._user;
-      final isLoginRoute = state.matchedLocation == '/login';
-      final isAdminRoute = state.matchedLocation.startsWith('/admin');
+      final isLoggedIn = authState != null;
+      final isLoggingIn = state.matchedLocation == '/login';
+      final isOnSplash = state.matchedLocation == '/splash';
 
-      if (status == AuthStatus.initial) return null;
-
-      if (status == AuthStatus.unauthenticated && !isLoginRoute) {
-        return '/login';
+      if (!isInitialized) {
+        return isOnSplash ? null : '/splash';
       }
 
-      if (status == AuthStatus.authenticated) {
-        final isAdmin = user != null &&
-            (user.role == 'super_admin' ||
-                user.role == 'reception' ||
-                user.role == 'trainer');
-        if (!isAdmin) {
-          ref.read(authStateProvider.notifier).logout();
-          return '/login';
-        }
-        if (isLoginRoute || !isAdminRoute) {
-          return '/admin/dashboard';
-        }
+      if (!isLoggedIn) {
+        return isLoggingIn ? null : '/login';
+      }
+
+      if (isLoggingIn) {
+        return '/';
+      }
+
+      final role = authState.role;
+      if (!adminRoles.contains(role)) {
+        return '/login';
       }
 
       return null;
     },
     routes: [
       GoRoute(
+        path: '/splash',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const SplashScreen(),
+      ),
+      GoRoute(
         path: '/login',
-        pageBuilder: (context, state) => _pageBuilder(const LoginScreen()),
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const LoginScreen(),
       ),
       ShellRoute(
-        navigatorKey: _adminShellNavigatorKey,
+        navigatorKey: _shellNavigatorKey,
         builder: (context, state, child) {
-          return AdminShellScreen(child: child);
+          return AdminShell(child: child);
         },
         routes: [
-          GoRoute(path: '/admin/dashboard', pageBuilder: (context, state) => _pageBuilder(const AdminDashboardScreen())),
-          GoRoute(path: '/admin/subscribers', pageBuilder: (context, state) => _pageBuilder(const SubscriberManagementScreen())),
-          GoRoute(path: '/admin/groups', pageBuilder: (context, state) => _pageBuilder(const GroupManagementScreen())),
-          GoRoute(path: '/admin/accounts', pageBuilder: (context, state) => _pageBuilder(const AccountManagementScreen())),
-          GoRoute(path: '/admin/notifications', pageBuilder: (context, state) => _pageBuilder(const AdminNotificationsScreen())),
-          GoRoute(path: '/admin/sessions', pageBuilder: (context, state) => _pageBuilder(const SessionManagementScreen())),
-          GoRoute(path: '/admin/financial', pageBuilder: (context, state) => _pageBuilder(const FinancialDashboardScreen())),
-          GoRoute(path: '/admin/performance', pageBuilder: (context, state) => _pageBuilder(const TrainerPerformanceScreen())),
-          GoRoute(path: '/admin/exercises', pageBuilder: (context, state) => _pageBuilder(const ExerciseBuilderScreen())),
-          GoRoute(path: '/admin/trainer', pageBuilder: (context, state) => _pageBuilder(const TrainerDashboardScreen())),
-          GoRoute(path: '/admin/packages', pageBuilder: (context, state) => _pageBuilder(const PackageManagementScreen())),
           GoRoute(
-            path: '/admin/athlete/:id',
-            pageBuilder: (context, state) {
-              final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
-              return _pageBuilder(AthleteDetailScreen(athleteId: id));
-            },
+            path: '/',
+            builder: (context, state) => const DashboardScreen(),
           ),
-          GoRoute(path: '/admin/staff', pageBuilder: (context, state) => _pageBuilder(const StaffManagementScreen())),
-          GoRoute(path: '/admin/approvals', pageBuilder: (context, state) => _pageBuilder(const ApprovalsScreen())),
+          GoRoute(
+            path: '/athletes',
+            builder: (context, state) => const AthletesListScreen(),
+            routes: [
+              GoRoute(
+                path: 'add',
+                parentNavigatorKey: _rootNavigatorKey,
+                pageBuilder: (context, state) =>
+                    _slideTransitionPage(child: const AddAthleteScreen(), state: state),
+              ),
+              GoRoute(
+                path: ':id',
+                parentNavigatorKey: _rootNavigatorKey,
+                pageBuilder: (context, state) {
+                  final idStr = state.pathParameters['id'];
+                  final id = int.tryParse(idStr ?? '') ?? 0;
+                  return _slideTransitionPage(
+                    child: AthleteProfileScreen(athleteId: id),
+                    state: state,
+                  );
+                },
+              ),
+            ],
+          ),
+          GoRoute(
+            path: '/approvals',
+            builder: (context, state) => const ApprovalsScreen(),
+          ),
+          GoRoute(
+            path: '/subscriptions',
+            builder: (context, state) => const SubscriptionsScreen(),
+          ),
+          GoRoute(
+            path: '/academies',
+            builder: (context, state) => const AcademiesScreen(),
+          ),
+          GoRoute(
+            path: '/coaches',
+            builder: (context, state) => const CoachesScreen(),
+          ),
+          GoRoute(
+            path: '/staff',
+            builder: (context, state) => const StaffScreen(),
+          ),
+          GoRoute(
+            path: '/reports',
+            builder: (context, state) => const ReportsScreen(),
+          ),
+          GoRoute(
+            path: '/verify',
+            builder: (context, state) => const VerifyScreen(),
+          ),
+          GoRoute(
+            path: '/notifications',
+            builder: (context, state) => const NotificationsScreen(),
+          ),
+          GoRoute(
+            path: '/settings',
+            builder: (context, state) => const SettingsScreen(),
+          ),
         ],
       ),
     ],
   );
 });
-
-class _GoRouterNotifier extends ChangeNotifier {
-  AuthStatus _status = AuthStatus.initial;
-  UserModel? _user;
-
-  AuthStatus get status => _status;
-  UserModel? get user => _user;
-
-  _GoRouterNotifier(Ref ref) {
-    ref.listen<AuthState>(authStateProvider, (_, next) {
-      _status = next.status;
-      _user = next.user;
-      notifyListeners();
-    });
-  }
-}

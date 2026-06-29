@@ -1,347 +1,237 @@
-import 'dart:io';
-import 'package:dio/dio.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../network/api_client.dart';
+import '../constants/api_endpoints.dart';
 import '../repositories/auth_repository.dart';
+import '../repositories/athlete_repository.dart';
 import '../repositories/subscription_repository.dart';
-import '../repositories/notification_repository.dart';
-import '../repositories/workout_repository.dart';
+import '../repositories/department_repository.dart';
+import '../repositories/registration_repository.dart';
+import '../repositories/analytics_repository.dart';
 import '../repositories/trainer_repository.dart';
-import '../repositories/store_repository.dart';
-import '../repositories/progress_repository.dart';
-import '../repositories/booking_repository.dart';
-import '../repositories/faq_repository.dart';
-import '../repositories/announcement_repository.dart';
+import '../repositories/staff_repository.dart';
+import '../repositories/notification_repository.dart';
 import '../repositories/package_repository.dart';
-import '../repositories/review_repository.dart';
-import '../repositories/preference_repository.dart';
-import '../repositories/device_repository.dart';
-import '../repositories/admin_repository.dart';
-import '../repositories/subscription_repository.dart' show SubscriptionRepository, AthleteRepository;
-import '../services/push_service.dart';
 import '../models/user_model.dart';
-import '../models/membership_model.dart';
-import '../models/notification_model.dart';
-import '../models/workout_session_model.dart';
+import '../models/athlete_model.dart';
+import '../models/subscription_model.dart';
+import '../models/department_model.dart';
+import '../models/registration_model.dart';
 import '../models/trainer_model.dart';
-import '../models/product_model.dart';
-import '../models/progress_model.dart';
-import '../models/faq_model.dart';
-import '../models/announcement_model.dart';
 import '../models/package_model.dart';
-import '../models/review_model.dart';
-import '../models/preference_model.dart';
+import '../models/notification_model.dart';
+import '../models/sport_model.dart';
+import '../models/group_model.dart';
 import '../models/dashboard_stats.dart';
 import '../helpers/secure_storage.dart';
-import '../theme/app_theme.dart';
-
-final brandProvider = StateProvider<SportsBrand>((ref) => SportsBrand.alAhly);
-final themeModeProvider = StateProvider<ThemeMode>((ref) => ThemeMode.system);
-
-final secureStorageProvider = Provider<SecureStorage>((ref) => SecureStorage());
-
-const _defaultApiUrl = String.fromEnvironment(
-  'API_BASE_URL',
-  defaultValue: 'http://10.22.95.35:8000/api',
-);
+import '../services/push_service.dart';
 
 final apiClientProvider = Provider<ApiClient>((ref) {
-  return ApiClient(baseUrl: _defaultApiUrl);
+  final client = ApiClient(baseUrl: ApiEndpoints.baseUrl);
+
+  client.setOnTokensRefreshed((access, refresh) async {
+    await SecureStorage.saveTokens(access: access, refresh: refresh);
+  });
+
+  return client;
 });
 
 final authRepositoryProvider = Provider<AuthRepository>((ref) {
-  return AuthRepository(ref.watch(apiClientProvider));
-});
-
-final subscriptionRepositoryProvider = Provider<SubscriptionRepository>((ref) {
-  return SubscriptionRepository(ref.watch(apiClientProvider));
+  return AuthRepository(apiClient: ref.watch(apiClientProvider));
 });
 
 final athleteRepositoryProvider = Provider<AthleteRepository>((ref) {
-  return AthleteRepository(ref.watch(apiClientProvider));
+  return AthleteRepository(apiClient: ref.watch(apiClientProvider));
 });
 
-final notificationRepositoryProvider = Provider<NotificationRepository>((ref) {
-  return NotificationRepository(ref.watch(apiClientProvider));
+final subscriptionRepositoryProvider = Provider<SubscriptionRepository>((ref) {
+  return SubscriptionRepository(apiClient: ref.watch(apiClientProvider));
 });
 
-enum AuthStatus { initial, loading, authenticated, unauthenticated, error }
-
-class AuthState {
-  final AuthStatus status;
-  final UserModel? user;
-  final String? errorMessage;
-
-  const AuthState({
-    this.status = AuthStatus.initial,
-    this.user,
-    this.errorMessage,
-  });
-
-  AuthState copyWith({
-    AuthStatus? status,
-    UserModel? user,
-    String? errorMessage,
-  }) {
-    return AuthState(
-      status: status ?? this.status,
-      user: user ?? this.user,
-      errorMessage: errorMessage ?? this.errorMessage,
-    );
-  }
-}
-
-class AuthNotifier extends StateNotifier<AuthState> {
-  final AuthRepository _repo;
-  final ApiClient _client;
-  final SecureStorage _storage;
-  final DeviceRepository _deviceRepo;
-  final PushService _pushService;
-
-  AuthNotifier(this._repo, this._client, this._storage, this._deviceRepo, this._pushService) : super(const AuthState()) {
-    _client.setOnUnauthorized(() {
-      if (mounted) _clearAuth();
-    });
-    _client.setOnTokensRefreshed((access, refresh) {
-      _storage.saveTokens(access, refresh);
-    });
-    _tryRestoreSession();
-  }
-
-  Future<void> _tryRestoreSession() async {
-    final tokens = await _storage.readTokens();
-    if (tokens.access == null || tokens.refresh == null) {
-      state = const AuthState(status: AuthStatus.unauthenticated);
-      return;
-    }
-    _client.setTokens(access: tokens.access!, refresh: tokens.refresh);
-    try {
-      final user = await _repo.getMe();
-      final role = user.role;
-      if (role != 'super_admin' && role != 'reception' && role != 'trainer') {
-        throw Exception('Access denied: not an admin');
-      }
-      state = AuthState(status: AuthStatus.authenticated, user: user);
-      _registerDevice();
-    } catch (_) {
-      await _storage.clearTokens();
-      _client.clearTokens();
-      state = const AuthState(status: AuthStatus.unauthenticated);
-    }
-  }
-
-  Future<void> login(String phone, String password) async {
-    state = state.copyWith(status: AuthStatus.loading);
-    try {
-      final authRes = await _repo.login(phone, password);
-      final role = authRes.user.role;
-      if (role != 'super_admin' && role != 'reception' && role != 'trainer') {
-        state = const AuthState(
-          status: AuthStatus.error,
-          errorMessage: 'عذراً، هذا الحساب ليس له صلاحيات الإدارة',
-        );
-        return;
-      }
-      await _storage.saveTokens(authRes.access, authRes.refresh);
-      state = AuthState(
-        status: AuthStatus.authenticated,
-        user: authRes.user,
-      );
-      _registerDevice();
-    } on Exception catch (e) {
-      state = AuthState(
-        status: AuthStatus.error,
-        errorMessage: _formatError(e),
-      );
-    }
-  }
-
-  Future<void> _registerDevice() async {
-    final token = _pushService.fcmToken;
-    if (token != null) {
-      await _deviceRepo.registerToken(token, Platform.isAndroid ? 'android' : 'ios');
-    }
-  }
-
-  Future<void> _clearAuth() async {
-    _client.clearTokens();
-    state = const AuthState(status: AuthStatus.unauthenticated);
-    await _storage.clearTokens();
-  }
-
-  Future<void> logout() async {
-    _client.clearTokens();
-    state = const AuthState(status: AuthStatus.unauthenticated);
-    await Future.wait([
-      _storage.clearTokens(),
-      _repo.logout(),
-    ]);
-  }
-
-  String _formatError(Exception e) {
-    if (e is DioException) {
-      if (e.response?.statusCode == 401) {
-        return 'رقم الهاتف أو كلمة المرور غير صحيحة';
-      }
-      if (e.type == DioExceptionType.connectionTimeout ||
-          e.type == DioExceptionType.receiveTimeout ||
-          e.type == DioExceptionType.connectionError) {
-        return 'تعذر الاتصال بالخادم. تأكد من اتصالك بالإنترنت';
-      }
-    }
-    return 'حدث خطأ غير متوقع. حاول مرة أخرى';
-  }
-}
-
-final authStateProvider =
-    StateNotifierProvider<AuthNotifier, AuthState>((ref) {
-  final repo = ref.watch(authRepositoryProvider);
-  final client = ref.watch(apiClientProvider);
-  final storage = ref.watch(secureStorageProvider);
-  final deviceRepo = ref.watch(deviceRepositoryProvider);
-  final pushService = ref.watch(pushServiceProvider);
-  return AuthNotifier(repo, client, storage, deviceRepo, pushService);
+final departmentRepositoryProvider = Provider<DepartmentRepository>((ref) {
+  return DepartmentRepository(apiClient: ref.watch(apiClientProvider));
 });
 
-final subscriptionsProvider = FutureProvider<List<MembershipModel>>((ref) async {
-  return ref.watch(subscriptionRepositoryProvider).getSubscriptions();
+final registrationRepositoryProvider = Provider<RegistrationRepository>((ref) {
+  return RegistrationRepository(apiClient: ref.watch(apiClientProvider));
 });
 
-final activeSubscriptionProvider = FutureProvider<MembershipModel?>((ref) async {
-  ref.watch(authStateProvider);
-  return ref.watch(subscriptionRepositoryProvider).getActiveSubscription();
-});
-
-final notificationsProvider = FutureProvider<List<NotificationModel>>((ref) async {
-  ref.watch(authStateProvider);
-  return ref.watch(notificationRepositoryProvider).getNotifications();
-});
-
-final workoutRepositoryProvider = Provider<WorkoutRepository>((ref) {
-  return WorkoutRepository(ref.watch(apiClientProvider));
+final analyticsRepositoryProvider = Provider<AnalyticsRepository>((ref) {
+  return AnalyticsRepository(apiClient: ref.watch(apiClientProvider));
 });
 
 final trainerRepositoryProvider = Provider<TrainerRepository>((ref) {
-  return TrainerRepository(ref.watch(apiClientProvider));
+  return TrainerRepository(apiClient: ref.watch(apiClientProvider));
 });
 
-final storeRepositoryProvider = Provider<StoreRepository>((ref) {
-  return StoreRepository(ref.watch(apiClientProvider));
+final staffRepositoryProvider = Provider<StaffRepository>((ref) {
+  return StaffRepository(apiClient: ref.watch(apiClientProvider));
 });
 
-final progressRepositoryProvider = Provider<ProgressRepository>((ref) {
-  return ProgressRepository(ref.watch(apiClientProvider));
-});
-
-final bookingRepositoryProvider = Provider<BookingRepository>((ref) {
-  return BookingRepository(ref.watch(apiClientProvider));
-});
-
-final workoutsProvider = FutureProvider<List<WorkoutSessionModel>>((ref) async {
-  ref.watch(authStateProvider);
-  return ref.watch(workoutRepositoryProvider).getSessions();
-});
-
-final trainerProvider = FutureProvider<TrainerModel?>((ref) async {
-  ref.watch(authStateProvider);
-  final trainers = await ref.watch(trainerRepositoryProvider).getTrainers();
-  return trainers.isNotEmpty ? trainers.first : null;
-});
-
-final productsProvider = FutureProvider<List<ProductModel>>((ref) async {
-  ref.watch(authStateProvider);
-  return ref.watch(storeRepositoryProvider).getProducts();
-});
-
-final weeklyProgressProvider = FutureProvider<WeeklyProgressSummary>((ref) async {
-  ref.watch(authStateProvider);
-  return ref.watch(progressRepositoryProvider).getWeeklyProgress();
-});
-
-final achievementsProvider = FutureProvider<List<AchievementModel>>((ref) async {
-  ref.watch(authStateProvider);
-  return ref.watch(progressRepositoryProvider).getAchievements();
-});
-
-final faqRepositoryProvider = Provider<FaqRepository>((ref) {
-  return FaqRepository(ref.watch(apiClientProvider));
-});
-
-final announcementRepositoryProvider = Provider<AnnouncementRepository>((ref) {
-  return AnnouncementRepository(ref.watch(apiClientProvider));
+final notificationRepositoryProvider = Provider<NotificationRepository>((ref) {
+  return NotificationRepository(apiClient: ref.watch(apiClientProvider));
 });
 
 final packageRepositoryProvider = Provider<PackageRepository>((ref) {
-  return PackageRepository(ref.watch(apiClientProvider));
-});
-
-final reviewRepositoryProvider = Provider<ReviewRepository>((ref) {
-  return ReviewRepository(ref.watch(apiClientProvider));
-});
-
-final preferenceRepositoryProvider = Provider<PreferenceRepository>((ref) {
-  return PreferenceRepository(ref.watch(apiClientProvider));
+  return PackageRepository(apiClient: ref.watch(apiClientProvider));
 });
 
 final pushServiceProvider = Provider<PushService>((ref) {
   return PushService();
 });
 
-final deviceRepositoryProvider = Provider<DeviceRepository>((ref) {
-  return DeviceRepository(ref.watch(apiClientProvider));
+final authInitializedProvider = StateProvider<bool>((ref) => false);
+
+const adminRoles = {'super_admin', 'reception', 'academy_manager'};
+
+class AuthNotifier extends StateNotifier<UserModel?> {
+  final AuthRepository authRepository;
+  final NotificationRepository notificationRepository;
+  final Ref ref;
+
+  AuthNotifier({
+    required this.authRepository,
+    required this.notificationRepository,
+    required this.ref,
+  }) : super(null) {
+    authRepository.apiClient.setOnUnauthorized(() {
+      clearSession();
+    });
+    tryAutoLogin();
+  }
+
+  Future<void> tryAutoLogin() async {
+    final token = await SecureStorage.getAccessToken();
+    final refresh = await SecureStorage.getRefreshToken();
+    if (token != null && refresh != null) {
+      authRepository.apiClient.setTokens(access: token, refresh: refresh);
+      try {
+        final user = await authRepository.getMe();
+        if (!adminRoles.contains(user.role)) {
+          clearSession();
+          return;
+        }
+        state = user;
+        await _registerPushToken();
+      } catch (_) {
+        clearSession();
+      }
+    }
+    ref.read(authInitializedProvider.notifier).state = true;
+  }
+
+  Future<void> login(String phone, String password, bool rememberMe) async {
+    final user = await authRepository.login(phone: phone, password: password, rememberMe: rememberMe);
+
+    if (!adminRoles.contains(user.role)) {
+      await authRepository.logout();
+      throw Exception('عذراً، هذا التطبيق مخصص للإدارة فقط');
+    }
+
+    state = user;
+    ref.read(authInitializedProvider.notifier).state = true;
+    await _registerPushToken();
+  }
+
+  Future<void> _registerPushToken() async {
+    try {
+      final pushService = ref.read(pushServiceProvider);
+      final fcmToken = await pushService.getFCMToken();
+      if (fcmToken != null) {
+        await notificationRepository.registerDeviceToken(
+          fcmToken: fcmToken,
+          platform: 'android',
+        );
+      }
+      pushService.setOnTokenRefresh((newToken) async {
+        try {
+          await notificationRepository.registerDeviceToken(
+            fcmToken: newToken,
+            platform: 'android',
+          );
+        } catch (_) {}
+      });
+    } catch (_) {}
+  }
+
+  Future<void> logout() async {
+    await authRepository.logout();
+    state = null;
+  }
+
+  void clearSession() {
+    authRepository.apiClient.clearTokens();
+    SecureStorage.clearAll();
+    state = null;
+    ref.read(authInitializedProvider.notifier).state = true;
+  }
+}
+
+final authProvider = StateNotifierProvider<AuthNotifier, UserModel?>((ref) {
+  return AuthNotifier(
+    authRepository: ref.watch(authRepositoryProvider),
+    notificationRepository: ref.watch(notificationRepositoryProvider),
+    ref: ref,
+  );
 });
 
-final faqsProvider = FutureProvider<List<FaqModel>>((ref) async {
-  ref.watch(authStateProvider);
-  return ref.watch(faqRepositoryProvider).getFaqs();
+final dashboardStatsProvider = FutureProvider.autoDispose.family<DashboardStats, int?>((ref, academyId) async {
+  return ref.watch(analyticsRepositoryProvider).fetchStats(academyId: academyId);
 });
 
-final announcementsProvider = FutureProvider<List<AnnouncementModel>>((ref) async {
-  ref.watch(authStateProvider);
-  return ref.watch(announcementRepositoryProvider).getAnnouncements();
+final athleteDetailProvider = FutureProvider.autoDispose.family<AthleteModel, int>((ref, id) {
+  return ref.watch(athleteRepositoryProvider).fetchAthlete(id);
 });
 
-final packagesProvider = FutureProvider<List<PackageModel>>((ref) async {
-  ref.watch(authStateProvider);
-  return ref.watch(packageRepositoryProvider).getPackages();
+final athletesProvider = FutureProvider.autoDispose.family<List<AthleteModel>, Map<String, dynamic>>((ref, params) async {
+  return ref.watch(athleteRepositoryProvider).fetchAthletes(
+    search: params['search'] as String?,
+    departmentId: params['departmentId'] as int?,
+    isActive: params['isActive'] as bool?,
+  );
 });
 
-final reviewsProvider = FutureProvider<List<ReviewModel>>((ref) async {
-  ref.watch(authStateProvider);
-  return ref.watch(reviewRepositoryProvider).getReviews();
+final subscriptionsProvider = FutureProvider.autoDispose.family<List<SubscriptionModel>, Map<String, dynamic>>((ref, params) async {
+  return ref.watch(subscriptionRepositoryProvider).fetchSubscriptions(
+    status: params['status'] as String?,
+    search: params['search'] as String?,
+    athleteId: params['athleteId'] as int?,
+  );
 });
 
-final preferencesProvider = FutureProvider<PreferenceModel>((ref) async {
-  ref.watch(authStateProvider);
-  return ref.watch(preferenceRepositoryProvider).getPreferences();
+final registrationsProvider = FutureProvider.autoDispose.family<List<RegistrationModel>, Map<String, dynamic>>((ref, params) async {
+  return ref.watch(registrationRepositoryProvider).fetchRegistrations(
+    status: params['status'] as String?,
+    roleChoice: params['roleChoice'] as String?,
+  );
 });
 
-final adminRepositoryProvider = Provider<AdminRepository>((ref) {
-  return AdminRepository(ref.watch(apiClientProvider));
+final staffProvider = FutureProvider.autoDispose.family<List<UserModel>, Map<String, dynamic>>((ref, params) async {
+  return ref.watch(staffRepositoryProvider).fetchStaff(
+    search: params['search'] as String?,
+    role: params['role'] as String?,
+  );
 });
 
-final dashboardStatsProvider = FutureProvider<DashboardStats>((ref) async {
-  return ref.watch(adminRepositoryProvider).getDashboardStats();
+final trainersProvider = FutureProvider.autoDispose<List<TrainerModel>>((ref) async {
+  return ref.watch(trainerRepositoryProvider).fetchTrainers();
 });
 
-final monthlyGrowthProvider = FutureProvider<List<MonthlyGrowth>>((ref) async {
-  return ref.watch(adminRepositoryProvider).getMonthlyGrowth();
+final departmentsProvider = FutureProvider.autoDispose<List<DepartmentModel>>((ref) async {
+  return ref.watch(departmentRepositoryProvider).fetchDepartments();
 });
 
-final revenueProvider = FutureProvider<List<RevenueData>>((ref) async {
-  return ref.watch(adminRepositoryProvider).getRevenue();
+final sportsProvider = FutureProvider.autoDispose<List<SportModel>>((ref) async {
+  return ref.watch(departmentRepositoryProvider).fetchSports();
 });
 
-final departmentDistProvider = FutureProvider<List<DepartmentDist>>((ref) async {
-  return ref.watch(adminRepositoryProvider).getDepartmentDistribution();
+final groupsProvider = FutureProvider.autoDispose<List<GroupModel>>((ref) async {
+  return ref.watch(departmentRepositoryProvider).fetchGroups();
 });
 
-final pendingRegistrationsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
-  return ref.watch(adminRepositoryProvider).getRegistrationRequests(status: 'pending');
+final packagesProvider = FutureProvider.autoDispose<List<PackageModel>>((ref) async {
+  return ref.watch(packageRepositoryProvider).fetchPackages();
 });
 
-final pendingSubscriptionsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
-  final data = await ref.watch(adminRepositoryProvider).getSubscriptions(status: 'pending');
-  return (data['results'] as List?)?.map((e) => e as Map<String, dynamic>).toList() ?? [];
+final notificationsProvider = FutureProvider.autoDispose<List<NotificationModel>>((ref) async {
+  return ref.watch(notificationRepositoryProvider).fetchNotifications();
 });

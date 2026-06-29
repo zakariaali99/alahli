@@ -68,8 +68,12 @@ def send_push_notification(notification_id: int):
     if not athlete:
         return "No athlete linked"
 
+    user = getattr(athlete, "user_account", None)
+    if not user:
+        return "No user linked to athlete"
+
     tokens = list(
-        Device.objects.filter(athlete=athlete, is_active=True)
+        Device.objects.filter(user=user, is_active=True)
         .values_list("fcm_token", flat=True)
     )
 
@@ -85,3 +89,28 @@ def send_push_notification(notification_id: int):
 
     logger.info("Push sent to %d/%d devices for %s", count, len(tokens), athlete.full_name)
     return f"Sent to {count}/{len(tokens)} devices"
+
+
+@shared_task
+def send_admin_push_notification(title: str, body: str, notification_type: str, entity_id: int = None):
+    from apps.accounts.models import User
+    from apps.notifications.models import Device
+    from apps.notifications.services import FCMService
+
+    admin_roles = [User.Role.SUPER_ADMIN, User.Role.RECEPTION, "academy_manager"]
+    tokens = list(
+        Device.objects.filter(user__role__in=admin_roles, is_active=True)
+        .values_list("fcm_token", flat=True)
+    )
+
+    if not tokens:
+        logger.info("No admin devices registered for push notification")
+        return "No admin devices registered"
+
+    data = {"type": notification_type}
+    if entity_id:
+        data["id"] = str(entity_id)
+
+    count = FCMService.send_push(tokens, title, body, data=data)
+    logger.info("Admin push sent to %d/%d devices: %s", count, len(tokens), title)
+    return f"Admin push sent to {count}/{len(tokens)} devices"

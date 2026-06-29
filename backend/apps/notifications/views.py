@@ -57,13 +57,9 @@ class DeviceViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
     permission_classes = [IsAuthenticated]
 
     def get_queryset(self):
-        return Device.objects.filter(athlete__user_account=self.request.user)
+        return Device.objects.filter(user=self.request.user)
 
     def create(self, request, *args, **kwargs):
-        athlete = getattr(request.user, "athlete", None)
-        if not athlete:
-            return Response({"detail": "No athlete linked to this user"}, status=status.HTTP_400_BAD_REQUEST)
-
         fcm_token = request.data.get("fcm_token")
         platform = request.data.get("platform", "android")
 
@@ -72,7 +68,7 @@ class DeviceViewSet(mixins.CreateModelMixin, viewsets.GenericViewSet):
 
         device, created = Device.objects.update_or_create(
             fcm_token=fcm_token,
-            defaults={"athlete": athlete, "platform": platform, "is_active": True},
+            defaults={"user": request.user, "platform": platform, "is_active": True},
         )
         serializer = self.get_serializer(device)
         return Response(serializer.data, status=status.HTTP_201_CREATED if created else status.HTTP_200_OK)

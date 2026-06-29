@@ -9,7 +9,6 @@ plugins {
 android {
     namespace = "ly.alahli.al_ahly_sports_center"
     compileSdk = 36
-    ndkVersion = "27.0.12077973"
 
     compileOptions {
         isCoreLibraryDesugaringEnabled = true

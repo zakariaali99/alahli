@@ -1,60 +1,82 @@
-import '../helpers/safe_json.dart';
+import 'package:dio/dio.dart';
 import '../network/api_client.dart';
-import '../models/membership_model.dart';
+import '../models/subscription_model.dart';
+import '../constants/api_endpoints.dart';
+import '../helpers/safe_json.dart';
 
 class SubscriptionRepository {
-  final ApiClient _client;
+  final ApiClient apiClient;
 
-  SubscriptionRepository(this._client);
+  SubscriptionRepository({required this.apiClient});
 
-  Future<List<MembershipModel>> getSubscriptions({int page = 1, String? search}) async {
-    final params = <String, dynamic>{'page': page};
-    if (search != null) params['search'] = search;
-    final res = await _client.dio.get('/subscriptions/', queryParameters: params);
-    final data = asMap(res.data);
-    if (data == null) return [];
-    return asList(data['results'])
-        .map((e) {
-          final m = asMap(e);
-          return m != null ? MembershipModel.fromJson(m) : null;
-        })
-        .whereType<MembershipModel>()
-        .toList();
+  Future<List<SubscriptionModel>> fetchSubscriptions({
+    String? status,
+    String? search,
+    int? athleteId,
+  }) async {
+    try {
+      final Map<String, dynamic> query = {};
+      if (status != null && status.isNotEmpty) query['status'] = status;
+      if (search != null && search.isNotEmpty) query['search'] = search;
+      if (athleteId != null) query['athlete'] = athleteId;
+
+      final res = await apiClient.dio.get(ApiEndpoints.subscriptions, queryParameters: query);
+      
+      dynamic resultsList = res.data;
+      if (res.data is Map && res.data['results'] != null) {
+        resultsList = res.data['results'];
+      }
+
+      final list = asList(resultsList, (e) => SubscriptionModel.fromJson(asMap(e) ?? {})) ?? [];
+      return list;
+    } on DioException catch (e) {
+      throw Exception(e.response?.data?['detail'] ?? 'فشل تحميل الاشتراكات');
+    }
   }
 
-  Future<MembershipModel?> getActiveSubscription() async {
-    final res = await _client.dio.get('/subscriptions/', queryParameters: {
-      'status': 'active',
-      'page_size': 1,
-    });
-    final data = asMap(res.data);
-    if (data == null) return null;
-    final results = asList(data['results']);
-    if (results.isEmpty) return null;
-    final first = asMap(results.first);
-    return first != null ? MembershipModel.fromJson(first) : null;
+  Future<SubscriptionModel> fetchSubscription(int id) async {
+    try {
+      final res = await apiClient.dio.get('${ApiEndpoints.subscriptions}$id/');
+      final data = asMap(res.data);
+      if (data == null) throw Exception('بيانات الاشتراك غير صالحة');
+      return SubscriptionModel.fromJson(data);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data?['detail'] ?? 'فشل تحميل تفاصيل الاشتراك');
+    }
   }
 
-  Future<Map<String, dynamic>> renew(int subscriptionId, {required int months, required double amount}) async {
-    final res = await _client.dio.post('/subscriptions/$subscriptionId/renew/', data: {
-      'months': months,
-      'amount': amount.toStringAsFixed(2),
-    });
-    final data = asMap(res.data);
-    if (data == null) throw Exception('فشل التجديد');
-    return data;
+  Future<SubscriptionModel> updateSubscriptionStatus(int id, String status) async {
+    try {
+      final res = await apiClient.dio.patch(
+        '${ApiEndpoints.subscriptions}$id/',
+        data: {'status': status},
+      );
+      final data = asMap(res.data);
+      if (data == null) throw Exception('فشل تحديث حالة الاشتراك');
+      return SubscriptionModel.fromJson(data);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data?['detail'] ?? 'فشل معالجة الطلب');
+    }
   }
-}
 
-class AthleteRepository {
-  final ApiClient _client;
-
-  AthleteRepository(this._client);
-
-  Future<Map<String, dynamic>> update(int athleteId, Map<String, dynamic> data) async {
-    final res = await _client.dio.patch('/athletes/$athleteId/', data: data);
-    final body = asMap(res.data);
-    if (body == null) throw Exception('فشل تحديث البيانات');
-    return body;
+  Future<SubscriptionModel> renewSubscription({
+    required int id,
+    required int months,
+    required double amount,
+  }) async {
+    try {
+      final res = await apiClient.dio.post(
+        ApiEndpoints.renewSubscription(id),
+        data: {
+          'months': months,
+          'amount': amount,
+        },
+      );
+      final data = asMap(res.data);
+      if (data == null) throw Exception('فشل تجديد الاشتراك');
+      return SubscriptionModel.fromJson(data);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data?['detail'] ?? 'فشل تجديد الاشتراك');
+    }
   }
 }

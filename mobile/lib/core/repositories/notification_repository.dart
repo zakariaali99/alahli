@@ -1,41 +1,41 @@
-import '../helpers/safe_json.dart';
+import 'package:dio/dio.dart';
 import '../network/api_client.dart';
 import '../models/notification_model.dart';
+import '../constants/api_endpoints.dart';
+import '../helpers/safe_json.dart';
 
 class NotificationRepository {
-  final ApiClient _client;
+  final ApiClient apiClient;
 
-  NotificationRepository(this._client);
+  NotificationRepository({required this.apiClient});
 
-  Future<List<NotificationModel>> getNotifications() async {
-    final res = await _client.dio.get('/notifications/');
-    final data = asMap(res.data);
-    if (data == null) return [];
-    return asList(data['results'])
-        .map((e) {
-          final m = asMap(e);
-          return m != null ? NotificationModel.fromJson(m) : null;
-        })
-        .whereType<NotificationModel>()
-        .toList();
+  Future<List<NotificationModel>> fetchNotifications() async {
+    try {
+      final res = await apiClient.dio.get(ApiEndpoints.notifications);
+      dynamic resultsList = res.data;
+      if (res.data is Map && res.data['results'] != null) {
+        resultsList = res.data['results'];
+      }
+      return asList(resultsList, (e) => NotificationModel.fromJson(asMap(e) ?? {})) ?? [];
+    } on DioException catch (e) {
+      throw Exception(e.response?.data?['detail'] ?? 'فشل تحميل التنبيهات');
+    }
   }
 
-  Future<void> markAsRead(int id) async {
-    await _client.dio.patch('/notifications/$id/', data: {'is_read': true});
-  }
-
-  Future<void> markAllAsRead() async {
-    await _client.dio.post('/notifications/mark_all_read/');
-  }
-
-  Future<void> delete(int id) async {
-    await _client.dio.delete('/notifications/$id/');
-  }
-
-  Future<Map<String, dynamic>> sendNotification({required String title, required String body}) async {
-    final res = await _client.dio.post('/notifications/', data: {'title': title, 'body': body});
-    final data = asMap(res.data);
-    if (data == null) throw Exception('فشل إرسال الإشعار');
-    return data;
+  Future<void> registerDeviceToken({
+    required String fcmToken,
+    required String platform,
+  }) async {
+    try {
+      await apiClient.dio.post(
+        ApiEndpoints.devices,
+        data: {
+          'fcm_token': fcmToken,
+          'platform': platform,
+        },
+      );
+    } catch (_) {
+      // Best effort
+    }
   }
 }

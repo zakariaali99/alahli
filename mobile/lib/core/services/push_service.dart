@@ -1,117 +1,141 @@
-import 'package:firebase_core/firebase_core.dart';
+import 'dart:convert';
 import 'package:firebase_messaging/firebase_messaging.dart';
-import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:go_router/go_router.dart';
 
-@pragma('vm:entry-point')
-Future<void> _backgroundHandler(RemoteMessage message) async {
-  await Firebase.initializeApp();
-  debugPrint('Background message: ${message.notification?.title}');
-  _showLocalNotification(message);
-}
-
-final FlutterLocalNotificationsPlugin _localNotifications =
-    FlutterLocalNotificationsPlugin();
-
-void _showLocalNotification(RemoteMessage message) {
-  final notification = message.notification;
-  if (notification == null) return;
-
-  _localNotifications.show(
-    notification.hashCode,
-    notification.title,
-    notification.body,
-    const NotificationDetails(
-      android: AndroidNotificationDetails(
-        'al_ahly_notifications',
-        'Al Ahly Notifications',
-        channelDescription: 'إشعارات النادي الأهلي',
-        importance: Importance.high,
-        priority: Priority.high,
-        icon: '@mipmap/ic_launcher',
-      ),
-      iOS: DarwinNotificationDetails(),
-    ),
-  );
-}
-
 class PushService {
-  static final PushService _instance = PushService._();
+  static final PushService _instance = PushService._internal();
   factory PushService() => _instance;
-  PushService._();
+  PushService._internal();
 
-  final FirebaseMessaging _messaging = FirebaseMessaging.instance;
-  String? _fcmToken;
+  final FirebaseMessaging _fcm = FirebaseMessaging.instance;
+  final FlutterLocalNotificationsPlugin _localNotifications = FlutterLocalNotificationsPlugin();
   GoRouter? _router;
 
-  String? get fcmToken => _fcmToken;
+  static const String _channelId = 'alahli_admin_channel';
+  static const String _channelName = 'تنبيهات الإدارة';
+  static const String _channelDesc = 'تنبيهات الطلبات الجديدة والاشتراكات المنتهية';
 
   void setRouter(GoRouter router) {
     _router = router;
   }
 
   Future<void> initialize() async {
-    const androidSettings =
-        AndroidInitializationSettings('@mipmap/ic_launcher');
-    const iosSettings = DarwinInitializationSettings();
-    const initSettings = InitializationSettings(
-      android: androidSettings,
-      iOS: iosSettings,
-    );
-    await _localNotifications.initialize(initSettings);
-
-    await _requestPermission();
-
-    FirebaseMessaging.onBackgroundMessage(_backgroundHandler);
-
-    _fcmToken = await _messaging.getToken();
-    debugPrint('FCM token: $_fcmToken');
-
-    _messaging.onTokenRefresh.listen((token) {
-      _fcmToken = token;
-      debugPrint('FCM token refreshed: $token');
-    });
-
-    FirebaseMessaging.onMessage.listen(_handleForegroundMessage);
-
-    FirebaseMessaging.onMessageOpenedApp.listen(_handleNotificationTap);
-
-    final initialMessage = await _messaging.getInitialMessage();
-    if (initialMessage != null) {
-      _handleNotificationTap(initialMessage);
-    }
-  }
-
-  Future<void> _requestPermission() async {
-    final settings = await _messaging.requestPermission(
+    await _fcm.requestPermission(
       alert: true,
       badge: true,
       sound: true,
-      provisional: false,
     );
-    debugPrint('FCM permission: ${settings.authorizationStatus}');
+
+    const AndroidNotificationChannel channel = AndroidNotificationChannel(
+      _channelId,
+      _channelName,
+      description: _channelDesc,
+      importance: Importance.max,
+      playSound: true,
+    );
+
+    await _localNotifications
+        .resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>()
+        ?.createNotificationChannel(channel);
+
+    const AndroidInitializationSettings androidSettings = AndroidInitializationSettings('@mipmap/ic_launcher');
+    const DarwinInitializationSettings iosSettings = DarwinInitializationSettings();
+    const InitializationSettings initSettings = InitializationSettings(
+      android: androidSettings,
+      iOS: iosSettings,
+    );
+
+    await _localNotifications.initialize(
+      initSettings,
+      onDidReceiveNotificationResponse: (NotificationResponse details) {
+        if (details.payload != null) {
+          _handleNotificationClick(details.payload!);
+        }
+      },
+    );
+
+    FirebaseMessaging.onMessage.listen((RemoteMessage message) {
+      _showLocalNotification(message);
+    });
+
+    FirebaseMessaging.onMessageOpenedApp.listen((RemoteMessage message) {
+      _handleNotificationClick(_extractPayload(message));
+    });
+
+    final initialMessage = await _fcm.getInitialMessage();
+    if (initialMessage != null) {
+      _handleNotificationClick(_extractPayload(initialMessage));
+    }
+
+    _fcm.onTokenRefresh.listen((String token) {
+      _onTokenRefresh?.call(token);
+    });
   }
 
-  void _handleForegroundMessage(RemoteMessage message) {
-    debugPrint('Foreground message: ${message.notification?.title}');
-    _showLocalNotification(message);
+  void Function(String token)? _onTokenRefresh;
+  void setOnTokenRefresh(void Function(String token) callback) {
+    _onTokenRefresh = callback;
   }
 
-  void _handleNotificationTap(RemoteMessage message) {
-    debugPrint('Notification tapped: ${message.notification?.title}');
-    final data = message.data;
-    final type = data['type'];
-    final id = data['id'];
+  void _showLocalNotification(RemoteMessage message) {
+    final notification = message.notification;
+    final android = message.notification?.android;
+    if (notification == null) return;
 
-    if (_router != null) {
-      if (type == 'registration' || type == 'subscription') {
-        _router!.go('/admin/approvals');
-      } else if (type == 'athlete' && id != null) {
-        _router!.go('/admin/athlete/$id');
-      } else {
-        _router!.go('/admin/dashboard');
+    _localNotifications.show(
+      notification.hashCode,
+      notification.title,
+      notification.body,
+      NotificationDetails(
+        android: AndroidNotificationDetails(
+          _channelId,
+          _channelName,
+          channelDescription: _channelDesc,
+          icon: android?.smallIcon ?? '@mipmap/ic_launcher',
+          importance: Importance.max,
+          priority: Priority.high,
+          playSound: true,
+        ),
+      ),
+      payload: _extractPayload(message),
+    );
+  }
+
+  String _extractPayload(RemoteMessage message) {
+    return jsonEncode(message.data);
+  }
+
+  void _handleNotificationClick(String payload) {
+    if (_router == null) return;
+
+    try {
+      final data = jsonDecode(payload) as Map<String, dynamic>;
+      final type = data['type'] as String?;
+
+      switch (type) {
+        case 'new_registration':
+          _router?.go('/approvals');
+          break;
+        case 'new_subscription':
+          _router?.go('/approvals');
+          break;
+        case 'subscription_expired':
+          _router?.go('/subscriptions');
+          break;
+        default:
+          _router?.go('/');
       }
+    } catch (_) {
+      _router?.go('/');
+    }
+  }
+
+  Future<String?> getFCMToken() async {
+    try {
+      return await _fcm.getToken();
+    } catch (_) {
+      return null;
     }
   }
 }

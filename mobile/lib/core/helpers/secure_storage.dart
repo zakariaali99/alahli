@@ -1,32 +1,39 @@
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 class SecureStorage {
-  static const _accessKey = 'access_token';
-  static const _refreshKey = 'refresh_token';
+  static const _storage = FlutterSecureStorage(
+    aOptions: AndroidOptions(encryptedSharedPreferences: true),
+  );
 
-  final FlutterSecureStorage _storage;
+  static const String _keyAccessToken = 'access_token';
+  static const String _keyRefreshToken = 'refresh_token';
+  static const String _keyRememberMe = 'remember_me';
 
-  SecureStorage() : _storage = const FlutterSecureStorage();
-
-  Future<void> saveTokens(String? access, String? refresh) async {
-    await Future.wait([
-      if (access != null) _storage.write(key: _accessKey, value: access),
-      if (refresh != null) _storage.write(key: _refreshKey, value: refresh),
-    ]);
+  static Future<void> saveTokens({required String access, required String refresh}) async {
+    await _storage.write(key: _keyAccessToken, value: access);
+    await _storage.write(key: _keyRefreshToken, value: refresh);
   }
 
-  Future<({String? access, String? refresh})> readTokens() async {
-    final results = await Future.wait([
-      _storage.read(key: _accessKey),
-      _storage.read(key: _refreshKey),
-    ]);
-    return (access: results[0], refresh: results[1]);
+  static Future<void> saveRememberMe(bool remember) async {
+    await _storage.write(key: _keyRememberMe, value: remember ? 'true' : 'false');
   }
 
-  Future<void> clearTokens() async {
-    await Future.wait([
-      _storage.delete(key: _accessKey),
-      _storage.delete(key: _refreshKey),
-    ]);
+  static Future<String?> getAccessToken() async {
+    return await _storage.read(key: _keyAccessToken);
+  }
+
+  static Future<String?> getRefreshToken() async {
+    return await _storage.read(key: _keyRefreshToken);
+  }
+
+  static Future<bool> getRememberMe() async {
+    final val = await _storage.read(key: _keyRememberMe);
+    return val == 'true';
+  }
+
+  static Future<void> clearAll() async {
+    await _storage.delete(key: _keyAccessToken);
+    await _storage.delete(key: _keyRefreshToken);
+    await _storage.delete(key: _keyRememberMe);
   }
 }

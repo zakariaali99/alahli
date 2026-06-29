@@ -86,8 +86,8 @@ class Device(models.Model):
         ANDROID = "android", "Android"
         IOS = "ios", "iOS"
 
-    athlete = models.ForeignKey(
-        "athletes.Athlete", on_delete=models.CASCADE, related_name="devices"
+    user = models.ForeignKey(
+        "accounts.User", on_delete=models.CASCADE, related_name="devices"
     )
     fcm_token = models.TextField(unique=True)
     platform = models.CharField(max_length=10, choices=Platform.choices, default=Platform.ANDROID)
@@ -101,4 +101,4 @@ class Device(models.Model):
         verbose_name_plural = "Devices"
 
     def __str__(self):
-        return f"{self.athlete.full_name} ({self.platform})"
+        return f"{self.user.full_name_ar} ({self.platform})"
