@@ -1,7 +1,7 @@
 class ApiEndpoints {
   static const String baseUrl = String.fromEnvironment(
     'API_BASE_URL',
-    defaultValue: 'http://10.22.95.35:8000/api',
+    defaultValue: 'https://alahlicenter.ly/api',
   );
 
   // Auth

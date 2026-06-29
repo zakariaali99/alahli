@@ -39,30 +39,42 @@ class _CoachesScreenState extends ConsumerState<CoachesScreen> {
                 TextFormField(
                   controller: nameController,
                   textAlign: TextAlign.right,
-                  decoration: const InputDecoration(labelText: 'الاسم الأول (عربي)'),
+                  decoration: InputDecoration(
+                    labelText: 'الاسم الأول (عربي)',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
                   validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 TextFormField(
                   controller: initialsController,
                   textAlign: TextAlign.right,
-                  decoration: const InputDecoration(labelText: 'الاسم الأخير (عربي)'),
+                  decoration: InputDecoration(
+                    labelText: 'الاسم الأخير (عربي)',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
                   validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 TextFormField(
                   controller: expController,
                   keyboardType: TextInputType.phone,
                   textAlign: TextAlign.right,
-                  decoration: const InputDecoration(labelText: 'رقم الهاتف'),
+                  decoration: InputDecoration(
+                    labelText: 'رقم الهاتف',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
                   validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 TextFormField(
                   controller: roleController,
                   textAlign: TextAlign.right,
                   obscureText: true,
-                  decoration: const InputDecoration(labelText: 'كلمة المرور'),
+                  decoration: InputDecoration(
+                    labelText: 'كلمة المرور',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
                   validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
                 ),
               ],
@@ -118,6 +130,7 @@ class _CoachesScreenState extends ConsumerState<CoachesScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: isDark ? AppColors.darkCard : Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),

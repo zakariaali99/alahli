@@ -94,11 +94,19 @@ class _AddSubscriptionScreenState extends ConsumerState<AddSubscriptionScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    const Text('بيانات الاشتراك', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
+                    const Text(
+                      'بيانات الاشتراك',
+                      style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                    ),
                     const SizedBox(height: 16),
                     
                     DropdownButtonFormField<AthleteModel>(
-                      decoration: const InputDecoration(labelText: 'اللاعب'),
+                      decoration: InputDecoration(
+                        labelText: 'اللاعب',
+                        prefixIcon: const Icon(Icons.person_outline),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      dropdownColor: Theme.of(context).brightness == Brightness.dark ? AppColors.darkCard : Colors.white,
                       items: athletes.map((a) => DropdownMenuItem(value: a, child: Text(a.fullName))).toList(),
                       onChanged: (val) => setState(() => _selectedAthlete = val),
                       validator: (v) => v == null ? 'الرجاء اختيار اللاعب' : null,
@@ -106,7 +114,12 @@ class _AddSubscriptionScreenState extends ConsumerState<AddSubscriptionScreen> {
                     const SizedBox(height: 16),
 
                     DropdownButtonFormField<PackageModel>(
-                      decoration: const InputDecoration(labelText: 'الباقة'),
+                      decoration: InputDecoration(
+                        labelText: 'الباقة',
+                        prefixIcon: const Icon(Icons.card_membership_outlined),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      dropdownColor: Theme.of(context).brightness == Brightness.dark ? AppColors.darkCard : Colors.white,
                       items: packages.map((p) => DropdownMenuItem(value: p, child: Text('${p.name} - ${p.price.toString().toWesternDigits()} د.ل'))).toList(),
                       onChanged: (val) => setState(() => _selectedPackage = val),
                       validator: (v) => v == null ? 'الرجاء اختيار الباقة' : null,
@@ -114,7 +127,12 @@ class _AddSubscriptionScreenState extends ConsumerState<AddSubscriptionScreen> {
                     const SizedBox(height: 16),
 
                     DropdownButtonFormField<GroupModel>(
-                      decoration: const InputDecoration(labelText: 'المجموعة الرياضية'),
+                      decoration: InputDecoration(
+                        labelText: 'المجموعة الرياضية',
+                        prefixIcon: const Icon(Icons.group_work_outlined),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      dropdownColor: Theme.of(context).brightness == Brightness.dark ? AppColors.darkCard : Colors.white,
                       items: groups.map((g) => DropdownMenuItem(value: g, child: Text(g.nameAr))).toList(),
                       onChanged: (val) => setState(() => _selectedGroup = val),
                       validator: (v) => v == null ? 'الرجاء اختيار المجموعة' : null,
@@ -123,7 +141,12 @@ class _AddSubscriptionScreenState extends ConsumerState<AddSubscriptionScreen> {
 
                     DropdownButtonFormField<String>(
                       value: _paymentMethod,
-                      decoration: const InputDecoration(labelText: 'طريقة الدفع'),
+                      decoration: InputDecoration(
+                        labelText: 'طريقة الدفع',
+                        prefixIcon: const Icon(Icons.payment_outlined),
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                      ),
+                      dropdownColor: Theme.of(context).brightness == Brightness.dark ? AppColors.darkCard : Colors.white,
                       items: const [
                         DropdownMenuItem(value: 'cash', child: Text('نقدي')),
                         DropdownMenuItem(value: 'bank_transfer', child: Text('تحويل مصرفي')),
@@ -132,14 +155,7 @@ class _AddSubscriptionScreenState extends ConsumerState<AddSubscriptionScreen> {
                     ),
                     const SizedBox(height: 16),
 
-                    ListTile(
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                        side: const BorderSide(color: AppColors.border),
-                      ),
-                      title: const Text('تاريخ بداية الاشتراك'),
-                      subtitle: Text(_startDate.toIso8601String().split('T')[0].toWesternDigits()),
-                      trailing: const Icon(Icons.calendar_today),
+                    InkWell(
                       onTap: () async {
                         final date = await showDatePicker(
                           context: context,
@@ -149,6 +165,18 @@ class _AddSubscriptionScreenState extends ConsumerState<AddSubscriptionScreen> {
                         );
                         if (date != null) setState(() => _startDate = date);
                       },
+                      borderRadius: BorderRadius.circular(12),
+                      child: InputDecorator(
+                        decoration: InputDecoration(
+                          labelText: 'تاريخ بداية الاشتراك',
+                          prefixIcon: const Icon(Icons.calendar_today),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        child: Text(
+                          _startDate.toIso8601String().split('T')[0].toWesternDigits(),
+                          style: const TextStyle(fontSize: 15),
+                        ),
+                      ),
                     ),
 
                     const SizedBox(height: 32),
@@ -157,10 +185,16 @@ class _AddSubscriptionScreenState extends ConsumerState<AddSubscriptionScreen> {
                         backgroundColor: AppColors.primary,
                         foregroundColor: Colors.white,
                         padding: const EdgeInsets.symmetric(vertical: 16),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        elevation: 0,
                       ),
                       onPressed: _isSubmitting ? null : _submit,
                       child: _isSubmitting
-                          ? const CircularProgressIndicator(color: Colors.white)
+                          ? const SizedBox(
+                              height: 20,
+                              width: 20,
+                              child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                            )
                           : const Text('إنشاء وتفعيل الاشتراك', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                     ),
                   ],

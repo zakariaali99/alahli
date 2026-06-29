@@ -39,27 +39,39 @@ class _AcademiesScreenState extends ConsumerState<AcademiesScreen> {
                 TextFormField(
                   controller: nameController,
                   textAlign: TextAlign.right,
-                  decoration: const InputDecoration(labelText: 'الاسم بالإنجليزية'),
+                  decoration: InputDecoration(
+                    labelText: 'الاسم بالإنجليزية',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
                   validator: (v) => v == null || v.isEmpty ? 'مطلوب' : null,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 TextFormField(
                   controller: nameArController,
                   textAlign: TextAlign.right,
-                  decoration: const InputDecoration(labelText: 'الاسم بالعربية'),
+                  decoration: InputDecoration(
+                    labelText: 'الاسم بالعربية',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
                   validator: (v) => v == null || v.isEmpty ? 'مطلوب' : null,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 TextFormField(
                   controller: bankController,
                   textAlign: TextAlign.right,
-                  decoration: const InputDecoration(labelText: 'رقم الحساب البنكي'),
+                  decoration: InputDecoration(
+                    labelText: 'رقم الحساب البنكي',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 TextFormField(
                   controller: ibanController,
                   textAlign: TextAlign.right,
-                  decoration: const InputDecoration(labelText: 'رقم الآيبان (IBAN)'),
+                  decoration: InputDecoration(
+                    labelText: 'رقم الآيبان (IBAN)',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
                 ),
               ],
             ),
@@ -109,6 +121,7 @@ class _AcademiesScreenState extends ConsumerState<AcademiesScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: isDark ? AppColors.darkCard : Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),

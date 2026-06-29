@@ -2,7 +2,7 @@ from .base import *
 
 DEBUG = os.environ.get("DJANGO_DEBUG", "False") == "True"
 
-ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "").split(",")
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "alahlicenter.ly,www.alahlicenter.ly,localhost,127.0.0.1").split(",")
 
 DATABASES = {
     "default": {
@@ -10,7 +10,7 @@ DATABASES = {
         "NAME": os.environ.get("DB_NAME", "alahly"),
         "USER": os.environ.get("DB_USER", "alahly"),
         "PASSWORD": os.environ.get("DB_PASSWORD", ""),
-        "HOST": os.environ.get("DB_HOST", "db"),
+        "HOST": os.environ.get("DB_HOST", "localhost"),
         "PORT": os.environ.get("DB_PORT", "5432"),
     }
 }
@@ -27,7 +27,7 @@ X_FRAME_OPTIONS = "DENY"
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
 
 CORS_ALLOW_ALL_ORIGINS = False
-_cors_origins = os.environ.get("CORS_ALLOWED_ORIGINS", "")
+_cors_origins = os.environ.get("CORS_ALLOWED_ORIGINS", "https://alahlicenter.ly,https://www.alahlicenter.ly")
 CORS_ALLOWED_ORIGINS = _cors_origins.split(",") if _cors_origins else []
 
 STATIC_ROOT = BASE_DIR / "staticfiles"
@@ -72,4 +72,4 @@ EMAIL_PORT = int(os.environ.get("EMAIL_PORT", "587"))
 EMAIL_HOST_USER = os.environ.get("EMAIL_HOST_USER", "")
 EMAIL_HOST_PASSWORD = os.environ.get("EMAIL_HOST_PASSWORD", "")
 EMAIL_USE_TLS = os.environ.get("EMAIL_USE_TLS", "True") == "True"
-DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "noreply@alahly.sport")
+DEFAULT_FROM_EMAIL = os.environ.get("DEFAULT_FROM_EMAIL", "noreply@alahlicenter.ly")

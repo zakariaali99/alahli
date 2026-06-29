@@ -204,7 +204,7 @@ class TestSubscriptionCheckoutAthleteFallback:
         )
 
         athlete = AthleteFactory(department=department, is_active=True)
-        user = athlete.user
+        user = UserFactory(role="athlete", athlete=athlete)
         refresh = RefreshToken.for_user(user)
         api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
 

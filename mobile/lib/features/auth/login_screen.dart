@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/providers.dart';
 import '../../core/constants/app_strings.dart';
+import '../../core/constants/app_colors.dart';
 import '../../core/helpers/numeral_converter.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {

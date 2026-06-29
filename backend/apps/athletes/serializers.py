@@ -26,6 +26,7 @@ class AthleteListSerializer(serializers.ModelSerializer):
 
 class AthleteDetailSerializer(serializers.ModelSerializer):
     department_name = serializers.CharField(source="department.name_ar", read_only=True)
+    is_active = serializers.BooleanField(required=False, default=True)
 
     class Meta:
         model = Athlete

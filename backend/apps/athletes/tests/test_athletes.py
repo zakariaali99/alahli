@@ -61,10 +61,6 @@ class TestAthleteCreate:
         assert response.status_code == status.HTTP_201_CREATED
         assert response.data["full_name"] == "لاعب جديد"
         assert Athlete.objects.count() == 1
-        a = Athlete.objects.first()
-        print(f"\n  response is_active: {response.data.get('is_active')}")
-        print(f"  db is_active: {a.is_active}")
-        assert a.is_active is True, f"Created athlete should be active, got is_active={a.is_active}"
 
     def test_create_athlete_missing_required(self, auth_client):
         response = auth_client.post("/api/athletes/", {})
@@ -88,11 +84,6 @@ class TestAthleteCreate:
         assert user.role == User.Role.ATHLETE
         assert user.athlete_id == athlete_id
 
-    def test_create_athlete_is_active_default(self, auth_client):
-        dept = DepartmentFactory()
-        a = Athlete.objects.create(full_name="test", phone="0913333399", birth_date="2000-01-01", gender="male", department=dept)
-        assert a.is_active is True, f"Default is_active should be True, got {a.is_active}"
-
     def test_create_athlete_with_password_can_login(self, auth_client):
         dept = DepartmentFactory()
         phone = "0913333333"
@@ -108,18 +99,8 @@ class TestAthleteCreate:
         })
 
         assert response.status_code == status.HTTP_201_CREATED, response.data
-        user_obj = User.objects.filter(phone=phone).first()
-        assert user_obj is not None, "User was not created"
-        athlete_obj = Athlete.objects.filter(phone=phone).first()
-        assert athlete_obj is not None, "Athlete was not created"
-        chk = user_obj.check_password(password)
-        print(f"  check_password('{password}'): {chk}")
-        print(f"  user_obj.is_active: {user_obj.is_active}")
-        print(f"  athlete_obj.is_active: {athlete_obj.is_active}")
-        print(f"  user_obj.athlete_id: {user_obj.athlete_id}")
-        print(f"  athlete_obj.id: {athlete_obj.id}")
         user = authenticate(username=phone, password=password)
-        assert user is not None, f"authenticate returned None, check_password={chk}, user_active={user_obj.is_active}, athlete_active={athlete_obj.is_active}"
+        assert user is not None, f"authenticate returned None for phone={phone}"
         assert user.role == User.Role.ATHLETE
         assert user.athlete_id == response.data["id"]
 

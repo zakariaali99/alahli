@@ -104,9 +104,6 @@ class AthleteViewSet(viewsets.ModelViewSet):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        if "is_active" not in request.data and "is_active" in serializer.validated_data:
-            del serializer.validated_data["is_active"]
-
         athlete = serializer.save()
 
         first_name, last_name = _split_full_name(athlete.full_name)

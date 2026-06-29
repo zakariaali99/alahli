@@ -152,42 +152,73 @@ class _AthletesListScreenState extends ConsumerState<AthletesListScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
             child: Column(
               children: [
-                TextField(
-                  controller: _searchController,
-                  textAlign: TextAlign.right,
-                  decoration: InputDecoration(
-                    hintText: AppStrings.search,
-                    prefixIcon: const Icon(Icons.search),
-                    suffixIcon: _searchQuery.isNotEmpty
-                        ? IconButton(
-                            icon: const Icon(Icons.clear),
-                            onPressed: () {
-                              _searchController.clear();
-                              setState(() {
-                                _searchQuery = '';
-                              });
-                            },
-                          )
-                        : null,
-                    border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(12),
-                    ),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkCard : Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: theme.shadowColor.withValues(alpha: 0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
-                  onSubmitted: (val) {
-                    setState(() {
-                      _searchQuery = val.trim();
-                    });
-                  },
+                  child: TextField(
+                    controller: _searchController,
+                    textAlign: TextAlign.right,
+                    decoration: InputDecoration(
+                      hintText: AppStrings.search,
+                      prefixIcon: const Icon(Icons.search, color: AppColors.primary),
+                      suffixIcon: _searchQuery.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() {
+                                  _searchQuery = '';
+                                });
+                              },
+                            )
+                          : null,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide.none,
+                      ),
+                      filled: true,
+                      fillColor: Colors.transparent,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+                    ),
+                    onSubmitted: (val) {
+                      setState(() {
+                        _searchQuery = val.trim();
+                      });
+                    },
+                  ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
                   child: Row(
                     children: [
-                      ChoiceChip(
-                        label: const Text('نشط'),
-                        selected: _selectedActiveStatus == true,
+                      _buildFilterChip(
+                        label: 'الكل',
+                        isSelected: _selectedActiveStatus == null && _selectedDepartmentId == null,
+                        onSelected: (val) {
+                          if (val) {
+                            setState(() {
+                              _selectedActiveStatus = null;
+                              _selectedDepartmentId = null;
+                            });
+                          }
+                        },
+                      ),
+                      const SizedBox(width: 8),
+                      _buildFilterChip(
+                        label: 'نشط',
+                        isSelected: _selectedActiveStatus == true,
                         onSelected: (val) {
                           setState(() {
                             _selectedActiveStatus = val ? true : null;
@@ -195,9 +226,9 @@ class _AthletesListScreenState extends ConsumerState<AthletesListScreen> {
                         },
                       ),
                       const SizedBox(width: 8),
-                      ChoiceChip(
-                        label: const Text('غير نشط'),
-                        selected: _selectedActiveStatus == false,
+                      _buildFilterChip(
+                        label: 'غير نشط',
+                        isSelected: _selectedActiveStatus == false,
                         onSelected: (val) {
                           setState(() {
                             _selectedActiveStatus = val ? false : null;
@@ -211,9 +242,9 @@ class _AthletesListScreenState extends ConsumerState<AthletesListScreen> {
                             return Wrap(
                               spacing: 8,
                               children: depts.map((dept) {
-                                return ChoiceChip(
-                                  label: Text(dept.nameAr),
-                                  selected: _selectedDepartmentId == dept.id,
+                                return _buildFilterChip(
+                                  label: dept.nameAr,
+                                  isSelected: _selectedDepartmentId == dept.id,
                                   onSelected: (val) {
                                     setState(() {
                                       _selectedDepartmentId = val ? dept.id : null;
@@ -241,6 +272,38 @@ class _AthletesListScreenState extends ConsumerState<AthletesListScreen> {
             ),
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildFilterChip({
+    required String label,
+    required bool isSelected,
+    required ValueChanged<bool> onSelected,
+  }) {
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    
+    return FilterChip(
+      label: Text(label),
+      selected: isSelected,
+      onSelected: onSelected,
+      showCheckmark: false,
+      backgroundColor: isDark ? AppColors.darkCard : Colors.white,
+      selectedColor: (isDark ? AppColors.darkPrimary : AppColors.primary).withValues(alpha: 0.15),
+      labelStyle: TextStyle(
+        color: isSelected
+            ? (isDark ? AppColors.darkPrimary : AppColors.primary)
+            : (isDark ? AppColors.darkMutedForeground : AppColors.mutedForeground),
+        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(
+          color: isSelected
+              ? (isDark ? AppColors.darkPrimary : AppColors.primary)
+              : theme.colorScheme.outline.withValues(alpha: 0.5),
+        ),
       ),
     );
   }
@@ -290,15 +353,27 @@ class _AthletesListScreenState extends ConsumerState<AthletesListScreen> {
           onTap: () => context.push('/athletes/${athlete.id}'),
           child: Row(
             children: [
-              Hero(
-                tag: 'athlete_avatar_${athlete.id}',
-                child: CircleAvatar(
-                  radius: 28,
-                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                  backgroundImage: athlete.photo != null ? NetworkImage(athlete.photo!) : null,
-                  child: athlete.photo == null
-                      ? const Icon(Icons.person, color: AppColors.primary, size: 28)
-                      : null,
+              Container(
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  border: Border.all(
+                    color: athlete.isActive 
+                        ? AppColors.secondary.withValues(alpha: 0.5)
+                        : AppColors.mutedForeground.withValues(alpha: 0.3),
+                    width: 2,
+                  ),
+                ),
+                padding: const EdgeInsets.all(2),
+                child: Hero(
+                  tag: 'athlete_avatar_${athlete.id}',
+                  child: CircleAvatar(
+                    radius: 26,
+                    backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                    backgroundImage: athlete.photo != null ? NetworkImage(athlete.photo!) : null,
+                    child: athlete.photo == null
+                        ? const Icon(Icons.person, color: AppColors.primary, size: 28)
+                        : null,
+                  ),
                 ),
               ),
               const SizedBox(width: 16),

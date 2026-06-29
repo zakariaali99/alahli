@@ -40,40 +40,84 @@ class AthleteProfileScreen extends ConsumerWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  AppCard(
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(24),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(24),
+                      gradient: LinearGradient(
+                        colors: isDark
+                            ? [AppColors.darkPrimaryGradientStart, AppColors.darkPrimaryGradientEnd]
+                            : [AppColors.primaryGradientStart, AppColors.primaryGradientEnd],
+                        begin: Alignment.topLeft,
+                        end: Alignment.bottomRight,
+                      ),
+                      boxShadow: [
+                        BoxShadow(
+                          color: (isDark ? AppColors.darkPrimary : AppColors.primary).withValues(alpha: 0.3),
+                          blurRadius: 20,
+                          offset: const Offset(0, 8),
+                        ),
+                      ],
+                    ),
                     child: Column(
                       children: [
-                        Hero(
-                          tag: 'athlete_avatar_${athlete.id}',
-                          child: CircleAvatar(
-                            radius: 48,
-                            backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                            backgroundImage: athlete.photo != null ? NetworkImage(athlete.photo!) : null,
-                            child: athlete.photo == null
-                                ? const Icon(Icons.person, size: 48, color: AppColors.primary)
-                                : null,
+                        Container(
+                          padding: const EdgeInsets.all(4),
+                          decoration: BoxDecoration(
+                            shape: BoxShape.circle,
+                            color: Colors.white.withValues(alpha: 0.2),
+                          ),
+                          child: Hero(
+                            tag: 'athlete_avatar_${athlete.id}',
+                            child: CircleAvatar(
+                              radius: 48,
+                              backgroundColor: Colors.white,
+                              backgroundImage: athlete.photo != null ? NetworkImage(athlete.photo!) : null,
+                              child: athlete.photo == null
+                                  ? const Icon(Icons.person, size: 48, color: AppColors.primary)
+                                  : null,
+                            ),
                           ),
                         ),
                         const SizedBox(height: 16),
                         Text(
                           athlete.fullName,
-                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'رقم العضوية: ${athlete.membershipNumber.toWesternDigits()}',
-                          style: TextStyle(
-                            fontSize: 13,
-                            color: isDark ? AppColors.darkMutedForeground : AppColors.mutedForeground,
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w900,
+                            color: Colors.white,
                           ),
                         ),
-                        const SizedBox(height: 16),
+                        const SizedBox(height: 4),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withValues(alpha: 0.2),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            'رقم العضوية: ${athlete.membershipNumber.toWesternDigits()}',
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
                         Container(
                           padding: const EdgeInsets.all(12),
                           decoration: BoxDecoration(
                             color: Colors.white,
                             borderRadius: BorderRadius.circular(16),
-                            border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.1),
+                                blurRadius: 10,
+                                offset: const Offset(0, 4),
+                              ),
+                            ],
                           ),
                           child: ConstrainedBox(
                             constraints: const BoxConstraints(maxWidth: 160, maxHeight: 160),
@@ -83,11 +127,11 @@ class AthleteProfileScreen extends ConsumerWidget {
                               size: 140.0,
                               gapless: false,
                               eyeStyle: const QrEyeStyle(
-                                color: Colors.black,
+                                color: AppColors.primary,
                                 eyeShape: QrEyeShape.square,
                               ),
                               dataModuleStyle: const QrDataModuleStyle(
-                                color: Colors.black,
+                                color: Colors.black87,
                                 dataModuleShape: QrDataModuleShape.square,
                               ),
                             ),

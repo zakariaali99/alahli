@@ -8,6 +8,7 @@ import '../../../core/helpers/numeral_converter.dart';
 import 'package:intl/intl.dart';
 import 'dart:io';
 import 'package:image_picker/image_picker.dart';
+import '../../../core/widgets/app_error_widget.dart';
 
 class AddAthleteScreen extends ConsumerStatefulWidget {
   const AddAthleteScreen({super.key});
@@ -154,21 +155,58 @@ class _AddAthleteScreenState extends ConsumerState<AddAthleteScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               if (_errorMessage != null) ...[
-                Container(
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: AppColors.destructive.withValues(alpha: 0.1),
-                    borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AppColors.destructive.withValues(alpha: 0.3)),
-                  ),
-                  child: Text(
-                    _errorMessage!,
-                    textAlign: TextAlign.center,
-                    style: const TextStyle(color: AppColors.destructive, fontWeight: FontWeight.bold, fontSize: 13),
-                  ),
+                AppErrorWidget(
+                  errorMessage: _errorMessage!,
+                  onRetry: () {
+                    setState(() {
+                      _errorMessage = null;
+                    });
+                  },
                 ),
                 const SizedBox(height: 16),
               ],
+              
+              // Avatar Picker
+              Center(
+                child: Stack(
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        border: Border.all(
+                          color: AppColors.primary.withValues(alpha: 0.3),
+                          width: 3,
+                        ),
+                      ),
+                      padding: const EdgeInsets.all(4),
+                      child: CircleAvatar(
+                        radius: 50,
+                        backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                        backgroundImage: _selectedImage != null ? FileImage(_selectedImage!) : null,
+                        child: _selectedImage == null
+                            ? const Icon(Icons.add_a_photo, size: 40, color: AppColors.primary)
+                            : null,
+                      ),
+                    ),
+                    Positioned(
+                      bottom: 0,
+                      right: 0,
+                      child: GestureDetector(
+                        onTap: _pickImage,
+                        child: Container(
+                          padding: const EdgeInsets.all(8),
+                          decoration: const BoxDecoration(
+                            color: AppColors.primary,
+                            shape: BoxShape.circle,
+                          ),
+                          child: const Icon(Icons.edit, size: 18, color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 32),
 
               // Full name
               TextFormField(

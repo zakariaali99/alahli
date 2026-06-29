@@ -144,6 +144,7 @@ class _SubscriptionsScreenState extends ConsumerState<SubscriptionsScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
+      isScrollControlled: true,
       backgroundColor: isDark ? AppColors.darkCard : Colors.white,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
@@ -229,24 +230,55 @@ class _SubscriptionsScreenState extends ConsumerState<SubscriptionsScreen> {
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Column(
               children: [
-                TextField(
-                  controller: _searchController,
-                  textAlign: TextAlign.right,
-                  decoration: InputDecoration(
-                    hintText: 'بحث باسم اللاعب أو رقم العضوية...',
-                    prefixIcon: const Icon(Icons.search),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                    contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 12),
+                AnimatedContainer(
+                  duration: const Duration(milliseconds: 300),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkCard : Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: theme.shadowColor.withValues(alpha: 0.05),
+                        blurRadius: 10,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
                   ),
-                  onSubmitted: (val) {
-                    setState(() {
-                      _searchQuery = val.trim();
-                    });
-                  },
+                  child: TextField(
+                    controller: _searchController,
+                    textAlign: TextAlign.right,
+                    decoration: InputDecoration(
+                      hintText: 'بحث باسم اللاعب أو رقم العضوية...',
+                      prefixIcon: const Icon(Icons.search, color: AppColors.primary),
+                      suffixIcon: _searchQuery.isNotEmpty
+                          ? IconButton(
+                              icon: const Icon(Icons.clear),
+                              onPressed: () {
+                                _searchController.clear();
+                                setState(() {
+                                  _searchQuery = '';
+                                });
+                              },
+                            )
+                          : null,
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(16),
+                        borderSide: BorderSide.none,
+                      ),
+                      filled: true,
+                      fillColor: Colors.transparent,
+                      contentPadding: const EdgeInsets.symmetric(vertical: 0, horizontal: 16),
+                    ),
+                    onSubmitted: (val) {
+                      setState(() {
+                        _searchQuery = val.trim();
+                      });
+                    },
+                  ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
+                  physics: const BouncingScrollPhysics(),
                   child: Row(
                     children: [
                       _buildStatusFilterChip(null, 'الكل'),
@@ -374,14 +406,35 @@ class _SubscriptionsScreenState extends ConsumerState<SubscriptionsScreen> {
   }
 
   Widget _buildStatusFilterChip(String? status, String label) {
-    return ChoiceChip(
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
+    final isSelected = _selectedStatus == status;
+    
+    return FilterChip(
       label: Text(label),
-      selected: _selectedStatus == status,
+      selected: isSelected,
       onSelected: (val) {
         setState(() {
           _selectedStatus = val ? status : null;
         });
       },
+      showCheckmark: false,
+      backgroundColor: isDark ? AppColors.darkCard : Colors.white,
+      selectedColor: (isDark ? AppColors.darkPrimary : AppColors.primary).withValues(alpha: 0.15),
+      labelStyle: TextStyle(
+        color: isSelected
+            ? (isDark ? AppColors.darkPrimary : AppColors.primary)
+            : (isDark ? AppColors.darkMutedForeground : AppColors.mutedForeground),
+        fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+      ),
+      shape: RoundedRectangleBorder(
+        borderRadius: BorderRadius.circular(20),
+        side: BorderSide(
+          color: isSelected
+              ? (isDark ? AppColors.darkPrimary : AppColors.primary)
+              : theme.colorScheme.outline.withValues(alpha: 0.5),
+        ),
+      ),
     );
   }
 }
