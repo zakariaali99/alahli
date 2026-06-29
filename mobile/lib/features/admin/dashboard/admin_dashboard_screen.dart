@@ -17,11 +17,6 @@ class AdminDashboardScreen extends ConsumerWidget {
       appBar: AppBar(
         title: const Text('لوحة التحكم'),
         actions: [
-          IconButton(
-            icon: const Icon(Icons.notifications_outlined),
-            onPressed: () => context.push('/admin/notifications'),
-            tooltip: 'الإشعارات',
-          ),
           Padding(
             padding: const EdgeInsets.only(right: 8),
             child: CircleAvatar(
@@ -149,6 +144,7 @@ class AdminDashboardScreen extends ConsumerWidget {
   Widget _buildQuickActions(BuildContext context, ThemeData theme) {
     final actions = [
       _QuickAction(icon: Icons.person_add, label: 'إضافة مشترك', route: '/admin/subscribers', color: theme.colorScheme.primary),
+      _QuickAction(icon: Icons.fact_check, label: 'الموافقات والطلبات', route: '/admin/approvals', color: Colors.blue),
       _QuickAction(icon: Icons.notification_add, label: 'إرسال تنبيه', route: '/admin/notifications', color: Colors.orange),
       _QuickAction(icon: Icons.card_giftcard, label: 'الباقات', route: '/admin/packages', color: Colors.purple),
       _QuickAction(icon: Icons.event, label: 'الجلسات', route: '/admin/sessions', color: Colors.teal),

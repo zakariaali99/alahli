@@ -1,4 +1,5 @@
 from django.contrib.auth.models import AbstractUser
+from django.core.validators import FileExtensionValidator
 from django.db import models
 
 from .managers import UserManager
@@ -9,7 +10,10 @@ class User(AbstractUser):
     class Role(models.TextChoices):
         SUPER_ADMIN = "super_admin", "Super Admin"
         RECEPTION = "reception", "Reception Staff"
+        ACADEMY_MANAGER = "academy_manager", "Academy Manager"
         TRAINER = "trainer", "Trainer"
+        ATHLETE = "athlete", "Athlete"
+        PARENT = "parent", "Parent"
         VIEWER = "viewer", "Viewer"
 
     username = None
@@ -21,7 +25,15 @@ class User(AbstractUser):
         "athletes.Athlete", on_delete=models.SET_NULL, null=True, blank=True,
         related_name="user_account",
     )
+    academy = models.ForeignKey(
+        "departments.Department", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="managers"
+    )
     is_active = models.BooleanField(default=True)
+    photo = models.ImageField(
+        upload_to="users/", blank=True, null=True,
+        validators=[FileExtensionValidator(allowed_extensions=["jpg", "jpeg", "png", "webp"])],
+    )
 
     USERNAME_FIELD = "phone"
     REQUIRED_FIELDS = ["first_name_ar", "last_name_ar"]

@@ -9,7 +9,7 @@ class ShimmerLoading extends StatefulWidget {
     super.key,
     this.width = double.infinity,
     required this.height,
-    this.borderRadius = 12,
+    this.borderRadius = 20,
   });
 
   @override

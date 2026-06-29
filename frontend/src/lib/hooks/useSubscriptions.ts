@@ -21,7 +21,7 @@ interface Subscription {
   start_date: string
   end_date: string
   amount: string
-  status: "active" | "expired" | "pending"
+  status: "active" | "expired" | "pending" | "rejected"
   package_name: string
   renewals: Renewal[]
   created_at: string
@@ -78,6 +78,17 @@ export function useRenewSubscription() {
   return useMutation({
     mutationFn: ({ id, months, amount }: { id: number; months: number; amount: string }) =>
       api.post<Subscription>(`/subscriptions/${id}/renew/`, { months, amount }),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["subscriptions"] })
+    },
+  })
+}
+
+export function useUpdateSubscription() {
+  const qc = useQueryClient()
+  return useMutation({
+    mutationFn: ({ id, status }: { id: number; status: "active" | "expired" | "pending" | "rejected" }) =>
+      api.patch<Subscription>(`/subscriptions/${id}/`, { status }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["subscriptions"] })
     },

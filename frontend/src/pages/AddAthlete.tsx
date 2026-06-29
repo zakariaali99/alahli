@@ -1,442 +1,353 @@
-import React, { useState, useRef } from "react"
-import { motion, type Variants } from "framer-motion"
-import { useNavigate } from "react-router-dom"
-import {
-  ArrowRight, User, Phone, Calendar, UserCheck, Tag, AlertCircle,
-  FileText, Loader2, ChevronDown, Camera, X,
-} from "lucide-react"
-import { Link } from "react-router-dom"
-import { useCreateAthlete } from "@/lib/hooks/useAthletes"
-import { useDepartments } from "@/lib/hooks/useDepartments"
+import { useEffect, useRef, useState, type FormEvent } from "react"
+import { Link, useNavigate, useSearchParams } from "react-router-dom"
+import { motion, AnimatePresence } from "framer-motion"
+import { ArrowRight, Dumbbell, Users, Camera, X, CheckCircle, AlertCircle, Loader2 } from "lucide-react"
+import { Button } from "@/components/ui/button"
+import { api } from "@/lib/api"
+import { useToast } from "@/lib/toast"
+import { extractResults } from "@/lib/response"
+import type { Department, RegistrationRequest } from "@/lib/types"
+import CameraCapture from "@/components/ui/camera-capture"
 
-const containerVariants: Variants = {
-  hidden: { opacity: 0 },
-  visible: { opacity: 1, transition: { staggerChildren: 0.08, delayChildren: 0.1 } },
+type Scenario = "choose" | "athlete" | "parent"
+
+type AthleteForm = {
+  full_name: string
+  phone: string
+  password: string
+  birth_day: string
+  birth_month: string
+  birth_year: string
+  weight: string
+  height: string
 }
 
-const itemVariants: Variants = {
-  hidden: { opacity: 0, y: 24 },
-  visible: { opacity: 1, y: 0, transition: { duration: 0.5, ease: [0.22, 1, 0.36, 1] } },
+type ParentForm = {
+  full_name: string
+  phone: string
+  password: string
+  birth_day: string
+  birth_month: string
+  birth_year: string
 }
 
-const photoVariants: Variants = {
-  hidden: { opacity: 0, scale: 0.9 },
-  visible: { opacity: 1, scale: 1, transition: { duration: 0.4, ease: [0.22, 1, 0.36, 1] } },
+const defaultAthleteForm: AthleteForm = {
+  full_name: "", phone: "", password: "",
+  birth_day: "", birth_month: "", birth_year: "",
+  weight: "", height: "",
+}
+
+const defaultParentForm: ParentForm = {
+  full_name: "", phone: "", password: "",
+  birth_day: "", birth_month: "", birth_year: "",
 }
 
 export default function AddAthletePage() {
   const navigate = useNavigate()
-  const { data: deptData } = useDepartments()
-  const createAthlete = useCreateAthlete()
-  const [photoFile, setPhotoFile] = useState<File | null>(null)
-  const [photoPreview, setPhotoPreview] = useState<string | null>(null)
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
-  const [dragOver, setDragOver] = useState(false)
-  const [focusedField, setFocusedField] = useState<string | null>(null)
-  const fileInputRef = useRef<HTMLInputElement>(null)
+  const [searchParams] = useSearchParams()
+  const registrationId = searchParams.get("registration")
+  const toast = useToast()
 
-  const [form, setForm] = useState({
-    fullName: "",
-    phone: "",
-    parentPhone: "",
-    birthDate: "",
-    gender: "male",
-    department: "",
-    notes: "",
-  })
+  const [scenario, setScenario] = useState<Scenario>("choose")
+  const [registration, setRegistration] = useState<RegistrationRequest | null>(null)
+  const [loadingRegistration, setLoadingRegistration] = useState(false)
+  const [submitting, setSubmitting] = useState(false)
+  const [error, setError] = useState("")
+  const [success, setSuccess] = useState(false)
 
-  const departments = deptData?.results || []
+  const [athleteForm, setAthleteForm] = useState<AthleteForm>(defaultAthleteForm)
+  const [parentForm, setParentForm] = useState<ParentForm>(defaultParentForm)
+  const [photo, setPhoto] = useState<string | null>(null)
 
-  const handleFile = (file: File) => {
-    if (!file.type.startsWith("image/")) {
-      setErrorMessage("الرجاء اختيار صورة بصيغة صالحة")
+  useEffect(() => {
+    if (!registrationId) return
+    const fetchRegistration = async () => {
+      try {
+        setLoadingRegistration(true)
+        const data = await api.get<RegistrationRequest>(`/athletes/registrations/${registrationId}/`)
+        setRegistration(data)
+        if (data.user_name) {
+          setAthleteForm((prev) => ({ ...prev, full_name: data.user_name, phone: data.user_phone }))
+        }
+      } catch (err: any) {
+        setError(err?.message || "تعذر تحميل طلب التسجيل")
+      } finally {
+        setLoadingRegistration(false)
+      }
+    }
+    void fetchRegistration()
+  }, [registrationId])
+
+  const handleSubmitAthlete = async (e: FormEvent) => {
+    e.preventDefault()
+    setError("")
+
+    if (!athleteForm.full_name.trim() || !athleteForm.phone.trim() || !athleteForm.password.trim()) {
+      setError("يرجى تعبئة الاسم ورقم الهاتف وكلمة المرور")
       return
     }
-    if (file.size > 5 * 1024 * 1024) {
-      setErrorMessage("حجم الصورة يجب ألا يتجاوز 5 ميجابايت")
+    if (!athleteForm.birth_day || !athleteForm.birth_month || !athleteForm.birth_year) {
+      setError("يرجى تعبئة تاريخ الميلاد")
       return
     }
-    setErrorMessage(null)
-    setPhotoFile(file)
-    const reader = new FileReader()
-    reader.onloadend = () => setPhotoPreview(reader.result as string)
-    reader.readAsDataURL(file)
-  }
-
-  const handlePhotoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0]
-    if (file) handleFile(file)
-  }
-
-  const handleDrop = (e: React.DragEvent) => {
-    e.preventDefault()
-    setDragOver(false)
-    const file = e.dataTransfer.files?.[0]
-    if (file) handleFile(file)
-  }
-
-  const handleDragOver = (e: React.DragEvent) => {
-    e.preventDefault()
-    setDragOver(true)
-  }
-
-  const handleDragLeave = () => setDragOver(false)
-
-  const removePhoto = () => {
-    setPhotoFile(null)
-    setPhotoPreview(null)
-    if (fileInputRef.current) fileInputRef.current.value = ""
-  }
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setErrorMessage(null)
-
-    if (!form.fullName.trim() || !form.phone.trim() || !form.birthDate || !form.department) {
-      setErrorMessage("الرجاء تعبئة جميع الحقول المطلوبة")
+    if (!photo && !registration?.athlete_photo) {
+      setError("يرجى التقاط أو رفع صورة شخصية للرياضي")
       return
     }
-
-    const fd = new FormData()
-    fd.append("full_name", form.fullName)
-    fd.append("phone", form.phone)
-    fd.append("birth_date", form.birthDate)
-    fd.append("gender", form.gender)
-    fd.append("department", form.department)
-    if (form.parentPhone) fd.append("parent_phone", form.parentPhone)
-    if (form.notes) fd.append("notes", form.notes)
-    if (photoFile) fd.append("photo", photoFile)
 
     try {
-      await createAthlete.mutateAsync(fd)
-      navigate("/dashboard/athletes")
+      setSubmitting(true)
+
+      if (registrationId) {
+        const fd = new FormData()
+        fd.append("full_name", athleteForm.full_name.trim())
+        fd.append("phone", athleteForm.phone.trim())
+        fd.append("birth_date", `${athleteForm.birth_year}-${athleteForm.birth_month.padStart(2, "0")}-${athleteForm.birth_day.padStart(2, "0")}`)
+        fd.append("gender", "male")
+        const created = await api.post<{ id: number }>(
+          `/athletes/registrations/${registrationId}/create-athlete/`,
+          fd,
+          { formData: true },
+        )
+        toast.success("تم إنشاء ملف الرياضي بنجاح")
+        navigate(`/dashboard/athletes/${created.id}`)
+        return
+      }
+
+      await api.post("/auth/register/", {
+        role: "athlete",
+        full_name: athleteForm.full_name.trim(),
+        phone: athleteForm.phone.trim(),
+        password: athleteForm.password,
+        photo,
+        weight: parseFloat(athleteForm.weight) || 0,
+        height: parseFloat(athleteForm.height) || 0,
+        birth_day: parseInt(athleteForm.birth_day),
+        birth_month: parseInt(athleteForm.birth_month),
+        birth_year: parseInt(athleteForm.birth_year),
+      })
+      setSuccess(true)
+      toast.success("تم تسجيل الرياضي بنجاح")
     } catch (err: any) {
-      setErrorMessage(err.message || "حدث خطأ أثناء حفظ البيانات")
+      setError(err?.message || "حدث خطأ أثناء التسجيل")
+    } finally {
+      setSubmitting(false)
     }
   }
 
-  const update = (field: string, value: string) => setForm((f) => ({ ...f, [field]: value }))
+  const handleSubmitParent = async (e: FormEvent) => {
+    e.preventDefault()
+    setError("")
 
-  const isFloating = (field: string) => focusedField === field || (form as any)[field].length > 0
+    if (!parentForm.full_name.trim() || !parentForm.phone.trim() || !parentForm.password.trim()) {
+      setError("يرجى تعبئة الاسم ورقم الهاتف وكلمة المرور")
+      return
+    }
 
-  const FloatField = ({
-    field,
-    label,
-    Icon,
-    type = "text",
-    required = false,
-  }: {
-    field: string
-    label: string
-    Icon: React.ComponentType<any>
-    type?: string
-    required?: boolean
-  }) => {
-    const floating = isFloating(field)
-    return (
-      <div className="relative group">
-        <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none z-10 transition-colors duration-300 text-muted-foreground/40 group-focus-within:text-primary">
-          <Icon className="w-4 h-4" />
-        </div>
-        <input
-          type={type}
-          placeholder=" "
-          value={(form as any)[field]}
-          onChange={(e) => update(field, e.target.value)}
-          onFocus={() => setFocusedField(field)}
-          onBlur={() => setFocusedField(null)}
-          required={required}
-          dir="rtl"
-          className="w-full bg-surface-container-low text-sm text-foreground rounded-xl pt-5 pb-2 pr-10 pl-4 border border-border/40 focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white outline-none transition-all duration-300 peer"
-        />
-        <label
-          className={`absolute right-10 pointer-events-none transition-all duration-200 ${
-            floating
-              ? "top-2 text-[11px] font-medium text-primary"
-              : "top-1/2 -translate-y-1/2 text-sm text-muted-foreground/60"
-          }`}
-        >
-          {label}
-          {required && <span className="text-error mr-0.5">*</span>}
-        </label>
-      </div>
-    )
+    try {
+      setSubmitting(true)
+      await api.post("/auth/register/", {
+        role: "parent",
+        full_name: parentForm.full_name.trim(),
+        phone: parentForm.phone.trim(),
+        password: parentForm.password,
+        birth_day: parseInt(parentForm.birth_day),
+        birth_month: parseInt(parentForm.birth_month),
+        birth_year: parseInt(parentForm.birth_year),
+      })
+      setSuccess(true)
+      toast.success("تم تسجيل ولي الأمر بنجاح")
+    } catch (err: any) {
+      setError(err?.message || "حدث خطأ أثناء التسجيل")
+    } finally {
+      setSubmitting(false)
+    }
   }
 
-  const TextareaField = ({
-    field,
-    label,
-    Icon,
-    required = false,
-  }: {
-    field: string
-    label: string
-    Icon: React.ComponentType<any>
-    required?: boolean
-  }) => {
-    const floating = isFloating(field)
+  if (success) {
     return (
-      <div className="relative group">
-        <div className="absolute right-3 top-4 pointer-events-none z-10 transition-colors duration-300 text-muted-foreground/40 group-focus-within:text-primary">
-          <Icon className="w-4 h-4" />
-        </div>
-        <textarea
-          placeholder=" "
-          value={(form as any)[field]}
-          onChange={(e) => update(field, e.target.value)}
-          onFocus={() => setFocusedField(field)}
-          onBlur={() => setFocusedField(null)}
-          required={required}
-          dir="rtl"
-          rows={4}
-          className="w-full bg-surface-container-low text-sm text-foreground rounded-xl pt-5 pb-2 pr-10 pl-4 border border-border/40 focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white outline-none transition-all duration-300 peer resize-none"
-        />
-        <label
-          className={`absolute right-10 pointer-events-none transition-all duration-200 ${
-            floating
-              ? "top-2 text-[11px] font-medium text-primary"
-              : "top-4 text-sm text-muted-foreground/60"
-          }`}
-        >
-          {label}
-        </label>
+      <div className="flex min-h-[60vh] items-center justify-center">
+        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center">
+          <CheckCircle className="mx-auto mb-4 h-16 w-16 text-primary" />
+          <h2 className="mb-2 text-2xl font-bold">تم التسجيل بنجاح</h2>
+          <p className="mb-6 text-muted-foreground">
+            {registrationId
+              ? "تم إنشاء ملف الرياضي وربطه بالطلب. يمكنك الآن مراجعته واعتماده."
+              : "تم إنشاء الحساب. يمكن للمستخدم الآن تسجيل الدخول."}
+          </p>
+          <div className="flex justify-center gap-3">
+            <Button onClick={() => navigate("/dashboard/registrations")}>الطلبات الجديدة</Button>
+            <Button variant="outline" onClick={() => navigate("/dashboard/athletes")}>قائمة الرياضيين</Button>
+          </div>
+        </motion.div>
       </div>
     )
   }
 
   return (
-    <motion.div
-      className="space-y-6 select-none"
-      variants={containerVariants}
-      initial="hidden"
-      animate="visible"
-      dir="rtl"
-    >
-      <motion.div className="flex items-center gap-3" variants={itemVariants}>
-        <Link
-          to="/dashboard/athletes"
-          className="text-muted-foreground hover:text-foreground transition-colors"
-        >
-          <ArrowRight className="w-6 h-6" />
-        </Link>
-        <div>
-          <h1 className="text-2xl font-extrabold gradient-text">إضافة رياضي جديد</h1>
-          <p className="text-xs text-muted-foreground mt-1">
-            تعبئة نموذج تسجيل رياضي جديد وتحديد الفرع الرياضي له.
-          </p>
-        </div>
-      </motion.div>
+    <div className="space-y-6">
+      <div>
+        <h1 className="text-2xl font-extrabold gradient-text">إضافة مستخدم جديد</h1>
+        <p className="mt-1 text-xs text-muted-foreground">
+          {registrationId
+            ? `إنشاء ملف رياضي لطلب التسجيل: ${registration?.user_name || "..."}`
+            : "أنشئ حساب رياضي أو ولي أمر مباشرة من لوحة الإدارة."}
+        </p>
+      </div>
 
-      {errorMessage && (
-        <motion.div
-          variants={itemVariants}
-          className="p-4 rounded-xl bg-error/15 border border-error/30 text-error text-sm flex items-center gap-2"
-        >
-          <AlertCircle className="w-5 h-5 shrink-0" />
-          <span>{errorMessage}</span>
-        </motion.div>
+      {error && (
+        <div className="flex items-center gap-2 rounded-xl border border-error/30 bg-error/10 p-3 text-sm text-error">
+          <AlertCircle className="h-4 w-4 shrink-0" />
+          {error}
+        </div>
       )}
 
-      <motion.div
-        className="glass-card-premium rounded-3xl p-6 md:p-8 border border-border/20 shadow-sm"
-        variants={itemVariants}
-      >
-        <form onSubmit={handleSubmit} className="space-y-8">
-          <motion.div variants={photoVariants}>
-            <div
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              onClick={() => fileInputRef.current?.click()}
-              className={`relative rounded-2xl border-2 border-dashed transition-all duration-300 cursor-pointer overflow-hidden ${
-                dragOver
-                  ? "border-primary bg-primary/5 scale-[1.02]"
-                  : "border-border/40 hover:border-primary/50 hover:bg-surface-container-low"
-              }`}
-            >
-              {photoPreview ? (
-                <div className="relative flex items-center justify-center p-4">
-                  <img
-                    src={photoPreview}
-                    alt="صورة الرياضي"
-                    className="w-36 h-36 rounded-xl object-cover shadow-md"
-                  />
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation()
-                      removePhoto()
-                    }}
-                    className="absolute top-2 left-2 bg-error/90 text-white p-1.5 rounded-full shadow-md hover:bg-error transition-colors"
-                  >
-                    <X className="w-3.5 h-3.5" />
-                  </button>
-                  <div className="absolute inset-0 bg-black/0 hover:bg-black/10 transition-colors rounded-2xl" />
-                </div>
-              ) : (
-                <div className="flex flex-col items-center justify-center gap-3 py-10 px-4">
-                  <div className="w-14 h-14 rounded-full bg-surface-container flex items-center justify-center group-hover:bg-primary/10 transition-colors duration-300">
-                    <Camera className="w-6 h-6 text-muted-foreground/60 group-hover:text-primary transition-colors duration-300" />
-                  </div>
-                  <div className="text-center">
-                    <p className="text-sm font-semibold text-foreground">
-                      اسحب وأفلت الصورة هنا
-                    </p>
-                    <p className="text-xs text-muted-foreground/60 mt-1">
-                      أو اضغط لاختيار صورة
-                    </p>
-                  </div>
-                  <p className="text-[11px] text-muted-foreground/40">
-                    JPG, PNG - الحد الأقصى 5MB
-                  </p>
-                </div>
-              )}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept="image/*"
-                onChange={handlePhotoUpload}
-                className="hidden"
-              />
-            </div>
-          </motion.div>
-
-          <div className="space-y-5">
-            <motion.div variants={itemVariants} className="section-header">
-              <h3 className="gradient-text text-base font-bold">المعلومات الشخصية</h3>
-              <div className="h-px w-full bg-gradient-to-l from-primary/40 via-primary/10 to-transparent rounded-full" />
-            </motion.div>
-
-            <motion.div
-              variants={itemVariants}
-              className="grid grid-cols-1 md:grid-cols-2 gap-5"
-            >
-              <FloatField field="fullName" label="الاسم الكامل للرياضي" Icon={User} required />
-              <FloatField field="birthDate" label="تاريخ الميلاد" Icon={Calendar} type="date" required />
-
-              <div className="relative group">
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none z-10 transition-colors duration-300 text-muted-foreground/40 group-focus-within:text-primary">
-                  <UserCheck className="w-4 h-4" />
-                </div>
-                <div className="bg-surface-container-low border border-border/40 rounded-xl overflow-hidden transition-all duration-300 focus-within:ring-2 focus-within:ring-primary/20 focus-within:border-primary">
-                  <div className="flex gap-1 p-1">
-                    {["male", "female"].map((g) => (
-                      <button
-                        key={g}
-                        type="button"
-                        onClick={() => update("gender", g)}
-                        className={`flex-1 py-2.5 px-4 rounded-lg text-sm font-semibold transition-all duration-300 ${
-                          form.gender === g
-                            ? "bg-primary text-primary-foreground shadow-md shadow-primary/25"
-                            : "text-muted-foreground hover:text-foreground bg-transparent"
-                        }`}
-                      >
-                        {g === "male" ? "ذكر" : "أنثى"}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-                <label className="absolute -top-2.5 right-3 px-1.5 text-[11px] font-medium text-primary bg-surface-container-low rounded">
-                  الجنس
-                  <span className="text-error mr-0.5">*</span>
-                </label>
-              </div>
-            </motion.div>
-          </div>
-
-          <div className="space-y-5">
-            <motion.div variants={itemVariants} className="section-header">
-              <h3 className="gradient-text text-base font-bold">معلومات الاتصال</h3>
-              <div className="h-px w-full bg-gradient-to-l from-primary/40 via-primary/10 to-transparent rounded-full" />
-            </motion.div>
-
-            <motion.div
-              variants={itemVariants}
-              className="grid grid-cols-1 md:grid-cols-2 gap-5"
-            >
-              <FloatField field="phone" label="رقم الهاتف" Icon={Phone} type="tel" required />
-              <FloatField field="parentPhone" label="رقم هاتف ولي الأمر" Icon={Phone} type="tel" />
-            </motion.div>
-          </div>
-
-          <div className="space-y-5">
-            <motion.div variants={itemVariants} className="section-header">
-              <h3 className="gradient-text text-base font-bold">تفاصيل إضافية</h3>
-              <div className="h-px w-full bg-gradient-to-l from-primary/40 via-primary/10 to-transparent rounded-full" />
-            </motion.div>
-
-            <motion.div
-              variants={itemVariants}
-              className="grid grid-cols-1 md:grid-cols-2 gap-5"
-            >
-              <div className="relative group">
-                <div className="absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none z-10 transition-colors duration-300 text-muted-foreground/40 group-focus-within:text-primary">
-                  <Tag className="w-4 h-4" />
-                </div>
-                <select
-                  value={form.department}
-                  onChange={(e) => update("department", e.target.value)}
-                  onFocus={() => setFocusedField("department")}
-                  onBlur={() => setFocusedField(null)}
-                  required
-                  dir="rtl"
-                  className="w-full bg-surface-container-low text-sm text-foreground rounded-xl pt-5 pb-2 pr-10 pl-10 border border-border/40 focus:ring-2 focus:ring-primary/20 focus:border-primary focus:bg-white outline-none transition-all duration-300 appearance-none cursor-pointer"
-                >
-                  <option value="" disabled></option>
-                  {departments.map((d: any) => (
-                    <option key={d.id} value={d.id}>
-                      {d.name_ar}
-                    </option>
-                  ))}
-                </select>
-                <label
-                  className={`absolute right-10 pointer-events-none transition-all duration-200 ${
-                    isFloating("department")
-                      ? "top-2 text-[11px] font-medium text-primary"
-                      : "top-1/2 -translate-y-1/2 text-sm text-muted-foreground/60"
-                  }`}
-                >
-                  الفرع / القسم الرياضي
-                  <span className="text-error mr-0.5">*</span>
-                </label>
-                <ChevronDown className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground/40 pointer-events-none transition-colors duration-300 group-focus-within:text-primary" />
-              </div>
-            </motion.div>
-
-            <motion.div variants={itemVariants}>
-              <TextareaField field="notes" label="ملاحظات إضافية" Icon={FileText} />
-            </motion.div>
-          </div>
-
+      <AnimatePresence mode="wait">
+        {scenario === "choose" && (
           <motion.div
-            variants={itemVariants}
-            className="flex justify-end gap-3 pt-6 border-t border-border/20"
+            key="choose"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            className="grid gap-4 sm:grid-cols-2"
           >
-            <Link to="/dashboard/athletes">
-              <button
-                type="button"
-                className="px-6 py-3 rounded-xl border-2 border-border/60 text-sm font-semibold text-muted-foreground hover:bg-surface-container hover:text-foreground hover:border-border transition-all duration-300"
-              >
-                إلغاء
-              </button>
-            </Link>
             <button
-              type="submit"
-              disabled={createAthlete.isPending}
-              className="relative overflow-hidden px-8 py-3 rounded-xl bg-gradient-to-l from-primary to-primary/80 text-primary-foreground font-semibold text-sm shadow-lg shadow-primary/25 hover:shadow-xl hover:shadow-primary/30 hover:from-primary/90 hover:to-primary/70 active:scale-[0.98] transition-all duration-300 disabled:opacity-60 disabled:cursor-not-allowed disabled:active:scale-100"
+              onClick={() => setScenario("athlete")}
+              className="group rounded-2xl border-2 border-border bg-card p-8 text-center transition hover:border-primary hover:bg-primary/5"
             >
-              {createAthlete.isPending ? (
-                <span className="flex items-center gap-2">
-                  <Loader2 className="w-4 h-4 animate-spin" />
-                  جاري الحفظ...
-                </span>
-              ) : (
-                "حفظ البيانات"
-              )}
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 transition group-hover:scale-110">
+                <Dumbbell className="h-8 w-8 text-primary" />
+              </div>
+              <h3 className="text-lg font-bold">تسجيل رياضي</h3>
+              <p className="mt-1 text-xs text-muted-foreground">أنشئ حساب رياضي مع صورة وبيانات بدنية</p>
+            </button>
+
+            <button
+              onClick={() => setScenario("parent")}
+              className="group rounded-2xl border-2 border-border bg-card p-8 text-center transition hover:border-primary hover:bg-primary/5"
+            >
+              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-secondary/10 transition group-hover:scale-110">
+                <Users className="h-8 w-8 text-secondary" />
+              </div>
+              <h3 className="text-lg font-bold">تسجيل ولي أمر</h3>
+              <p className="mt-1 text-xs text-muted-foreground">أنشئ حساب ولي أمر لإدارة الرياضيين</p>
             </button>
           </motion.div>
-        </form>
-      </motion.div>
-    </motion.div>
+        )}
+
+        {scenario === "athlete" && (
+          <motion.div
+            key="athlete"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+          >
+            <form onSubmit={handleSubmitAthlete} className="mx-auto max-w-md space-y-4 rounded-2xl border border-border bg-card p-6">
+              <div className="text-center">
+                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
+                  <Dumbbell className="h-6 w-6 text-primary" />
+                </div>
+                <h2 className="text-lg font-bold">تسجيل رياضي جديد</h2>
+              </div>
+
+              <CameraCapture onCapture={setPhoto} preview={photo || registration?.athlete_photo || undefined} />
+
+              <FormField label="الاسم الكامل" required>
+                <input className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors" value={athleteForm.full_name} onChange={(e) => setAthleteForm((p) => ({ ...p, full_name: e.target.value }))} required />
+              </FormField>
+
+              <FormField label="رقم الهاتف" required>
+                <input className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors" dir="ltr" value={athleteForm.phone} onChange={(e) => setAthleteForm((p) => ({ ...p, phone: e.target.value }))} required />
+              </FormField>
+
+              <FormField label="كلمة المرور" required>
+                <input className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors" type="password" value={athleteForm.password} onChange={(e) => setAthleteForm((p) => ({ ...p, password: e.target.value }))} required minLength={8} />
+              </FormField>
+
+              <FormField label="تاريخ الميلاد" required>
+                <div className="grid grid-cols-3 gap-2">
+                  <input className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors" type="number" min={1} max={31} placeholder="DD" value={athleteForm.birth_day} onChange={(e) => setAthleteForm((p) => ({ ...p, birth_day: e.target.value }))} required />
+                  <input className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors" type="number" min={1} max={12} placeholder="MM" value={athleteForm.birth_month} onChange={(e) => setAthleteForm((p) => ({ ...p, birth_month: e.target.value }))} required />
+                  <input className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors" type="number" min={1900} max={2026} placeholder="YY" value={athleteForm.birth_year} onChange={(e) => setAthleteForm((p) => ({ ...p, birth_year: e.target.value }))} required />
+                </div>
+              </FormField>
+
+              <div className="grid grid-cols-2 gap-3">
+                <FormField label="الوزن (كجم)">
+                  <input className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors" type="number" step="0.1" value={athleteForm.weight} onChange={(e) => setAthleteForm((p) => ({ ...p, weight: e.target.value }))} />
+                </FormField>
+                <FormField label="الطول (سم)">
+                  <input className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors" type="number" step="0.1" value={athleteForm.height} onChange={(e) => setAthleteForm((p) => ({ ...p, height: e.target.value }))} />
+                </FormField>
+              </div>
+
+              <div className="flex justify-between gap-2 pt-2">
+                <Button type="button" variant="ghost" onClick={() => setScenario("choose")}>رجوع</Button>
+                <Button type="submit" disabled={submitting || loadingRegistration}>
+                  {submitting ? <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> جاري...</span> : <>تسجيل <ArrowRight className="mr-1 h-4 w-4" /></>}
+                </Button>
+              </div>
+            </form>
+          </motion.div>
+        )}
+
+        {scenario === "parent" && (
+          <motion.div
+            key="parent"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+          >
+            <form onSubmit={handleSubmitParent} className="mx-auto max-w-md space-y-4 rounded-2xl border border-border bg-card p-6">
+              <div className="text-center">
+                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-secondary/10">
+                  <Users className="h-6 w-6 text-secondary" />
+                </div>
+                <h2 className="text-lg font-bold">تسجيل ولي أمر</h2>
+              </div>
+
+              <FormField label="الاسم الكامل" required>
+                <input className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors" value={parentForm.full_name} onChange={(e) => setParentForm((p) => ({ ...p, full_name: e.target.value }))} required />
+              </FormField>
+
+              <FormField label="رقم الهاتف" required>
+                <input className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors" dir="ltr" value={parentForm.phone} onChange={(e) => setParentForm((p) => ({ ...p, phone: e.target.value }))} required />
+              </FormField>
+
+              <FormField label="كلمة المرور" required>
+                <input className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors" type="password" value={parentForm.password} onChange={(e) => setParentForm((p) => ({ ...p, password: e.target.value }))} required minLength={8} />
+              </FormField>
+
+              <FormField label="تاريخ الميلاد" required>
+                <div className="grid grid-cols-3 gap-2">
+                  <input className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors" type="number" min={1} max={31} placeholder="DD" value={parentForm.birth_day} onChange={(e) => setParentForm((p) => ({ ...p, birth_day: e.target.value }))} required />
+                  <input className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors" type="number" min={1} max={12} placeholder="MM" value={parentForm.birth_month} onChange={(e) => setParentForm((p) => ({ ...p, birth_month: e.target.value }))} required />
+                  <input className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors" type="number" min={1900} max={2026} placeholder="YY" value={parentForm.birth_year} onChange={(e) => setParentForm((p) => ({ ...p, birth_year: e.target.value }))} required />
+                </div>
+              </FormField>
+
+              <div className="flex justify-between gap-2 pt-2">
+                <Button type="button" variant="ghost" onClick={() => setScenario("choose")}>رجوع</Button>
+                <Button type="submit" disabled={submitting}>
+                  {submitting ? <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> جاري...</span> : <>تسجيل <ArrowRight className="mr-1 h-4 w-4" /></>}
+                </Button>
+              </div>
+            </form>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </div>
+  )
+}
+
+function FormField({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
+  return (
+    <div>
+      <label className="mb-1 block text-sm font-medium">
+        {label}
+        {required && <span className="mr-0.5 text-error">*</span>}
+      </label>
+      {children}
+    </div>
   )
 }

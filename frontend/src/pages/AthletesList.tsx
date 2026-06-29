@@ -3,11 +3,17 @@ import { Link } from "react-router-dom"
 import { motion, type Variants } from "framer-motion"
 import {
   Plus, Search, Filter, LayoutGrid, TableProperties, Eye, Edit2,
-  ChevronRight, ChevronLeft, Users, UserX, MoreVertical,
+  ChevronRight, ChevronLeft, Users, UserX, MoreVertical, Trash2, UserCog,
 } from "lucide-react"
 import { useAthletes } from "@/lib/hooks/useAthletes"
 import { Button } from "@/components/ui/button"
+import { Input, Select } from "@/components/ui/input"
+import { Card } from "@/components/ui/card"
+import { Badge } from "@/components/ui/badge"
 import { TableSkeleton } from "@/components/ui/loading-spinner"
+import { useToast } from "@/lib/toast"
+import { useMutation, useQueryClient } from "@tanstack/react-query"
+import { api } from "@/lib/api"
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -41,12 +47,48 @@ function DepartmentDisplay({ name }: { name: string | null }) {
 }
 
 export default function AthletesPage() {
+  const toast = useToast()
+  const queryClient = useQueryClient()
+  const [activeMenuId, setActiveMenuId] = useState<number | null>(null)
   const [searchQuery, setSearchQuery] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
   const [viewMode, setViewMode] = useState<"table" | "grid">("table")
   const [page, setPage] = useState(1)
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
   const [selectAll, setSelectAll] = useState(false)
+
+  const toggleActiveMutation = useMutation({
+    mutationFn: ({ id, is_active }: { id: number; is_active: boolean }) =>
+      api.patch(`/athletes/${id}/`, { is_active }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["athletes"] })
+      toast.success("تم تحديث حالة اللاعب بنجاح")
+    },
+    onError: (err: any) => {
+      toast.error(`فشل التحديث: ${err.message || err}`)
+    }
+  })
+
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => api.delete(`/athletes/${id}/`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["athletes"] })
+      toast.success("تم حذف اللاعب بنجاح")
+    },
+    onError: (err: any) => {
+      toast.error(`فشل الحذف: ${err.message || err}`)
+    }
+  })
+
+  const handleToggleActive = (athlete: any) => {
+    toggleActiveMutation.mutate({ id: athlete.id, is_active: !athlete.is_active })
+  }
+
+  const handleDeleteAthlete = (athlete: any) => {
+    if (window.confirm(`هل أنت متأكد من حذف اللاعب "${athlete.full_name}" نهائياً؟`)) {
+      deleteMutation.mutate(athlete.id)
+    }
+  }
 
   const { data, isLoading } = useAthletes({
     page,
@@ -59,24 +101,19 @@ export default function AthletesPage() {
   const totalPages = data ? Math.ceil(data.count / 20) : 0
 
   const statusBadge = (isActive: boolean) => {
-    if (isActive) {
-      return (
-        <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-secondary/10 text-secondary border border-secondary/10">
-          <span className="w-1.5 h-1.5 rounded-full bg-secondary" />
-          نشط
-        </span>
-      )
-    }
-    return (
-      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[11px] font-bold bg-error-container/30 text-error border border-error/10">
-        <span className="w-1.5 h-1.5 rounded-full bg-error" />
+    return isActive ? (
+      <Badge variant="success" dot>
+        نشط
+      </Badge>
+    ) : (
+      <Badge variant="error" dot>
         غير نشط
-      </span>
+      </Badge>
     )
   }
 
   const formatDate = (d: string) => {
-    return new Date(d).toLocaleDateString("ar-SA", { year: "numeric", month: "long", day: "numeric" })
+    return new Date(d).toLocaleDateString("ar-SA-u-nu-latn", { year: "numeric", month: "long", day: "numeric" })
   }
 
   const toggleSelectAll = () => {
@@ -131,21 +168,20 @@ export default function AthletesPage() {
       {/* ── Filter Bar ── */}
       <motion.div
         variants={itemVariants}
-        className="glass-card rounded-2xl p-4 flex flex-col lg:flex-row gap-4 items-center justify-between"
+        className="glass-card rounded-3xl p-4 flex flex-col lg:flex-row gap-4 items-center justify-between"
       >
         <div className="flex flex-wrap gap-3 w-full lg:w-auto">
           {/* Status Filter */}
-          <div className="relative min-w-[160px]">
-            <select
+          <div className="min-w-[180px]">
+            <Select
               value={statusFilter}
               onChange={(e) => { setStatusFilter(e.target.value); setPage(1) }}
-              className="w-full appearance-none bg-surface-container-low border border-outline-variant/30 text-foreground text-sm rounded-xl px-4 py-2.5 pr-10 focus:ring-2 focus:ring-primary focus:border-primary hover:bg-surface-container-high cursor-pointer transition-colors outline-none"
+              icon={<Filter className="w-4 h-4 text-muted-foreground" />}
             >
               <option value="all">حالة الاشتراك: الكل</option>
               <option value="active">نشط</option>
               <option value="inactive">غير نشط</option>
-            </select>
-            <Filter className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4 pointer-events-none" />
+            </Select>
           </div>
         </div>
 
@@ -177,21 +213,20 @@ export default function AthletesPage() {
       </motion.div>
 
       {/* ── Search ── */}
-      <div className="relative w-full max-w-md -mt-4">
-        <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4" />
-        <input
+      <div className="w-full max-w-md -mt-4">
+        <Input
           type="text"
           placeholder="البحث عن رياضي..."
           value={searchQuery}
           onChange={(e) => { setSearchQuery(e.target.value); setPage(1) }}
-          className="w-full bg-surface-container-low text-sm text-foreground rounded-xl py-2.5 pr-10 pl-4 border border-border/40 focus:ring-2 focus:ring-primary focus:bg-white outline-none transition-all"
+          icon={<Search className="w-4 h-4 text-muted-foreground" />}
         />
       </div>
 
       {/* ── Loading State ── */}
       {isLoading ? (
         viewMode === "table" ? (
-          <div className="glass-card rounded-2xl overflow-hidden shadow-sm border border-border/20">
+          <div className="glass-card rounded-3xl overflow-hidden shadow-sm border border-border/20">
             <TableSkeleton />
           </div>
         ) : (
@@ -203,7 +238,7 @@ export default function AthletesPage() {
         /* ── Table View ── */
         <motion.div
           variants={itemVariants}
-          className="glass-card rounded-2xl overflow-hidden shadow-sm border border-border/20"
+          className="glass-card rounded-3xl overflow-hidden shadow-sm border border-border/20"
         >
           <div className="overflow-x-auto w-full">
             <table className="w-full text-right border-collapse min-w-[800px]">
@@ -290,15 +325,55 @@ export default function AthletesPage() {
                               <Edit2 className="w-4 h-4" />
                             </motion.button>
                           </Link>
-                          <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.9 }}
-                            className="p-2 rounded-lg text-muted-foreground hover:text-error hover:bg-error-container/30 transition-colors"
-                            title="المزيد"
-                            onClick={() => alert('سيتم إضافة المزيد من الخيارات قريباً')}
-                          >
-                            <MoreVertical className="w-4 h-4" />
-                          </motion.button>
+                          <div className="relative">
+                            <motion.button
+                              whileHover={{ scale: 1.1 }}
+                              whileTap={{ scale: 0.9 }}
+                              className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-muted transition-colors cursor-pointer"
+                              title="المزيد"
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                setActiveMenuId(activeMenuId === athlete.id ? null : athlete.id);
+                              }}
+                            >
+                              <MoreVertical className="w-4 h-4" />
+                            </motion.button>
+                            {activeMenuId === athlete.id && (
+                              <>
+                                <div className="fixed inset-0 z-10" onClick={() => setActiveMenuId(null)} />
+                                <div className="absolute left-0 mt-1 w-44 rounded-xl bg-card border border-border shadow-lg z-20 py-1 text-right">
+                                  <Link
+                                    to={`/dashboard/athletes/${athlete.id}`}
+                                    className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted text-foreground transition-colors w-full text-right"
+                                    onClick={() => setActiveMenuId(null)}
+                                  >
+                                    <Eye className="w-3.5 h-3.5" />
+                                    <span>عرض التفاصيل</span>
+                                  </Link>
+                                  <button
+                                    onClick={() => {
+                                      setActiveMenuId(null);
+                                      handleToggleActive(athlete);
+                                    }}
+                                    className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted text-foreground transition-colors w-full text-right cursor-pointer"
+                                  >
+                                    <UserCog className="w-3.5 h-3.5" />
+                                    <span>{athlete.is_active ? "تجميد الحساب" : "تنشيط الحساب"}</span>
+                                  </button>
+                                  <button
+                                    onClick={() => {
+                                      setActiveMenuId(null);
+                                      handleDeleteAthlete(athlete);
+                                    }}
+                                    className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-error/10 text-error hover:text-error transition-colors w-full text-right cursor-pointer"
+                                  >
+                                    <Trash2 className="w-3.5 h-3.5" />
+                                    <span>حذف اللاعب</span>
+                                  </button>
+                                </div>
+                              </>
+                            )}
+                          </div>
                         </div>
                       </td>
                     </motion.tr>
@@ -424,13 +499,54 @@ export default function AthletesPage() {
                       التفاصيل
                     </motion.button>
                   </Link>
-                  <motion.button
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                    className="py-2.5 px-3.5 border border-border/60 hover:bg-surface-container-low text-muted-foreground hover:text-foreground rounded-xl transition-all"
-                  >
-                    <Edit2 className="w-3.5 h-3.5" />
-                  </motion.button>
+                  <div className="relative">
+                    <motion.button
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                      className="py-2.5 px-3.5 border border-border/60 hover:bg-surface-container-low text-muted-foreground hover:text-foreground rounded-xl transition-all cursor-pointer"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setActiveMenuId(activeMenuId === athlete.id ? null : athlete.id);
+                      }}
+                    >
+                      <MoreVertical className="w-3.5 h-3.5" />
+                    </motion.button>
+                    {activeMenuId === athlete.id && (
+                      <>
+                        <div className="fixed inset-0 z-10" onClick={() => setActiveMenuId(null)} />
+                        <div className="absolute left-0 bottom-full mb-1 w-44 rounded-xl bg-card border border-border shadow-lg z-20 py-1 text-right">
+                          <Link
+                            to={`/dashboard/athletes/${athlete.id}`}
+                            className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted text-foreground transition-colors w-full text-right"
+                            onClick={() => setActiveMenuId(null)}
+                          >
+                            <Eye className="w-3.5 h-3.5" />
+                            <span>عرض التفاصيل</span>
+                          </Link>
+                          <button
+                            onClick={() => {
+                              setActiveMenuId(null);
+                              handleToggleActive(athlete);
+                            }}
+                            className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted text-foreground transition-colors w-full text-right cursor-pointer"
+                          >
+                            <UserCog className="w-3.5 h-3.5" />
+                            <span>{athlete.is_active ? "تجميد الحساب" : "تنشيط الحساب"}</span>
+                          </button>
+                          <button
+                            onClick={() => {
+                              setActiveMenuId(null);
+                              handleDeleteAthlete(athlete);
+                            }}
+                            className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-error/10 text-error hover:text-error transition-colors w-full text-right cursor-pointer"
+                          >
+                            <Trash2 className="w-3.5 h-3.5" />
+                            <span>حذف اللاعب</span>
+                          </button>
+                        </div>
+                      </>
+                    )}
+                  </div>
                 </div>
               </motion.div>
             ))

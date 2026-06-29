@@ -90,7 +90,7 @@ export default function NotificationsPage() {
     if (diff < 60_000) return "الآن"
     if (diff < 3_600_000) return `منذ ${Math.floor(diff / 60_000)} دقيقة`
     if (diff < 86_400_000) return `منذ ${Math.floor(diff / 3_600_000)} ساعة`
-    return date.toLocaleDateString("ar-SA", { month: "short", day: "numeric" })
+    return date.toLocaleDateString("ar-SA-u-nu-latn", { month: "short", day: "numeric" })
   }
 
   const typeIcon = (title: string) => {
@@ -264,7 +264,7 @@ export default function NotificationsPage() {
                     <div className="flex justify-between items-center mb-2">
                       <span className="text-[10px] font-bold text-[#006d30] bg-[#006d30]/10 px-2.5 py-0.5 rounded-full">إعلان</span>
                       <span className="text-[10px] text-muted-foreground">
-                        {new Date(ann.created_at).toLocaleDateString("ar-SA", { month: "short", day: "numeric" })}
+                        {new Date(ann.created_at).toLocaleDateString("ar-SA-u-nu-latn", { month: "short", day: "numeric" })}
                       </span>
                     </div>
                     <h4 className="font-bold text-sm text-[#0b1c30] mb-1">{ann.title}</h4>

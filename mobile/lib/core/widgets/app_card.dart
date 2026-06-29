@@ -14,7 +14,7 @@ class AppCard extends StatelessWidget {
     required this.child,
     this.padding = const EdgeInsets.all(16),
     this.margin,
-    this.borderRadius = 16,
+    this.borderRadius = 20,
     this.borderColor,
     this.backgroundColor,
     this.onTap,
@@ -27,9 +27,24 @@ class AppCard extends StatelessWidget {
       margin: margin ?? const EdgeInsets.only(bottom: 12),
       padding: padding,
       decoration: BoxDecoration(
-        color: backgroundColor ?? theme.colorScheme.surface,
+        color: backgroundColor ?? theme.cardTheme.color ?? theme.colorScheme.surface,
         borderRadius: BorderRadius.circular(borderRadius),
-        border: Border.all(color: borderColor ?? theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
+        border: Border.all(
+          color: borderColor ?? theme.colorScheme.outlineVariant.withValues(alpha: 0.4),
+          width: 0.8,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: theme.colorScheme.shadow.withValues(alpha: 0.03),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+          BoxShadow(
+            color: theme.colorScheme.shadow.withValues(alpha: 0.02),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
       ),
       child: child,
     );

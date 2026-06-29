@@ -11,8 +11,8 @@ class RenewalInline(admin.TabularInline):
 
 @admin.register(Subscription)
 class SubscriptionAdmin(admin.ModelAdmin):
-    list_display = ["athlete", "status", "start_date", "end_date", "amount"]
-    list_filter = ["status"]
+    list_display = ["athlete", "status", "payment_method", "start_date", "end_date", "amount", "approved_by"]
+    list_filter = ["status", "payment_method"]
     search_fields = ["athlete__full_name", "athlete__membership_number"]
     inlines = [RenewalInline]
 

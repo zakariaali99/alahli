@@ -6,7 +6,10 @@ export interface SubscriptionPackage {
   name: string
   description: string
   price: string
-  duration_days: number
+  duration_type: "weeks" | "months"
+  duration_value: number
+  max_athletes: number
+  tag: "discount" | "special" | "normal"
   features: string[]
   icon_name: string
   color_class: string

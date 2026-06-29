@@ -26,30 +26,30 @@ interface RevenueEntry {
   revenue: number
 }
 
-export function useDashboardStats() {
+export function useDashboardStats(academyId?: number) {
   return useQuery({
-    queryKey: ["analytics", "stats"],
-    queryFn: () => api.get<DashboardStats>("/analytics/stats/"),
+    queryKey: ["analytics", "stats", academyId],
+    queryFn: () => api.get<DashboardStats>("/analytics/stats/", academyId ? { academy_id: String(academyId) } : {}),
   })
 }
 
-export function useMonthlyGrowth() {
+export function useMonthlyGrowth(academyId?: number) {
   return useQuery({
-    queryKey: ["analytics", "monthly-growth"],
-    queryFn: () => api.get<MonthlyGrowth[]>("/analytics/monthly-growth/"),
+    queryKey: ["analytics", "monthly-growth", academyId],
+    queryFn: () => api.get<MonthlyGrowth[]>("/analytics/monthly-growth/", academyId ? { academy_id: String(academyId) } : {}),
   })
 }
 
-export function useDepartmentDistribution() {
+export function useDepartmentDistribution(academyId?: number) {
   return useQuery({
-    queryKey: ["analytics", "department-distribution"],
-    queryFn: () => api.get<DepartmentDistribution[]>("/analytics/department-distribution/"),
+    queryKey: ["analytics", "department-distribution", academyId],
+    queryFn: () => api.get<DepartmentDistribution[]>("/analytics/department-distribution/", academyId ? { academy_id: String(academyId) } : {}),
   })
 }
 
-export function useRevenue() {
+export function useRevenue(academyId?: number) {
   return useQuery({
-    queryKey: ["analytics", "revenue"],
-    queryFn: () => api.get<RevenueEntry[]>("/analytics/revenue/"),
+    queryKey: ["analytics", "revenue", academyId],
+    queryFn: () => api.get<RevenueEntry[]>("/analytics/revenue/", academyId ? { academy_id: String(academyId) } : {}),
   })
 }

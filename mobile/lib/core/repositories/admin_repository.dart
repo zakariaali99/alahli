@@ -187,13 +187,14 @@ class AdminRepository {
     }).toList();
   }
 
-  Future<List<Map<String, dynamic>>> getUsers({int page = 1, int pageSize = 20, String? search}) async {
+  Future<List<Map<String, dynamic>>> getUsers({int page = 1, int pageSize = 20, String? search, String? role}) async {
     final params = <String, dynamic>{'page': page, 'page_size': pageSize};
     if (search != null && search.isNotEmpty) params['search'] = search;
-    final res = await _client.dio.get('/accounts/users/', queryParameters: params);
+    if (role != null && role.isNotEmpty) params['role'] = role;
+    final res = await _client.dio.get('/auth/users/', queryParameters: params);
     final data = asMap(res.data);
     if (data == null) return [];
-    final results = asList(data['results']);
+    final results = asList(data['results']) ?? asList(res.data) ?? [];
     return results.map((e) {
       final m = asMap(e);
       return m ?? <String, dynamic>{};
@@ -201,20 +202,126 @@ class AdminRepository {
   }
 
   Future<Map<String, dynamic>> createUser(Map<String, dynamic> data) async {
-    final res = await _client.dio.post('/accounts/users/', data: data);
+    final res = await _client.dio.post('/auth/users/', data: data);
     final body = asMap(res.data);
     if (body == null) throw Exception('فشل إنشاء المستخدم');
     return body;
   }
 
   Future<Map<String, dynamic>> updateUser(int id, Map<String, dynamic> data) async {
-    final res = await _client.dio.patch('/accounts/users/$id/', data: data);
+    final res = await _client.dio.patch('/auth/users/$id/', data: data);
     final body = asMap(res.data);
     if (body == null) throw Exception('فشل تحديث المستخدم');
     return body;
   }
 
   Future<void> deleteUser(int id) async {
-    await _client.dio.delete('/accounts/users/$id/');
+    await _client.dio.delete('/auth/users/$id/');
+  }
+
+  Future<Map<String, dynamic>> getSubscriptions({int page = 1, int pageSize = 20, String? status, String? search}) async {
+    final params = <String, dynamic>{'page': page, 'page_size': pageSize};
+    if (status != null && status.isNotEmpty) params['status'] = status;
+    if (search != null && search.isNotEmpty) params['search'] = search;
+    final res = await _client.dio.get('/subscriptions/', queryParameters: params);
+    final data = asMap(res.data);
+    if (data == null) throw Exception('استجابة غير صالحة');
+    return data;
+  }
+
+  Future<Map<String, dynamic>> updateSubscription(int id, Map<String, dynamic> data) async {
+    final res = await _client.dio.patch('/subscriptions/$id/', data: data);
+    final body = asMap(res.data);
+    if (body == null) throw Exception('فشل تحديث الاشتراك');
+    return body;
+  }
+
+  Future<List<Map<String, dynamic>>> getRegistrationRequests({String? status}) async {
+    final params = <String, dynamic>{};
+    if (status != null && status.isNotEmpty) params['status'] = status;
+    final res = await _client.dio.get('/athletes/registrations/', queryParameters: params);
+    final data = asMap(res.data);
+    if (data == null) return [];
+    final results = asList(data['results']) ?? asList(res.data) ?? [];
+    return results.map((e) {
+      final m = asMap(e);
+      return m ?? <String, dynamic>{};
+    }).toList();
+  }
+
+  Future<Map<String, dynamic>> createAthleteProfileForRegistration(int registrationId, Map<String, dynamic> data) async {
+    final res = await _client.dio.post('/athletes/registrations/$registrationId/create-athlete/', data: data);
+    final body = asMap(res.data);
+    if (body == null) throw Exception('فشل إنشاء ملف المشترك');
+    return body;
+  }
+
+  Future<void> approveRegistrationRequest(int id) async {
+    await _client.dio.post('/athletes/registrations/$id/approve/');
+  }
+
+  Future<void> rejectRegistrationRequest(int id) async {
+    await _client.dio.post('/athletes/registrations/$id/reject/');
+  }
+
+  Future<List<Map<String, dynamic>>> getSports({int? departmentId}) async {
+    final params = <String, dynamic>{};
+    if (departmentId != null) params['department'] = departmentId;
+    final res = await _client.dio.get('/sports/', queryParameters: params);
+    final data = asMap(res.data);
+    final results = data != null ? asList(data['results']) : asList(res.data);
+    return results.map((e) {
+      final m = asMap(e);
+      return m ?? <String, dynamic>{};
+    }).toList();
+  }
+
+  Future<Map<String, dynamic>> createSport(Map<String, dynamic> data) async {
+    final res = await _client.dio.post('/sports/', data: data);
+    final body = asMap(res.data);
+    if (body == null) throw Exception('فشل إنشاء الرياضة');
+    return body;
+  }
+
+  Future<Map<String, dynamic>> updateSport(int id, Map<String, dynamic> data) async {
+    final res = await _client.dio.patch('/sports/$id/', data: data);
+    final body = asMap(res.data);
+    if (body == null) throw Exception('فشل تحديث الرياضة');
+    return body;
+  }
+
+  Future<void> deleteSport(int id) async {
+    await _client.dio.delete('/sports/$id/');
+  }
+
+  Future<List<Map<String, dynamic>>> getGroups({int? sportId, int? coachId}) async {
+    final params = <String, dynamic>{};
+    if (sportId != null) params['sport'] = sportId;
+    if (coachId != null) params['coach'] = coachId;
+    final res = await _client.dio.get('/groups/', queryParameters: params);
+    final data = asMap(res.data);
+    final results = data != null ? asList(data['results']) : asList(res.data);
+    return results.map((e) {
+      final m = asMap(e);
+      return m ?? <String, dynamic>{};
+    }).toList();
+  }
+
+  Future<Map<String, dynamic>> createGroup(Map<String, dynamic> data) async {
+    final res = await _client.dio.post('/groups/', data: data);
+    final body = asMap(res.data);
+    if (body == null) throw Exception('فشل إنشاء المجموعة');
+    return body;
+  }
+
+  Future<Map<String, dynamic>> updateGroup(int id, Map<String, dynamic> data) async {
+    final res = await _client.dio.patch('/groups/$id/', data: data);
+    final body = asMap(res.data);
+    if (body == null) throw Exception('فشل تحديث المجموعة');
+    return body;
+  }
+
+  Future<void> deleteGroup(int id) async {
+    await _client.dio.delete('/groups/$id/');
   }
 }

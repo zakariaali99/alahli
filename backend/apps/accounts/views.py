@@ -17,7 +17,7 @@ from .serializers import (
     UserCreateSerializer,
     UserUpdateSerializer,
 )
-from .permissions import IsSuperAdmin, IsReceptionOrAbove
+from .permissions import IsReceptionOrAbove
 
 
 class LoginRateThrottle(AnonRateThrottle):
@@ -26,7 +26,9 @@ class LoginRateThrottle(AnonRateThrottle):
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all().order_by("-id")
-    permission_classes = [IsSuperAdmin]
+    permission_classes = [IsReceptionOrAbove]
+    filterset_fields = ["role"]
+    search_fields = ["phone", "full_name_ar"]
 
     def get_serializer_class(self):
         if self.action == "create":
@@ -34,6 +36,20 @@ class UserViewSet(viewsets.ModelViewSet):
         if self.action in ["update", "partial_update"]:
             return UserUpdateSerializer
         return UserSerializer
+
+    def create(self, request, *args, **kwargs):
+        return super().create(request, *args, **kwargs)
+
+    def update(self, request, *args, **kwargs):
+        partial = kwargs.pop("partial", False)
+        instance = self.get_object()
+        serializer = self.get_serializer(instance, data=request.data, partial=partial, context={"request": request})
+        serializer.is_valid(raise_exception=True)
+        self.perform_update(serializer)
+        return Response(serializer.data)
+
+    def perform_update(self, serializer):
+        serializer.save()
 
 
 @api_view(["POST"])
@@ -61,7 +77,7 @@ def login_view(request):
     return Response({
         "access": str(refresh.access_token),
         "refresh": str(refresh),
-        "user": UserSerializer(user).data,
+        "user": UserSerializer(user, context={"request": request}).data,
         "remember_me": serializer.validated_data.get("remember_me", False),
     })
 
@@ -88,7 +104,7 @@ def logout_view(request):
 @api_view(["GET"])
 def me_view(request):
     user = User.objects.select_related("athlete__department").get(pk=request.user.pk)
-    return Response(UserSerializer(user).data)
+    return Response(UserSerializer(user, context={"request": request}).data)
 
 
 @api_view(["POST"])

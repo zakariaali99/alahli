@@ -118,6 +118,10 @@ class AuthNotifier extends StateNotifier<AuthState> {
     _client.setTokens(access: tokens.access!, refresh: tokens.refresh);
     try {
       final user = await _repo.getMe();
+      final role = user.role;
+      if (role != 'super_admin' && role != 'reception' && role != 'trainer') {
+        throw Exception('Access denied: not an admin');
+      }
       state = AuthState(status: AuthStatus.authenticated, user: user);
       _registerDevice();
     } catch (_) {
@@ -131,6 +135,14 @@ class AuthNotifier extends StateNotifier<AuthState> {
     state = state.copyWith(status: AuthStatus.loading);
     try {
       final authRes = await _repo.login(phone, password);
+      final role = authRes.user.role;
+      if (role != 'super_admin' && role != 'reception' && role != 'trainer') {
+        state = const AuthState(
+          status: AuthStatus.error,
+          errorMessage: 'عذراً، هذا الحساب ليس له صلاحيات الإدارة',
+        );
+        return;
+      }
       await _storage.saveTokens(authRes.access, authRes.refresh);
       state = AuthState(
         status: AuthStatus.authenticated,
@@ -323,4 +335,13 @@ final revenueProvider = FutureProvider<List<RevenueData>>((ref) async {
 
 final departmentDistProvider = FutureProvider<List<DepartmentDist>>((ref) async {
   return ref.watch(adminRepositoryProvider).getDepartmentDistribution();
+});
+
+final pendingRegistrationsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+  return ref.watch(adminRepositoryProvider).getRegistrationRequests(status: 'pending');
+});
+
+final pendingSubscriptionsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+  final data = await ref.watch(adminRepositoryProvider).getSubscriptions(status: 'pending');
+  return (data['results'] as List?)?.map((e) => e as Map<String, dynamic>).toList() ?? [];
 });

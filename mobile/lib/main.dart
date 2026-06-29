@@ -54,6 +54,8 @@ class AlAhlyApp extends ConsumerWidget {
     final router = ref.watch(goRouterProvider);
     final themeMode = ref.watch(themeModeProvider);
 
+    PushService().setRouter(router);
+
     return MaterialApp.router(
       title: 'مركز الأهلي الرياضي',
       debugShowCheckedModeBanner: false,

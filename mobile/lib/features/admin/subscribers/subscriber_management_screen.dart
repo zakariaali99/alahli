@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/providers/providers.dart';
+import '../../../core/helpers/numeral_converter.dart';
 
 final _athletesProvider = FutureProvider.family<Map<String, dynamic>, String>((ref, search) async {
   return ref.watch(adminRepositoryProvider).getAthletes(search: search.isNotEmpty ? search : null);
@@ -161,20 +162,19 @@ class _SubscriberManagementScreenState extends ConsumerState<SubscriberManagemen
     final name = athlete['full_name'] as String? ?? '';
     final dept = athlete['department_name'] as String? ?? '';
     final isActive = athlete['is_active'] as bool? ?? true;
-    final phone = athlete['phone'] as String? ?? '';
-    final membersNum = athlete['membership_number'] as String? ?? '';
+    final phone = NumeralConverter.convert(athlete['phone'] as String? ?? '');
+    final membersNum = NumeralConverter.convert(athlete['membership_number'] as String? ?? '');
 
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      padding: const EdgeInsets.all(16),
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
-      ),
-      child: InkWell(
-        onTap: () => context.push('/admin/athlete/$id'),
-        borderRadius: BorderRadius.circular(16),
+    return GestureDetector(
+      onTap: () => context.push('/admin/athlete/$id'),
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: theme.colorScheme.surface,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: theme.colorScheme.outlineVariant.withValues(alpha: 0.5)),
+        ),
         child: Row(
           children: [
             Container(

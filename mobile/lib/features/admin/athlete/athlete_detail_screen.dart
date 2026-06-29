@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers/providers.dart';
 import '../../../core/widgets/widgets.dart';
+import '../../../core/helpers/numeral_converter.dart';
 
 final _athleteDetailProvider = FutureProvider.family<Map<String, dynamic>, int>((ref, id) async {
   return ref.watch(adminRepositoryProvider).getAthleteDetail(id);
@@ -134,13 +135,13 @@ class _AthleteDetailScreenState extends ConsumerState<AthleteDetailScreen> {
   }
 
   Widget _buildInfoSection(ThemeData theme, Map<String, dynamic> athlete) {
-    final membership = athlete['membership_number'] as String? ?? '—';
-    final phone = athlete['phone'] as String? ?? '—';
+    final membership = NumeralConverter.convert(athlete['membership_number'] as String? ?? '—');
+    final phone = NumeralConverter.convert(athlete['phone'] as String? ?? '—');
     final dept = athlete['department_name'] as String? ?? '—';
     final gender = athlete['gender'] as String? ?? '—';
-    final birthDate = athlete['birth_date'] as String? ?? '—';
+    final birthDate = NumeralConverter.convert(athlete['birth_date'] as String? ?? '—');
     final notes = athlete['notes'] as String? ?? '';
-    final createdAt = athlete['created_at'] as String? ?? '';
+    final createdAt = NumeralConverter.convert(athlete['created_at'] as String? ?? '');
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -200,9 +201,9 @@ class _AthleteDetailScreenState extends ConsumerState<AthleteDetailScreen> {
   Widget _buildSubscriptionCard(ThemeData theme, Map<String, dynamic> sub) {
     final packageName = sub['package_name'] as String? ?? '—';
     final status = sub['status'] as String? ?? '';
-    final startDate = sub['start_date'] as String? ?? '';
-    final endDate = sub['end_date'] as String? ?? '';
-    final amount = sub['amount'] as String? ?? '';
+    final startDate = NumeralConverter.convert(sub['start_date'] as String? ?? '');
+    final endDate = NumeralConverter.convert(sub['end_date'] as String? ?? '');
+    final amount = NumeralConverter.convert(sub['amount'] as String? ?? '');
     final isActive = status == 'active';
 
     return Container(

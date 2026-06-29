@@ -2,6 +2,8 @@ import os
 from datetime import timedelta
 from pathlib import Path
 
+from celery.schedules import crontab
+
 from config.sentry import init_sentry
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
@@ -152,6 +154,16 @@ CELERY_ACCEPT_CONTENT = ["json"]
 CELERY_TASK_SERIALIZER = "json"
 CELERY_RESULT_SERIALIZER = "json"
 CELERY_TIMEZONE = "Africa/Tripoli"
+CELERY_BEAT_SCHEDULE = {
+    "expire-memberships-daily": {
+        "task": "apps.subscriptions.tasks.expire_memberships",
+        "schedule": crontab(hour=0, minute=0),
+    },
+    "alert-expiring-memberships-daily": {
+        "task": "apps.subscriptions.tasks.alert_expiring_soon",
+        "schedule": crontab(hour=1, minute=0),
+    },
+}
 
 # WhatsApp Cloud API
 WHATSAPP_PHONE_NUMBER_ID = os.environ.get("WHATSAPP_PHONE_NUMBER_ID", "")
@@ -160,3 +172,7 @@ WHATSAPP_AUTO_SEND_ENABLED = os.environ.get("WHATSAPP_AUTO_SEND_ENABLED", "False
 
 # Firebase Cloud Messaging
 FCM_CREDENTIALS_PATH = os.environ.get("FCM_CREDENTIALS_PATH", "")
+
+# Bank Account Details (for bank transfer payments)
+BANK_ACCOUNT_NUMBER = os.environ.get("BANK_ACCOUNT_NUMBER", "000-123456-789")
+BANK_IBAN = os.environ.get("BANK_IBAN", "LY123456789012345678901234")

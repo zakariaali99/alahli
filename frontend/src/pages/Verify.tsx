@@ -23,6 +23,7 @@ import { useVerifyAthlete } from "@/lib/hooks/useAthletes"
 import { QRScanner } from "@/components/ui/qr-scanner"
 import { ErrorDisplay } from "@/components/ui/error-display"
 import { useLogAttendance } from "@/lib/hooks/useAttendance"
+import { useToast } from "@/lib/toast"
 
 type SearchState = "idle" | "loading" | "found" | "notfound"
 
@@ -69,7 +70,7 @@ const statusConfig = (active: boolean) =>
 
 const formatDate = (d: string | null) => {
   if (!d) return "—"
-  return new Date(d).toLocaleDateString("ar-SA", { year: "numeric", month: "long", day: "numeric" })
+  return new Date(d).toLocaleDateString("ar-SA-u-nu-latn", { year: "numeric", month: "long", day: "numeric" })
 }
 
 function IdlePlaceholder() {
@@ -224,6 +225,7 @@ export default function VerifyPage() {
   const [searchState, setSearchState] = useState<SearchState>("idle")
   const verifyMutation = useVerifyAthlete()
   const logAttendance = useLogAttendance()
+  const toast = useToast()
   const member = verifyMutation.data
 
   const handleSearch = useCallback(() => {
@@ -332,7 +334,7 @@ export default function VerifyPage() {
 
               <div className="relative flex-1">
                 <div className="relative overflow-hidden rounded-2xl">
-                  <QRScanner onScan={handleQrScan} onError={(msg) => alert(msg)} />
+                  <QRScanner onScan={handleQrScan} onError={(msg) => toast.error(msg)} />
                   <motion.div
                     className="absolute left-0 right-0 h-0.5 bg-gradient-to-r from-transparent via-secondary to-transparent pointer-events-none z-20"
                     variants={scanLineVariants}

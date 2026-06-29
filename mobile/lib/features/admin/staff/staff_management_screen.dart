@@ -7,6 +7,10 @@ final _usersProvider = FutureProvider.family<List<Map<String, dynamic>>, String>
   return ref.watch(adminRepositoryProvider).getUsers(search: search);
 });
 
+final _departmentsProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
+  return ref.watch(adminRepositoryProvider).getDepartments();
+});
+
 class StaffManagementScreen extends ConsumerStatefulWidget {
   const StaffManagementScreen({super.key});
 
@@ -33,13 +37,16 @@ class _StaffManagementScreenState extends ConsumerState<StaffManagementScreen> {
     final nameArController = TextEditingController(text: existing?['first_name_ar'] as String? ?? '');
     final nameEnController = TextEditingController(text: existing?['last_name_ar'] as String? ?? '');
     final phoneController = TextEditingController(text: existing?['phone'] as String? ?? '');
-    String selectedRole = existing?['role'] as String? ?? 'viewer';
+    final passwordController = TextEditingController();
+    String selectedRole = existing?['role'] as String? ?? 'reception';
     bool isActive = existing?['is_active'] as bool? ?? true;
+    int? selectedAcademyId = existing?['academy'] as int?;
     bool isSaving = false;
 
     final roles = [
       {'value': 'super_admin', 'label': 'سوبر أدمن', 'icon': Icons.admin_panel_settings, 'color': Colors.red},
       {'value': 'reception', 'label': 'موظف استقبال', 'icon': Icons.person, 'color': Colors.blue},
+      {'value': 'academy_manager', 'label': 'مدير أكاديمية', 'icon': Icons.business, 'color': Colors.purple},
       {'value': 'trainer', 'label': 'مدرب', 'icon': Icons.fitness_center, 'color': Colors.green},
       {'value': 'viewer', 'label': 'مشاهد', 'icon': Icons.visibility, 'color': Colors.grey},
     ];
@@ -47,92 +54,131 @@ class _StaffManagementScreenState extends ConsumerState<StaffManagementScreen> {
     await showDialog(
       context: context,
       builder: (dialogCtx) => StatefulBuilder(
-        builder: (ctx, setDialogState) => AlertDialog(
-          title: Text(isEditing ? 'تعديل الموظف' : 'إضافة موظف جديد'),
-          content: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                TextField(
-                  controller: nameArController,
-                  decoration: const InputDecoration(labelText: 'الاسم الأول (عربي)', border: OutlineInputBorder()),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: nameEnController,
-                  decoration: const InputDecoration(labelText: 'الاسم الأخير (عربي)', border: OutlineInputBorder()),
-                ),
-                const SizedBox(height: 12),
-                TextField(
-                  controller: phoneController,
-                  decoration: const InputDecoration(labelText: 'رقم الهاتف', border: OutlineInputBorder()),
-                  keyboardType: TextInputType.phone,
-                ),
-                const SizedBox(height: 12),
-                DropdownButtonFormField<String>(
-                  value: selectedRole,
-                  decoration: const InputDecoration(labelText: 'الدور', border: OutlineInputBorder()),
-                  items: roles.map((r) => DropdownMenuItem(
-                    value: r['value'] as String,
-                    child: Row(
-                      children: [
-                        Icon(r['icon'] as IconData, color: r['color'] as Color, size: 20),
-                        const SizedBox(width: 8),
-                        Text(r['label'] as String),
-                      ],
+        builder: (ctx, setDialogState) {
+          final deptsAsync = ref.watch(_departmentsProvider);
+
+          return AlertDialog(
+            title: Text(isEditing ? 'تعديل الموظف' : 'إضافة موظف جديد'),
+            content: SingleChildScrollView(
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  TextField(
+                    controller: nameArController,
+                    decoration: const InputDecoration(labelText: 'الاسم الأول (عربي)', border: OutlineInputBorder()),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: nameEnController,
+                    decoration: const InputDecoration(labelText: 'الاسم الأخير (عربي)', border: OutlineInputBorder()),
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: phoneController,
+                    decoration: const InputDecoration(labelText: 'رقم الهاتف', border: OutlineInputBorder()),
+                    keyboardType: TextInputType.phone,
+                  ),
+                  const SizedBox(height: 12),
+                  TextField(
+                    controller: passwordController,
+                    decoration: InputDecoration(
+                      labelText: isEditing ? 'كلمة المرور الجديدة (اختياري)' : 'كلمة المرور',
+                      border: const OutlineInputBorder(),
                     ),
-                  )).toList(),
-                  onChanged: (v) => setDialogState(() => selectedRole = v ?? 'viewer'),
-                ),
-                const SizedBox(height: 12),
-                SwitchListTile(
-                  title: const Text('نشط'),
-                  value: isActive,
-                  onChanged: (v) => setDialogState(() => isActive = v),
-                  contentPadding: EdgeInsets.zero,
-                ),
-              ],
+                    obscureText: true,
+                  ),
+                  const SizedBox(height: 12),
+                  DropdownButtonFormField<String>(
+                    value: selectedRole,
+                    decoration: const InputDecoration(labelText: 'الدور', border: OutlineInputBorder()),
+                    items: roles.map((r) => DropdownMenuItem(
+                      value: r['value'] as String,
+                      child: Row(
+                        children: [
+                          Icon(r['icon'] as IconData, color: r['color'] as Color, size: 20),
+                          const SizedBox(width: 8),
+                          Text(r['label'] as String),
+                        ],
+                      ),
+                    )).toList(),
+                    onChanged: (v) => setDialogState(() => selectedRole = v ?? 'viewer'),
+                  ),
+                  const SizedBox(height: 12),
+                  if (selectedRole != 'super_admin')
+                    deptsAsync.when(
+                      data: (depts) => DropdownButtonFormField<int>(
+                        value: selectedAcademyId,
+                        decoration: const InputDecoration(labelText: 'تعيين لأكاديمية محددة', border: OutlineInputBorder()),
+                        items: [
+                          const DropdownMenuItem<int>(
+                            value: null,
+                            child: Text('جميع الأكاديميات (كامل الصلاحية)'),
+                          ),
+                          ...depts.map((d) => DropdownMenuItem<int>(
+                            value: d['id'] as int,
+                            child: Text(d['name_ar'] as String? ?? d['name'] as String? ?? ''),
+                          )),
+                        ],
+                        onChanged: (v) => setDialogState(() => selectedAcademyId = v),
+                      ),
+                      loading: () => const CircularProgressIndicator(),
+                      error: (e, _) => Text('خطأ في تحميل الأكاديميات: $e'),
+                    ),
+                  const SizedBox(height: 12),
+                  SwitchListTile(
+                    title: const Text('نشط'),
+                    value: isActive,
+                    onChanged: (v) => setDialogState(() => isActive = v),
+                    contentPadding: EdgeInsets.zero,
+                  ),
+                ],
+              ),
             ),
-          ),
-          actions: [
-            TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
-            ElevatedButton(
-              onPressed: isSaving ? null : () async {
-                if (nameArController.text.trim().isEmpty || nameEnController.text.trim().isEmpty || phoneController.text.trim().isEmpty) return;
-                setDialogState(() => isSaving = true);
-                try {
-                  final data = {
-                    'first_name_ar': nameArController.text.trim(),
-                    'last_name_ar': nameEnController.text.trim(),
-                    'phone': phoneController.text.trim(),
-                    'role': selectedRole,
-                    'is_active': isActive,
-                  };
-                  final repo = ref.read(adminRepositoryProvider);
-                  if (isEditing) {
-                    await repo.updateUser(existing['id'] as int, data);
-                  } else {
-                    await repo.createUser(data);
+            actions: [
+              TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
+              ElevatedButton(
+                onPressed: isSaving ? null : () async {
+                  if (nameArController.text.trim().isEmpty || nameEnController.text.trim().isEmpty || phoneController.text.trim().isEmpty) return;
+                  if (!isEditing && passwordController.text.trim().isEmpty) return;
+                  setDialogState(() => isSaving = true);
+                  try {
+                    final data = <String, dynamic>{
+                      'first_name_ar': nameArController.text.trim(),
+                      'last_name_ar': nameEnController.text.trim(),
+                      'phone': phoneController.text.trim(),
+                      'role': selectedRole,
+                      'is_active': isActive,
+                      'academy': selectedRole == 'super_admin' ? null : selectedAcademyId,
+                    };
+                    if (passwordController.text.trim().isNotEmpty) {
+                      data['password'] = passwordController.text.trim();
+                    }
+                    final repo = ref.read(adminRepositoryProvider);
+                    if (isEditing) {
+                      await repo.updateUser(existing['id'] as int, data);
+                    } else {
+                      await repo.createUser(data);
+                    }
+                    if (!ctx.mounted) return;
+                    Navigator.pop(ctx);
+                    ref.invalidate(_usersProvider(_searchQuery));
+                    ScaffoldMessenger.of(ctx).showSnackBar(
+                      SnackBar(content: Text(isEditing ? 'تم تحديث الموظف' : 'تم إضافة الموظف'), backgroundColor: Colors.green),
+                    );
+                  } catch (e) {
+                    if (!ctx.mounted) return;
+                    ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text('فشل: $e'), backgroundColor: Colors.red));
+                  } finally {
+                    if (ctx.mounted) setDialogState(() => isSaving = false);
                   }
-                  if (!ctx.mounted) return;
-                  Navigator.pop(ctx);
-                  ref.invalidate(_usersProvider(_searchQuery));
-                  ScaffoldMessenger.of(ctx).showSnackBar(
-                    SnackBar(content: Text(isEditing ? 'تم تحديث الموظف' : 'تم إضافة الموظف'), backgroundColor: Colors.green),
-                  );
-                } catch (e) {
-                  if (!ctx.mounted) return;
-                  ScaffoldMessenger.of(ctx).showSnackBar(SnackBar(content: Text('فشل: $e'), backgroundColor: Colors.red));
-                } finally {
-                  if (ctx.mounted) setDialogState(() => isSaving = false);
-                }
-              },
-              child: isSaving
-                  ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
-                  : Text(isEditing ? 'حفظ' : 'إضافة'),
-            ),
-          ],
-        ),
+                },
+                child: isSaving
+                    ? const SizedBox(width: 18, height: 18, child: CircularProgressIndicator(strokeWidth: 2))
+                    : Text(isEditing ? 'حفظ' : 'إضافة'),
+              ),
+            ],
+          );
+        },
       ),
     );
   }
@@ -216,6 +262,7 @@ class _StaffManagementScreenState extends ConsumerState<StaffManagementScreen> {
                     final role = u['role'] as String? ?? 'viewer';
                     final isActive = u['is_active'] as bool? ?? true;
                     final phone = u['phone'] as String? ?? '';
+                    final academyName = u['academy_name'] as String? ?? 'جميع الأكاديميات';
                     final roleInfo = _getRoleInfo(role);
 
                     return AppCard(
@@ -223,9 +270,9 @@ class _StaffManagementScreenState extends ConsumerState<StaffManagementScreen> {
                       onTap: () => _showUserDialog(existing: u),
                       child: Row(
                         children: [
-                          CircleAvatar(
-                            backgroundColor: roleInfo['color'].withValues(alpha: 0.15),
-                            child: Icon(roleInfo['icon'], color: roleInfo['color']),
+                           CircleAvatar(
+                            backgroundColor: (roleInfo['color'] as Color).withValues(alpha: 0.15),
+                            child: Icon(roleInfo['icon'] as IconData, color: roleInfo['color'] as Color),
                           ),
                           const SizedBox(width: 12),
                           Expanded(
@@ -239,15 +286,15 @@ class _StaffManagementScreenState extends ConsumerState<StaffManagementScreen> {
                                     Container(
                                       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
                                       decoration: BoxDecoration(
-                                        color: roleInfo['color'].withValues(alpha: 0.1),
+                                        color: (roleInfo['color'] as Color).withValues(alpha: 0.1),
                                         borderRadius: BorderRadius.circular(12),
                                       ),
-                                      child: Text(roleInfo['label'], style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: roleInfo['color'])),
+                                      child: Text(roleInfo['label'] as String, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: roleInfo['color'] as Color)),
                                     ),
                                   ],
                                 ),
                                 const SizedBox(height: 4),
-                                Text(phone, style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
+                                Text('$phone • $academyName', style: theme.textTheme.bodySmall?.copyWith(color: theme.colorScheme.onSurfaceVariant)),
                               ],
                             ),
                           ),
@@ -294,6 +341,7 @@ class _StaffManagementScreenState extends ConsumerState<StaffManagementScreen> {
     switch (role) {
       case 'super_admin': return {'label': 'سوبر أدمن', 'icon': Icons.admin_panel_settings, 'color': Colors.red};
       case 'reception': return {'label': 'موظف استقبال', 'icon': Icons.person, 'color': Colors.blue};
+      case 'academy_manager': return {'label': 'مدير أكاديمية', 'icon': Icons.business, 'color': Colors.purple};
       case 'trainer': return {'label': 'مدرب', 'icon': Icons.fitness_center, 'color': Colors.green};
       default: return {'label': 'مشاهد', 'icon': Icons.visibility, 'color': Colors.grey};
     }

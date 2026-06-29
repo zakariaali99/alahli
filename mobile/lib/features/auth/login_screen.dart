@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/providers.dart';
 import '../../core/widgets/animations.dart';
+import '../../core/widgets/widgets.dart';
+import '../../core/helpers/numeral_converter.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
   const LoginScreen({super.key});
@@ -40,27 +42,14 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                   duration: const Duration(milliseconds: 800),
                   curve: Curves.elasticOut,
                   builder: (ctx, value, child) => Transform.scale(scale: value, child: child),
-                  child: Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      color: Colors.white,
-                      borderRadius: BorderRadius.circular(24),
-                      boxShadow: [
-                        BoxShadow(
-                          color: theme.colorScheme.primary.withValues(alpha: 0.2),
-                          blurRadius: 20,
-                          offset: const Offset(0, 8),
-                        ),
-                      ],
-                    ),
-                    child: Center(
-                      child: Image.asset(
-                        'assets/logo.png',
-                        width: 60,
-                        height: 60,
-                        fit: BoxFit.contain,
-                      ),
+                  child: GlassContainer(
+                    borderRadius: 24,
+                    padding: const EdgeInsets.all(20),
+                    child: Image.asset(
+                      'assets/logo.png',
+                      width: 60,
+                      height: 60,
+                      fit: BoxFit.contain,
                     ),
                   ),
                 ),
@@ -156,7 +145,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   }
 
   void _login() {
-    final phone = _phoneController.text.trim();
+    final phone = NumeralConverter.convert(_phoneController.text.trim());
     final password = _passwordController.text;
     if (phone.isEmpty || password.isEmpty) return;
     ref.read(authStateProvider.notifier).login(phone, password);

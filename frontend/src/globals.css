@@ -1,6 +1,22 @@
 @import url("https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Arabic:wght@300;400;500;600;700;800&display=swap");
 @import "tailwindcss";
 
+@property --spotlight-color {
+  syntax: "<color>";
+  inherits: false;
+  initial-value: rgba(0, 40, 142, 0.08);
+}
+@property --spotlight-x {
+  syntax: "<length-percentage>";
+  inherits: false;
+  initial-value: 50%;
+}
+@property --spotlight-y {
+  syntax: "<length-percentage>";
+  inherits: false;
+  initial-value: 50%;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -199,10 +215,10 @@
     @apply border-border outline-ring/50;
   }
   body {
-    @apply bg-background text-foreground font-sans;
+    @apply bg-background text-foreground font-sans overflow-x-hidden max-w-full;
   }
   html {
-    @apply font-sans;
+    @apply font-sans overflow-x-hidden max-w-full;
   }
   ::selection {
     @apply bg-primary/20 text-primary;
@@ -414,4 +430,74 @@
 
 ::-webkit-scrollbar-thumb:hover {
   background: var(--muted-fg);
+}
+
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border) transparent;
+}
+
+/* ── Spotlight effect ── */
+.card-spotlight {
+  position: relative;
+  overflow: hidden;
+}
+.card-spotlight::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(
+    circle 250px at var(--spotlight-x, 50%) var(--spotlight-y, 50%),
+    var(--spotlight-color, rgba(0, 40, 142, 0.08)),
+    transparent 80%
+  );
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  pointer-events: none;
+  z-index: 1;
+}
+.card-spotlight:hover::after {
+  opacity: 1;
+}
+
+/* ── Interactive glass card hover effect ── */
+.glass-card-hover {
+  transition: transform 0.3s cubic-bezier(0.22, 1, 0.36, 1), box-shadow 0.3s cubic-bezier(0.22, 1, 0.36, 1), border-color 0.3s cubic-bezier(0.22, 1, 0.36, 1);
+}
+.glass-card-hover:hover {
+  transform: translateY(-4px);
+  border-color: rgba(0, 40, 142, 0.25);
+  box-shadow: 
+    0 4px 6px rgba(0, 0, 0, 0.02),
+    0 10px 20px rgba(0, 40, 142, 0.06),
+    0 20px 35px rgba(0, 0, 0, 0.04);
+}
+.dark .glass-card-hover:hover {
+  border-color: rgba(184, 196, 255, 0.2);
+  box-shadow: 
+    0 4px 6px rgba(0, 0, 0, 0.15),
+    0 10px 20px rgba(0, 0, 0, 0.2),
+    0 20px 35px rgba(0, 0, 0, 0.15);
+}
+
+/* ── Skeleton loading CSS shimmer ── */
+.skeleton-loading {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.4) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
+}
+.dark .skeleton-loading {
+  background: linear-gradient(
+    90deg,
+    rgba(255, 255, 255, 0) 0%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0) 100%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.5s infinite;
 }

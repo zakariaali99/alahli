@@ -1,7 +1,8 @@
-import React, { useState, useEffect } from "react"
-import { Link, Outlet, useLocation, useNavigate } from "react-router-dom"
+import React, { useState, useEffect, useCallback } from "react"
+import { Link, Outlet, useLocation, useNavigate, Navigate } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import {
   LayoutDashboard,
@@ -10,21 +11,28 @@ import {
   QrCode,
   Bell,
   BarChart3,
+  Building2,
   Settings,
   LogOut,
   Search,
   ChevronLeft,
   Menu,
-  X,
-  User,
+  Dumbbell,
+  UserCog,
 } from "lucide-react"
 import { useAuth } from "@/lib/auth"
+import { ErrorBoundary } from "@/components/ui/error-boundary"
+import { cn } from "@/lib/utils"
 
 const navItems = [
   { name: "لوحة القيادة", path: "/dashboard", icon: LayoutDashboard },
   { name: "اللاعبين", path: "/dashboard/athletes", icon: Users },
   { name: "الاشتراكات", path: "/dashboard/memberships", icon: CreditCard },
   { name: "الفحص السريع", path: "/dashboard/verify", icon: QrCode },
+  { name: "الطلبات الجديدة", path: "/dashboard/registrations", icon: Users },
+  { name: "الأكاديميات", path: "/dashboard/academies", icon: Building2 },
+  { name: "المدربون", path: "/dashboard/coaches", icon: Dumbbell },
+  { name: "الإدارة", path: "/dashboard/staff", icon: UserCog },
   { name: "التنبيهات", path: "/dashboard/notifications", icon: Bell },
   { name: "التقارير", path: "/dashboard/reports", icon: BarChart3 },
 ]
@@ -32,27 +40,56 @@ const navItems = [
 export default function DashboardLayout() {
   const location = useLocation()
   const navigate = useNavigate()
-  const { user, logout, isAuthenticated, isLoading } = useAuth()
+  const { user, logout, isLoading } = useAuth()
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [isMobile, setIsMobile] = useState(false)
   const [scrolled, setScrolled] = useState(false)
 
-  useEffect(() => {
-    if (!isLoading && !isAuthenticated) {
-      navigate("/login", { replace: true })
-    }
-  }, [isLoading, isAuthenticated, navigate])
+  const handleForcedLogout = useCallback(() => {
+    navigate("/login", { replace: true })
+  }, [navigate])
 
   useEffect(() => {
-    const handler = () => navigate("/login", { replace: true })
-    window.addEventListener("auth:logout", handler)
-    return () => window.removeEventListener("auth:logout", handler)
-  }, [navigate])
+    if (isLoading) return
+
+    if (!user) {
+      navigate("/login", { replace: true })
+      return
+    }
+
+    if (user.role === "athlete" || user.role === "parent") {
+      navigate("/user", { replace: true })
+    }
+  }, [isLoading, user, navigate])
+
+  useEffect(() => {
+    window.addEventListener("auth:logout", handleForcedLogout)
+    return () => window.removeEventListener("auth:logout", handleForcedLogout)
+  }, [handleForcedLogout])
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 10)
     window.addEventListener("scroll", onScroll, { passive: true })
     return () => window.removeEventListener("scroll", onScroll)
   }, [])
+
+  useEffect(() => {
+    const onResize = () => {
+      const mobile = window.innerWidth < 768
+      setIsMobile(mobile)
+      setSidebarOpen(!mobile)
+    }
+
+    onResize()
+    window.addEventListener("resize", onResize)
+    return () => window.removeEventListener("resize", onResize)
+  }, [])
+
+  useEffect(() => {
+    if (isMobile) {
+      setSidebarOpen(false)
+    }
+  }, [location.pathname, isMobile])
 
   if (isLoading) {
     return (
@@ -65,7 +102,7 @@ export default function DashboardLayout() {
     )
   }
 
-  if (!user) return null
+  if (!user) return <Navigate to="/login" replace />
 
   const handleLogout = async () => {
     await logout()
@@ -73,11 +110,11 @@ export default function DashboardLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex">
+    <div className="min-h-screen bg-background text-foreground flex overflow-x-hidden">
       {/* ── Sidebar ── */}
       <aside
-        className={`fixed top-0 right-0 h-screen z-50 flex flex-col transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]
-          ${sidebarOpen ? "w-64 opacity-100 visible" : "w-0 -right-64 opacity-0 invisible pointer-events-none overflow-hidden"}
+        className={`fixed top-0 right-0 h-screen z-50 flex w-72 md:w-64 flex-col transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]
+          ${sidebarOpen ? "translate-x-0 opacity-100" : "translate-x-full opacity-0 pointer-events-none"}
           bg-sidebar-bg border-l border-sidebar-border
           shadow-[4px_0_24px_rgba(0,0,0,0.12)]`}
       >
@@ -103,7 +140,7 @@ export default function DashboardLayout() {
         </div>
 
         {/* Navigation */}
-        <nav className="flex-1 overflow-y-auto p-3 space-y-0.5">
+        <nav className="flex-1 overflow-y-auto p-3 space-y-1">
           {navItems.map((item) => {
             const isActive = location.pathname === item.path
             const Icon = item.icon
@@ -111,17 +148,25 @@ export default function DashboardLayout() {
               <Link
                 key={item.path}
                 to={item.path}
-                className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 group ${
+                onClick={() => {
+                  if (isMobile) setSidebarOpen(false)
+                }}
+                className={cn(
+                  "relative flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-colors duration-200 group z-10",
                   isActive
-                    ? "bg-sidebar-item-active text-sidebar-item-active-fg font-semibold shadow-sm"
-                    : "text-sidebar-fg hover:bg-sidebar-item-hover hover:text-white"
-                }`}
-              >
-                <Icon className={`w-5 h-5 shrink-0 ${isActive ? "text-primary dark:text-primary" : ""}`} />
-                <span>{item.name}</span>
-                {isActive && (
-                  <div className="mr-auto w-1 h-5 rounded-full bg-primary dark:bg-primary" />
+                    ? "text-sidebar-item-active-fg font-semibold"
+                    : "text-sidebar-fg hover:text-white"
                 )}
+              >
+                {isActive && (
+                  <motion.div
+                    layoutId="activeNav"
+                    className="absolute inset-0 bg-sidebar-item-active rounded-xl -z-10"
+                    transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                  />
+                )}
+                <Icon className={cn("w-5 h-5 shrink-0 transition-colors", isActive ? "text-white" : "text-sidebar-fg group-hover:text-white")} />
+                <span>{item.name}</span>
               </Link>
             )
           })}
@@ -129,14 +174,6 @@ export default function DashboardLayout() {
 
         {/* Bottom Section */}
         <div className="p-3 border-t border-sidebar-border space-y-1">
-          <Button
-            variant="ghost"
-            size="lg"
-            className="w-full justify-start text-sidebar-fg hover:text-white hover:bg-sidebar-item-hover text-sm"
-          >
-            <span className="w-5 h-5 shrink-0 flex items-center justify-center text-base">⇄</span>
-            <span>تبديل الأكاديمية</span>
-          </Button>
           <Link
             to="/dashboard/settings"
             className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-sm transition-all duration-200 ${
@@ -160,8 +197,16 @@ export default function DashboardLayout() {
         </div>
       </aside>
 
-      {/* ── Sidebar Overlay (mobile) ── */}
-      {!sidebarOpen && (
+      {isMobile && sidebarOpen && (
+        <button
+          aria-label="close-sidebar"
+          className="fixed inset-0 z-40 bg-black/40 md:hidden"
+          onClick={() => setSidebarOpen(false)}
+        />
+      )}
+
+      {/* ── Sidebar Open Trigger ── */}
+      {isMobile && !sidebarOpen && (
         <Button
           onClick={() => setSidebarOpen(true)}
           variant="ghost"
@@ -179,7 +224,7 @@ export default function DashboardLayout() {
       </div>
 
       {/* ── Main Content ── */}
-      <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${sidebarOpen ? "mr-64" : "mr-0"}`}>
+      <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${sidebarOpen ? "md:mr-64" : "md:mr-0"}`}>
         {/* ── Floating Header ── */}
         <header
           className={`sticky top-0 z-30 transition-all duration-300 ${
@@ -188,9 +233,9 @@ export default function DashboardLayout() {
               : "bg-transparent"
           }`}
         >
-          <div className="flex items-center justify-between px-6 h-16">
+          <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 md:h-16 md:px-6 md:py-0">
             {/* Left: Breadcrumb / Page title area */}
-            <div className="flex items-center gap-3">
+            <div className="flex w-full items-center gap-3 md:w-auto">
               {!sidebarOpen && (
                 <Button
                   onClick={() => setSidebarOpen(true)}
@@ -200,29 +245,24 @@ export default function DashboardLayout() {
                   <Menu className="w-5 h-5" />
                 </Button>
               )}
-              <div className="relative w-64 sm:w-80">
-                <Search className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground w-4 h-4 pointer-events-none" />
-                <input
-                  className="w-full bg-surface-container-low border border-border/40 rounded-xl py-2 pr-9 pl-3 text-sm text-foreground placeholder:text-muted-foreground focus:ring-2 focus:ring-primary/30 focus:border-primary transition-all outline-none"
+              <div className="hidden w-full md:block md:w-64 lg:w-80">
+                <Input
+                  className="bg-surface-container-low/50"
                   placeholder="ابحث عن لاعب أو اشتراك..."
-                  type="text"
+                  icon={<Search className="w-4 h-4 text-muted-foreground" />}
                 />
               </div>
             </div>
 
             {/* Right: Actions */}
-            <div className="flex items-center gap-3">
-              <Button variant="ghost" size="icon" className="relative">
-                <Bell className="w-5 h-5" />
-                <span className="absolute top-2 right-2 w-2 h-2 bg-destructive rounded-full ring-2 ring-white dark:ring-card" />
-              </Button>
-              <div className="flex items-center gap-2.5 pr-3 border-r border-border/40">
-                <div className="text-left">
+            <div className="mr-auto flex items-center gap-3 md:mr-0">
+              <div className="flex items-center gap-2.5">
+                <div className="hidden text-left sm:block">
                   <p className="text-sm font-semibold text-foreground leading-tight">
                     {user.full_name_ar || "المسؤول"}
                   </p>
                   <p className="text-[11px] text-muted-foreground">
-                    {user.role === "super_admin" ? "مدير النظام" : user.role === "reception" ? "موظف استقبال" : "مشاهد"}
+                    {user.role === "super_admin" ? "مدير النظام" : user.role === "reception" ? "موظف استقبال" : user.role === "academy_manager" ? "مدير الأكاديمية" : "مشاهد"}
                   </p>
                 </div>
                 <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-primary-container flex items-center justify-center text-white font-bold text-sm shadow-md shrink-0">
@@ -234,7 +274,7 @@ export default function DashboardLayout() {
         </header>
 
         {/* ── Page Content ── */}
-        <main className="flex-1 px-6 pb-8 pt-6">
+        <main className="flex-1 px-3 pb-8 pt-4 md:px-6 md:pt-6">
           <div className="max-w-7xl mx-auto">
             <AnimatePresence mode="wait">
               <motion.div
@@ -244,7 +284,9 @@ export default function DashboardLayout() {
                 exit={{ opacity: 0, y: -12 }}
                 transition={{ duration: 0.25, ease: [0.22, 1, 0.36, 1] }}
               >
-                <Outlet />
+                <ErrorBoundary>
+                  <Outlet />
+                </ErrorBoundary>
               </motion.div>
             </AnimatePresence>
           </div>

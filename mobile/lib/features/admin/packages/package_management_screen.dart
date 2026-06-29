@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers/providers.dart';
 import '../../../core/widgets/widgets.dart';
+import '../../../core/helpers/numeral_converter.dart';
 
 final _packagesProvider = FutureProvider<List<Map<String, dynamic>>>((ref) async {
   return ref.watch(adminRepositoryProvider).getPackages();
@@ -43,8 +44,14 @@ class _PackageManagementScreenState extends ConsumerState<PackageManagementScree
     final nameCtl = TextEditingController(text: existing?['name'] as String? ?? '');
     final descCtl = TextEditingController(text: existing?['description'] as String? ?? '');
     final priceCtl = TextEditingController(text: existing?['price']?.toString() ?? '');
-    final durationCtl = TextEditingController(text: (existing?['duration_days'] as int?)?.toString() ?? '30');
+    final durationValCtl = TextEditingController(text: (existing?['duration_value'] as int?)?.toString() ?? '1');
+    final maxAthletesCtl = TextEditingController(text: (existing?['max_athletes'] as int?)?.toString() ?? '1');
     final featuresCtl = TextEditingController(text: (existing?['features'] as List?)?.join(', ') ?? '');
+    
+    String durationType = existing?['duration_type'] as String? ?? 'months';
+    String tag = existing?['tag'] as String? ?? 'normal';
+    bool isActive = existing?['is_active'] as bool? ?? true;
+    
     final isEditing = existing != null;
     bool isSaving = false;
 
@@ -57,15 +64,78 @@ class _PackageManagementScreenState extends ConsumerState<PackageManagementScree
             child: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                TextField(controller: nameCtl, decoration: const InputDecoration(labelText: 'اسم الباقة', border: OutlineInputBorder())),
-                const SizedBox(height: 8),
-                TextField(controller: descCtl, decoration: const InputDecoration(labelText: 'الوصف', border: OutlineInputBorder()), maxLines: 2),
-                const SizedBox(height: 8),
-                TextField(controller: priceCtl, decoration: const InputDecoration(labelText: 'السعر', border: OutlineInputBorder()), keyboardType: TextInputType.number),
-                const SizedBox(height: 8),
-                TextField(controller: durationCtl, decoration: const InputDecoration(labelText: 'المدة (أيام)', border: OutlineInputBorder()), keyboardType: TextInputType.number),
-                const SizedBox(height: 8),
-                TextField(controller: featuresCtl, decoration: const InputDecoration(labelText: 'المميزات (مفصولة بفواصل)', border: OutlineInputBorder())),
+                TextField(
+                  controller: nameCtl,
+                  decoration: const InputDecoration(labelText: 'اسم الباقة', border: OutlineInputBorder()),
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: descCtl,
+                  decoration: const InputDecoration(labelText: 'الوصف', border: OutlineInputBorder()),
+                  maxLines: 2,
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: priceCtl,
+                  decoration: const InputDecoration(labelText: 'السعر (د.ل)', border: OutlineInputBorder()),
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Expanded(
+                      child: TextField(
+                        controller: durationValCtl,
+                        decoration: const InputDecoration(labelText: 'قيمة المدة', border: OutlineInputBorder()),
+                        keyboardType: TextInputType.number,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: DropdownButtonFormField<String>(
+                        value: durationType,
+                        decoration: const InputDecoration(labelText: 'نوع المدة', border: OutlineInputBorder()),
+                        items: const [
+                          DropdownMenuItem(value: 'weeks', child: Text('أسابيع')),
+                          DropdownMenuItem(value: 'months', child: Text('أشهر')),
+                        ],
+                        onChanged: (v) {
+                          if (v != null) setDialogState(() => durationType = v);
+                        },
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: maxAthletesCtl,
+                  decoration: const InputDecoration(labelText: 'أقصى عدد لاعبين', border: OutlineInputBorder()),
+                  keyboardType: TextInputType.number,
+                ),
+                const SizedBox(height: 12),
+                DropdownButtonFormField<String>(
+                  value: tag,
+                  decoration: const InputDecoration(labelText: 'النوع / التصنيف', border: OutlineInputBorder()),
+                  items: const [
+                    DropdownMenuItem(value: 'normal', child: Text('عادية (Normal)')),
+                    DropdownMenuItem(value: 'special', child: Text('مميزة (Special)')),
+                    DropdownMenuItem(value: 'discount', child: Text('تخفيض (Discount)')),
+                  ],
+                  onChanged: (v) {
+                    if (v != null) setDialogState(() => tag = v);
+                  },
+                ),
+                const SizedBox(height: 12),
+                TextField(
+                  controller: featuresCtl,
+                  decoration: const InputDecoration(labelText: 'المميزات (مفصولة بفواصل)', border: OutlineInputBorder()),
+                ),
+                const SizedBox(height: 12),
+                SwitchListTile(
+                  title: const Text('نشط'),
+                  value: isActive,
+                  onChanged: (v) => setDialogState(() => isActive = v),
+                ),
               ],
             ),
           ),
@@ -76,11 +146,20 @@ class _PackageManagementScreenState extends ConsumerState<PackageManagementScree
                 if (nameCtl.text.trim().isEmpty) return;
                 setDialogState(() => isSaving = true);
                 try {
+                  // Normalize numeric values
+                  final cleanPriceStr = NumeralConverter.convert(priceCtl.text.trim());
+                  final cleanDurationStr = NumeralConverter.convert(durationValCtl.text.trim());
+                  final cleanMaxAthletesStr = NumeralConverter.convert(maxAthletesCtl.text.trim());
+
                   final data = {
                     'name': nameCtl.text.trim(),
                     'description': descCtl.text.trim(),
-                    'price': priceCtl.text.trim(),
-                    'duration_days': int.tryParse(durationCtl.text) ?? 30,
+                    'price': cleanPriceStr,
+                    'duration_type': durationType,
+                    'duration_value': int.tryParse(cleanDurationStr) ?? 1,
+                    'max_athletes': int.tryParse(cleanMaxAthletesStr) ?? 1,
+                    'tag': tag,
+                    'is_active': isActive,
                     'features': featuresCtl.text.split(',').map((f) => f.trim()).where((f) => f.isNotEmpty).toList(),
                   };
                   final repo = ref.read(adminRepositoryProvider);
@@ -154,10 +233,32 @@ class _PackageManagementScreenState extends ConsumerState<PackageManagementScree
   Widget _buildPackageCard(ThemeData theme, Map<String, dynamic> pkg) {
     final id = pkg['id'] as int? ?? 0;
     final name = pkg['name'] as String? ?? '';
-    final price = pkg['price'] as String? ?? '0';
-    final days = pkg['duration_days'] as int? ?? 0;
+    final priceStr = pkg['price'] as String? ?? '0';
+    final durationVal = pkg['duration_value'] as int? ?? 1;
+    final durationType = pkg['duration_type'] as String? ?? 'months';
+    final tag = pkg['tag'] as String? ?? 'normal';
+    final maxAthletes = pkg['max_athletes'] as int? ?? 1;
     final features = pkg['features'] as List? ?? [];
     final isActive = pkg['is_active'] as bool? ?? true;
+
+    final durationText = durationType == 'weeks' 
+        ? '$durationVal أسبوع' 
+        : '$durationVal شهر';
+
+    Color tagColor = Colors.grey;
+    String tagLabel = 'عادية';
+    if (tag == 'special') {
+      tagColor = Colors.orange;
+      tagLabel = 'مميزة';
+    } else if (tag == 'discount') {
+      tagColor = Colors.red;
+      tagLabel = 'تخفيض';
+    }
+
+    // Force standard numerals formatting for display
+    final cleanPrice = NumeralConverter.convert(priceStr);
+    final cleanMaxAthletes = NumeralConverter.convert(maxAthletes.toString());
+    final cleanDurationText = NumeralConverter.convert(durationText);
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -174,8 +275,11 @@ class _PackageManagementScreenState extends ConsumerState<PackageManagementScree
             children: [
               Container(
                 padding: const EdgeInsets.all(10),
-                decoration: BoxDecoration(color: theme.colorScheme.primary.withValues(alpha: 0.1), borderRadius: BorderRadius.circular(12)),
-                child: Icon(Icons.card_giftcard, color: theme.colorScheme.primary, size: 22),
+                decoration: BoxDecoration(
+                  color: tagColor.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: Icon(Icons.card_giftcard, color: tagColor, size: 22),
               ),
               const SizedBox(width: 12),
               Expanded(
@@ -186,11 +290,27 @@ class _PackageManagementScreenState extends ConsumerState<PackageManagementScree
                       children: [
                         Text(name, style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold)),
                         const SizedBox(width: 8),
-                        Container(width: 8, height: 8, decoration: BoxDecoration(color: isActive ? Colors.green : Colors.red, shape: BoxShape.circle)),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: tagColor.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: Text(tagLabel, style: TextStyle(color: tagColor, fontSize: 10, fontWeight: FontWeight.bold)),
+                        ),
+                        const SizedBox(width: 8),
+                        Container(
+                          width: 8,
+                          height: 8,
+                          decoration: BoxDecoration(color: isActive ? Colors.green : Colors.red, shape: BoxShape.circle),
+                        ),
                       ],
                     ),
                     const SizedBox(height: 4),
-                    Text('$price د.ل • $days يوم', style: TextStyle(fontSize: 13, color: theme.colorScheme.primary, fontWeight: FontWeight.w600)),
+                    Text(
+                      '$cleanPrice د.ل • $cleanDurationText • الحد الأقصى: $cleanMaxAthletes لاعبين', 
+                      style: TextStyle(fontSize: 13, color: theme.colorScheme.primary, fontWeight: FontWeight.w600),
+                    ),
                   ],
                 ),
               ),
@@ -216,7 +336,7 @@ class _PackageManagementScreenState extends ConsumerState<PackageManagementScree
                 children: [
                   Icon(Icons.check, size: 14, color: theme.colorScheme.secondary),
                   const SizedBox(width: 6),
-                  Text(f.toString(), style: const TextStyle(fontSize: 12)),
+                  Text(NumeralConverter.convert(f.toString()), style: const TextStyle(fontSize: 12)),
                 ],
               ),
             )),

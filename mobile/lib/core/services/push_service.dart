@@ -2,6 +2,7 @@ import 'package:firebase_core/firebase_core.dart';
 import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:go_router/go_router.dart';
 
 @pragma('vm:entry-point')
 Future<void> _backgroundHandler(RemoteMessage message) async {
@@ -42,8 +43,13 @@ class PushService {
 
   final FirebaseMessaging _messaging = FirebaseMessaging.instance;
   String? _fcmToken;
+  GoRouter? _router;
 
   String? get fcmToken => _fcmToken;
+
+  void setRouter(GoRouter router) {
+    _router = router;
+  }
 
   Future<void> initialize() async {
     const androidSettings =
@@ -94,5 +100,18 @@ class PushService {
 
   void _handleNotificationTap(RemoteMessage message) {
     debugPrint('Notification tapped: ${message.notification?.title}');
+    final data = message.data;
+    final type = data['type'];
+    final id = data['id'];
+
+    if (_router != null) {
+      if (type == 'registration' || type == 'subscription') {
+        _router!.go('/admin/approvals');
+      } else if (type == 'athlete' && id != null) {
+        _router!.go('/admin/athlete/$id');
+      } else {
+        _router!.go('/admin/dashboard');
+      }
+    }
   }
 }

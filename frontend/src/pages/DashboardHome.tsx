@@ -6,43 +6,14 @@ import {
 } from "lucide-react"
 import { Link } from "react-router-dom"
 import { Button } from "@/components/ui/button"
+import { Card } from "@/components/ui/card"
+import { StatCard } from "@/components/ui/stat-card"
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
 } from "recharts"
 import { useDashboardStats, useMonthlyGrowth, useDepartmentDistribution } from "@/lib/hooks/useAnalytics"
 import { useAthletes } from "@/lib/hooks/useAthletes"
 import { useAuth } from "@/lib/auth"
-
-function CountUp({ end, duration = 1500 }: { end: number; duration?: number }) {
-  const [count, setCount] = useState(0)
-  const ref = useRef<HTMLSpanElement>(null)
-  const started = useRef(false)
-
-  useEffect(() => {
-    if (started.current) return
-    const observer = new IntersectionObserver(
-      ([entry]) => {
-        if (entry.isIntersecting && !started.current) {
-          started.current = true
-          const start = performance.now()
-          const animate = (now: number) => {
-            const elapsed = now - start
-            const progress = Math.min(elapsed / duration, 1)
-            const eased = 1 - Math.pow(1 - progress, 3)
-            setCount(Math.floor(eased * end))
-            if (progress < 1) requestAnimationFrame(animate)
-          }
-          requestAnimationFrame(animate)
-        }
-      },
-      { threshold: 0.3 }
-    )
-    if (ref.current) observer.observe(ref.current)
-    return () => observer.disconnect()
-  }, [end, duration])
-
-  return <span ref={ref}>{count.toLocaleString("ar-SA-u-nu-latn")}</span>
-}
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -170,40 +141,28 @@ export default function DashboardPage() {
 
       {/* ── Glass KPI Cards ── */}
       <motion.div variants={cardVariants} className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
-        {statCards.map((card, idx) => {
-          const Icon = card.icon
-          const BadgeIcon = card.badgeIcon
-          return (
-            <motion.div
-              key={idx}
-              whileHover={{ y: -4, transition: { duration: 0.2 } }}
-              className="glass-card rounded-2xl p-6 relative overflow-hidden group"
-            >
-              <div className="absolute -left-6 -top-6 w-24 h-24 rounded-full blur-xl opacity-60 group-hover:opacity-100 transition-opacity bg-primary/5" />
-              <div className="flex justify-between items-start mb-4">
-                <span className="text-sm font-medium text-muted-foreground">{card.label}</span>
-                <div className={`w-10 h-10 rounded-full ${card.iconBg} flex items-center justify-center shadow-sm`}>
-                  <Icon className="w-5 h-5" />
+        {statsLoading
+          ? Array.from({ length: 4 }).map((_, idx) => (
+              <Card key={idx} variant="glass" className="h-[120px] flex flex-col justify-between p-6">
+                <div className="flex justify-between items-center">
+                  <div className="h-4 skeleton-loading bg-surface-container-high rounded-xl w-1/3" />
+                  <div className="w-9 h-9 skeleton-loading bg-surface-container-high rounded-xl" />
                 </div>
-              </div>
-              <div className="text-3xl font-extrabold text-foreground tracking-tight">
-                {statsLoading ? (
-                  <span className="animate-pulse bg-muted rounded w-20 h-9 inline-block" />
-                ) : (
-                  <CountUp end={card.value} />
-                )}
-              </div>
-              {card.badge && (
-                <div className="flex items-center gap-1.5 mt-3 text-xs font-semibold text-muted-foreground">
-                  {BadgeIcon && <BadgeIcon className="w-3.5 h-3.5 text-primary" />}
-                  <span>{card.badge}</span>
-                  {String(card.trend) === "up" && <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />}
-                  {String(card.trend) === "down" && <TrendingDown className="w-3.5 h-3.5 text-rose-500" />}
-                </div>
-              )}
-            </motion.div>
-          )
-        })}
+                <div className="h-7 skeleton-loading bg-surface-container-high rounded-xl w-1/2" />
+              </Card>
+            ))
+          : statCards.map((card, idx) => (
+              <StatCard
+                key={idx}
+                label={card.label}
+                value={card.value}
+                icon={card.icon}
+                iconBg={card.iconBg}
+                glow={card.glow}
+                badge={card.badge}
+                trend={card.trend === "warning" ? null : card.trend}
+              />
+            ))}
       </motion.div>
 
       {/* ── Quick Actions ── */}

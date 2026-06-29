@@ -4,7 +4,7 @@ from rest_framework.routers import DefaultRouter
 from .views import SubscriptionPackageViewSet
 
 router = DefaultRouter()
-router.register("", SubscriptionPackageViewSet)
+router.register("", SubscriptionPackageViewSet, basename="subscriptionpackage")
 
 urlpatterns = [
     path("", include(router.urls)),

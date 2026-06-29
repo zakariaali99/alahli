@@ -47,6 +47,11 @@ class Athlete(models.Model):
     def __str__(self):
         return f"{self.full_name} ({self.membership_number})"
 
+    registration = models.OneToOneField(
+        "athletes.RegistrationRequest", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="athlete",
+    )
+
     def save(self, *args, **kwargs):
         if not self.qr_code:
             self.generate_qr_code()
@@ -61,3 +66,48 @@ class Athlete(models.Model):
         img.save(buffer, format="PNG")
         filename = f"qr_{self.membership_number}.png"
         self.qr_code.save(filename, ContentFile(buffer.getvalue()), save=False)
+
+
+class RegistrationRequest(models.Model):
+    class RoleChoice(models.TextChoices):
+        ATHLETE = "athlete", "Athlete"
+        PARENT = "parent", "Parent"
+
+    class Status(models.TextChoices):
+        PENDING = "pending", "Pending"
+        APPROVED = "approved", "Approved"
+        REJECTED = "rejected", "Rejected"
+
+    user = models.ForeignKey(
+        "accounts.User", on_delete=models.CASCADE, related_name="registration_requests",
+    )
+    role_choice = models.CharField(max_length=10, choices=RoleChoice.choices)
+    status = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING, db_index=True)
+    reviewed_by = models.ForeignKey(
+        "accounts.User", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="reviewed_registrations",
+    )
+    reviewed_at = models.DateTimeField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"{self.user.full_name_ar} ({self.role_choice}) - {self.status}"
+
+
+class ParentAthlete(models.Model):
+    parent = models.ForeignKey(
+        "accounts.User", on_delete=models.CASCADE, related_name="managed_athletes",
+    )
+    athlete = models.ForeignKey(Athlete, on_delete=models.CASCADE, related_name="parents")
+    relationship = models.CharField(max_length=50, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        ordering = ["-created_at"]
+        unique_together = [("parent", "athlete")]
+
+    def __str__(self):
+        return f"{self.parent.full_name_ar} → {self.athlete.full_name}"

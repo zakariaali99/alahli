@@ -7,15 +7,28 @@ interface User {
   first_name_ar: string
   last_name_ar: string
   full_name_ar: string
-  role: "super_admin" | "reception" | "viewer"
+  role: "super_admin" | "reception" | "trainer" | "athlete" | "parent" | "viewer" | "academy_manager"
   is_active: boolean
+  photo: string | null
+  academy?: number | null
+  academy_name?: string | null
+  athlete_detail?: {
+    id: number
+    membership_number: string
+    full_name: string
+    phone: string
+    birth_date: string
+    gender: "male" | "female"
+    department_name: string | null
+    photo: string | null
+  } | null
 }
 
 interface AuthContextType {
   user: User | null
   isLoading: boolean
   isAuthenticated: boolean
-  login: (phone: string, password: string) => Promise<void>
+  login: (phone: string, password: string) => Promise<User>
   logout: () => Promise<void>
 }
 
@@ -51,6 +64,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     )
     api.setTokens(data.access, data.refresh)
     setUser(data.user)
+    return data.user
   }, [])
 
   const logout = useCallback(async () => {

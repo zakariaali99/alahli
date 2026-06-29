@@ -1,4 +1,4 @@
-import React from "react"
+import React, { useState, useEffect } from "react"
 import { motion, type Variants } from "framer-motion"
 import {
   Users,
@@ -8,6 +8,8 @@ import {
   FileText,
   Percent,
   Calendar,
+  CreditCard,
+  Building,
 } from "lucide-react"
 import {
   BarChart,
@@ -26,7 +28,11 @@ import {
   useRevenue,
   useDepartmentDistribution,
 } from "@/lib/hooks/useAnalytics"
+import { useSubscriptions } from "@/lib/hooks/useSubscriptions"
 import { Button } from "@/components/ui/button"
+import { api } from "@/lib/api"
+import { extractResults } from "@/lib/response"
+import { useAuth } from "@/lib/auth"
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -50,19 +56,54 @@ function CustomTooltip({ active, payload, label }: any) {
   )
 }
 
+type Department = {
+  id: number
+  name_ar: string
+  name: string
+}
+
 export default function ReportsPage() {
-  const { data: stats, isLoading: statsLoading } = useDashboardStats()
-  const { data: revenueData, isLoading: revenueLoading } = useRevenue()
-  const { data: departments, isLoading: deptLoading } = useDepartmentDistribution()
+  const { user } = useAuth()
+  const [departments, setDepartments] = useState<Department[]>([])
+  const [selectedAcademy, setSelectedAcademy] = useState<number | undefined>(
+    user?.academy ? Number(user.academy) : undefined
+  )
+
+  useEffect(() => {
+    if (!user?.academy) {
+      void fetchDepartments()
+    }
+  }, [user])
+
+  const fetchDepartments = async () => {
+    try {
+      const data = await api.get<Department[] | { results: Department[] }>("/departments/")
+      setDepartments(extractResults(data))
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
+  const { data: stats, isLoading: statsLoading } = useDashboardStats(selectedAcademy)
+  const { data: revenueData, isLoading: revenueLoading } = useRevenue(selectedAcademy)
+  const { data: departmentDistribution, isLoading: deptLoading } = useDepartmentDistribution(selectedAcademy)
+  
+  // Fetch latest 5 subscriptions for the payment details table
+  const { data: subListData, isLoading: subListLoading } = useSubscriptions({
+    page: 1,
+    page_size: 5,
+    ordering: "-id",
+  })
+  const recentPayments = subListData?.results || []
 
   const monthlyRevenueData = (revenueData || []).map((d) => {
     const date = new Date(d.month)
     return { name: monthNames[date.getMonth()], revenue: d.revenue }
   })
 
-  const distributionData = departments && departments.length > 0 
-    ? departments.map((d) => ({
-        name: d.department__name_ar,
+  const distributionData = departmentDistribution && departmentDistribution.length > 0 
+    ? departmentDistribution.map((d) => ({
+        name: d.department__name_ar || "أخرى",
         value: d.count
       }))
     : []
@@ -73,10 +114,12 @@ export default function ReportsPage() {
   const activeMemberships = stats?.active_memberships ?? 0
   const renewalRate = stats?.renewal_rate ?? 0
 
+  const COLORS = ["#00288e", "#006d30", "#e67e22", "#7c3aed", "#c62828"]
+
   const kpiCards = [
     {
       label: "إجمالي الإيرادات",
-      value: totalRevenue.toLocaleString("ar-SA-u-nu-latn"),
+      value: `${totalRevenue.toLocaleString("ar-SA-u-nu-latn")} د.ل`,
       icon: DollarSign,
       iconBg: "bg-primary/10 text-primary",
     },
@@ -112,12 +155,30 @@ export default function ReportsPage() {
           <h2 className="text-3xl font-extrabold text-foreground tracking-tight">نظرة عامة على الأداء</h2>
           <p className="text-muted-foreground mt-1 text-sm">تحليل شامل لبيانات اللاعبين والاشتراكات والإيرادات.</p>
         </div>
-        <div className="flex gap-3">
-          <Button variant="outline" size="lg" className="glass-card flex items-center gap-2 rounded-xl text-primary">
+
+        <div className="flex flex-wrap items-center gap-3">
+          {/* Academy Filter Option for Super Admins */}
+          {!user?.academy && (
+            <div className="flex items-center gap-2 bg-card border border-border px-3 py-1.5 rounded-xl shadow-sm">
+              <Building className="w-4 h-4 text-muted-foreground" />
+              <select
+                className="text-xs font-semibold bg-transparent text-foreground outline-none cursor-pointer pr-5"
+                value={selectedAcademy || ""}
+                onChange={(e) => setSelectedAcademy(e.target.value === "" ? undefined : Number(e.target.value))}
+              >
+                <option value="">جميع الأكاديميات</option>
+                {departments.map((d) => (
+                  <option key={d.id} value={d.id}>{d.name_ar}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          <Button variant="outline" size="lg" className="glass-card flex items-center gap-2 rounded-xl text-primary cursor-pointer">
             <FileText className="w-4 h-4" />
             تصدير PDF
           </Button>
-          <Button variant="outline" size="lg" className="glass-card flex items-center gap-2 rounded-xl text-secondary">
+          <Button variant="outline" size="lg" className="glass-card flex items-center gap-2 rounded-xl text-secondary cursor-pointer">
             <FileSpreadsheet className="w-4 h-4" />
             تصدير Excel
           </Button>
@@ -141,7 +202,7 @@ export default function ReportsPage() {
                   <Icon className="w-5 h-5" />
                 </div>
               </div>
-              <div className="text-3xl font-extrabold text-foreground">
+              <div className="text-2xl font-extrabold text-foreground">
                 {statsLoading ? (
                   <span className="animate-pulse bg-muted rounded w-16 h-8 inline-block" />
                 ) : (
@@ -161,7 +222,7 @@ export default function ReportsPage() {
             <h3 className="text-lg font-bold text-foreground">تحليل الإيرادات (شهري)</h3>
             <div className="flex items-center gap-1.5 text-xs text-muted-foreground">
               <Calendar className="w-4 h-4" />
-              <span>آخر 6 أشهر</span>
+              <span>آخر 12 شهراً</span>
             </div>
           </div>
           <div className="flex-1 min-h-[300px]" dir="ltr">
@@ -178,7 +239,7 @@ export default function ReportsPage() {
                 <BarChart data={monthlyRevenueData} margin={{ top: 10, right: 10, left: 10, bottom: 0 }}>
                   <CartesianGrid strokeDasharray="3 3" stroke="var(--border)" vertical={false} opacity={0.5} />
                   <XAxis dataKey="name" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: "var(--muted-fg)" }} />
-                  <YAxis tickLine={false} axisLine={false} tickFormatter={(v) => `${v / 1000}k`} tick={{ fontSize: 12, fill: "var(--muted-fg)" }} />
+                  <YAxis tickLine={false} axisLine={false} tickFormatter={(v) => `${v.toLocaleString("en")} د.ل`} tick={{ fontSize: 12, fill: "var(--muted-fg)" }} />
                   <Tooltip content={<CustomTooltip />} cursor={{ fill: "rgba(0, 40, 142, 0.02)" }} />
                   <Bar dataKey="revenue" fill="var(--primary)" radius={[6, 6, 0, 0]} maxBarSize={48} />
                 </BarChart>
@@ -190,7 +251,7 @@ export default function ReportsPage() {
         {/* Donut Distribution Chart */}
         <motion.div variants={itemVariants} className="glass-card rounded-3xl p-6 flex flex-col items-center">
           <div className="w-full flex justify-between items-center mb-6">
-            <h3 className="text-lg font-bold text-foreground">توزيع اللاعبين</h3>
+            <h3 className="text-lg font-bold text-foreground">توزيع اللاعبين بالأقسام</h3>
           </div>
           {deptLoading ? (
             <div className="flex-1 flex items-center justify-center py-12">
@@ -198,7 +259,7 @@ export default function ReportsPage() {
             </div>
           ) : distributionData.length === 0 ? (
             <div className="flex-1 flex items-center justify-center py-12 text-muted-foreground text-sm">
-              لا توجد بيانات توزيع
+              لا توجد بيانات توزيع للاعبين
             </div>
           ) : (
             <div className="w-full flex-1 flex flex-col items-center justify-center">
@@ -215,7 +276,7 @@ export default function ReportsPage() {
                       stroke="none"
                     >
                       {distributionData.map((_, i) => (
-                        <Cell key={i} fill={i === 0 ? "var(--primary)" : "var(--secondary)"} />
+                        <Cell key={i} fill={COLORS[i % COLORS.length]} />
                       ))}
                     </Pie>
                   </PieChart>
@@ -232,11 +293,11 @@ export default function ReportsPage() {
                 {distributionData.map((d, i) => (
                   <div key={i} className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <div className="w-3.5 h-3.5 rounded-full" style={{ backgroundColor: i === 0 ? "var(--primary)" : "var(--secondary)" }} />
+                      <div className="w-3.5 h-3.5 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }} />
                       <span className="text-sm font-semibold text-muted-foreground">{d.name}</span>
                     </div>
                     <span className="text-sm font-extrabold text-foreground">
-                      {totalDistribution > 0 ? `${Math.round((d.value / totalDistribution) * 100)}%` : '0%'}
+                      {d.value} ({totalDistribution > 0 ? `${Math.round((d.value / totalDistribution) * 100)}%` : '0%'})
                     </span>
                   </div>
                 ))}
@@ -245,6 +306,62 @@ export default function ReportsPage() {
           )}
         </motion.div>
       </div>
+
+      {/* Recent Payments Table */}
+      <motion.div variants={itemVariants} className="glass-card rounded-3xl p-6">
+        <div className="flex justify-between items-center mb-6">
+          <div className="flex items-center gap-2.5">
+            <div className="w-9 h-9 rounded-xl bg-primary/10 text-primary flex items-center justify-center">
+              <CreditCard className="w-4 h-4" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-foreground">آخر عمليات السداد والاشتراكات</h3>
+              <p className="text-xs text-muted-foreground">أحدث 5 اشتراكات تم تسجيلها في النظام.</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="overflow-x-auto">
+          <table className="w-full text-right text-sm">
+            <thead>
+              <tr className="border-b border-border text-xs text-muted-foreground">
+                <th className="pb-3 pt-1 px-4">رقم العضوية</th>
+                <th className="pb-3 pt-1 px-4">اللاعب</th>
+                <th className="pb-3 pt-1 px-4">الباقة</th>
+                <th className="pb-3 pt-1 px-4">المبلغ</th>
+                <th className="pb-3 pt-1 px-4">طريقة الدفع</th>
+                <th className="pb-3 pt-1 px-4">تاريخ الاشتراك</th>
+              </tr>
+            </thead>
+            <tbody>
+              {subListLoading ? (
+                <tr>
+                  <td colSpan={6} className="py-8 text-center text-muted-foreground">جارٍ تحميل البيانات...</td>
+                </tr>
+              ) : recentPayments.length === 0 ? (
+                <tr>
+                  <td colSpan={6} className="py-8 text-center text-muted-foreground">لا توجد اشتراكات مسجلة</td>
+                </tr>
+              ) : (
+                recentPayments.map((sub: any) => (
+                  <tr key={sub.id} className="border-b border-border/40 hover:bg-surface-container-low/30 transition-colors">
+                    <td className="py-3.5 px-4 font-mono font-medium text-xs">{sub.membership_number}</td>
+                    <td className="py-3.5 px-4 font-semibold">{sub.athlete_name}</td>
+                    <td className="py-3.5 px-4 text-muted-foreground">{sub.package_name}</td>
+                    <td className="py-3.5 px-4 font-extrabold text-primary">{sub.amount.toLocaleString("ar-SA-u-nu-latn")} د.ل</td>
+                    <td className="py-3.5 px-4">
+                      <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${sub.payment_method === 'cash' ? 'bg-secondary/15 text-secondary' : 'bg-primary/15 text-primary'}`}>
+                        {sub.payment_method === 'cash' ? 'نقدي' : 'تحويل مصرفي'}
+                      </span>
+                    </td>
+                    <td className="py-3.5 px-4 text-muted-foreground text-xs">{new Date(sub.start_date).toLocaleDateString("ar-LY")}</td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+      </motion.div>
     </motion.div>
   )
 }

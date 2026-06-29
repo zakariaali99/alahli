@@ -7,19 +7,30 @@ from apps.athletes.serializers import AthleteDetailSerializer
 from .models import User
 
 
+def _build_photo_url(self, data):
+    request = self.context.get("request")
+    if request and data.get("photo"):
+        data["photo"] = request.build_absolute_uri(data["photo"])
+    return data
+
+
 class UserSerializer(serializers.ModelSerializer):
     athlete_detail = serializers.SerializerMethodField()
+    academy_name = serializers.CharField(source="academy.name_ar", read_only=True, default="")
 
     class Meta:
         model = User
-        fields = ["id", "phone", "first_name_ar", "last_name_ar", "full_name_ar", "role", "is_active", "athlete_detail"]
+        fields = ["id", "phone", "first_name_ar", "last_name_ar", "full_name_ar", "role", "is_active", "photo", "athlete_detail", "academy", "academy_name"]
         read_only_fields = ["id"]
 
     def get_athlete_detail(self, obj):
         athlete = getattr(obj, "athlete", None)
         if athlete is not None:
-            return AthleteDetailSerializer(athlete).data
+            return AthleteDetailSerializer(athlete, context=self.context).data
         return None
+
+    def to_representation(self, instance):
+        return _build_photo_url(self, super().to_representation(instance))
 
 
 class UserCreateSerializer(serializers.ModelSerializer):
@@ -27,7 +38,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ["id", "phone", "first_name_ar", "last_name_ar", "role", "is_active", "password"]
+        fields = ["id", "phone", "first_name_ar", "last_name_ar", "role", "is_active", "password", "photo", "academy"]
         read_only_fields = ["id"]
 
     def validate_password(self, value):
@@ -42,13 +53,16 @@ class UserCreateSerializer(serializers.ModelSerializer):
         user = User.objects.create_user(**validated_data, password=password)
         return user
 
+    def to_representation(self, instance):
+        return _build_photo_url(self, super().to_representation(instance))
+
 
 class UserUpdateSerializer(serializers.ModelSerializer):
     password = serializers.CharField(write_only=True, min_length=8, required=False)
 
     class Meta:
         model = User
-        fields = ["id", "phone", "first_name_ar", "last_name_ar", "role", "is_active", "password"]
+        fields = ["id", "phone", "first_name_ar", "last_name_ar", "role", "is_active", "password", "photo", "academy"]
         read_only_fields = ["id"]
 
     def validate_password(self, value):
@@ -67,6 +81,9 @@ class UserUpdateSerializer(serializers.ModelSerializer):
             instance.set_password(password)
         instance.save()
         return instance
+
+    def to_representation(self, instance):
+        return _build_photo_url(self, super().to_representation(instance))
 
 
 class LoginSerializer(serializers.Serializer):

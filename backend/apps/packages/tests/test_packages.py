@@ -41,7 +41,8 @@ def package(db):
     return SubscriptionPackage.objects.create(
         name="الباقة الذهبية",
         price=500,
-        duration_days=30,
+        duration_type="months",
+        duration_value=1,
         description="باقة مميزة",
         is_active=True,
     )
@@ -77,7 +78,8 @@ class TestPackageWrite:
         response = admin_auth_client.post("/api/packages/", {
             "name": "الباقة الفضية",
             "price": 300,
-            "duration_days": 30,
+            "duration_type": "months",
+            "duration_value": 1,
         })
         assert response.status_code == status.HTTP_201_CREATED
 

@@ -12,6 +12,7 @@ import { Button } from "@/components/ui/button"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { useAthlete } from "@/lib/hooks/useAthletes"
 import { useSubscriptions } from "@/lib/hooks/useSubscriptions"
+import { useToast } from "@/lib/toast"
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -24,6 +25,7 @@ const itemVariants: Variants = {
 }
 
 export default function AthleteProfilePage() {
+  const toast = useToast()
   const params = useParams()
   const id = Number(params.id)
   const isValidId = !isNaN(id) && id > 0
@@ -59,7 +61,7 @@ export default function AthleteProfilePage() {
   const subs = activeSub || subscriptions[0]
 
   const formatDate = (d: string) =>
-    new Date(d).toLocaleDateString("ar-SA", { year: "numeric", month: "long", day: "numeric" })
+    new Date(d).toLocaleDateString("ar-SA-u-nu-latn", { year: "numeric", month: "long", day: "numeric" })
 
   const calcPercent = (start: string, end: string) => {
     const s = new Date(start).getTime()
@@ -224,7 +226,7 @@ export default function AthleteProfilePage() {
             <div className="relative z-10 w-full flex flex-col items-center">
               <div className="flex items-center justify-between w-full mb-4">
                 <h3 className="text-base font-bold text-foreground">بطاقة العضوية</h3>
-                <Button variant="ghost" size="icon-xs" onClick={() => alert('طباعة البطاقة غير متوفرة حالياً')}>
+                <Button variant="ghost" size="icon-xs" onClick={() => toast.info("طباعة البطاقة غير متوفرة حالياً")}>
                   <Printer className="w-4 h-4" />
                 </Button>
               </div>
