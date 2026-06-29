@@ -7,6 +7,7 @@ class ConfirmDialog extends StatelessWidget {
   final String confirmLabel;
   final String cancelLabel;
   final Color confirmColor;
+  final IconData? icon;
 
   const ConfirmDialog({
     required this.title,
@@ -14,42 +15,65 @@ class ConfirmDialog extends StatelessWidget {
     this.confirmLabel = 'تأكيد',
     this.cancelLabel = 'إلغاء',
     this.confirmColor = AppColors.primary,
+    this.icon,
     super.key,
   });
 
   @override
   Widget build(BuildContext context) {
+    final isDestructive = confirmColor == AppColors.destructive;
+    final displayIcon = icon ?? (isDestructive ? Icons.warning_amber_rounded : Icons.help_outline);
+
     return AlertDialog(
-      title: Text(
-        title,
-        textAlign: TextAlign.right,
-        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+      titlePadding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+      contentPadding: const EdgeInsets.symmetric(horizontal: 24),
+      actionsPadding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
+      title: Column(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: confirmColor.withValues(alpha: 0.1),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(displayIcon, color: confirmColor, size: 32),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            title,
+            textAlign: TextAlign.center,
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18),
+          ),
+        ],
       ),
       content: Text(
         content,
-        textAlign: TextAlign.right,
+        textAlign: TextAlign.center,
         style: const TextStyle(fontSize: 14),
       ),
-      actionsAlignment: MainAxisAlignment.spaceBetween,
+      actionsAlignment: MainAxisAlignment.center,
       actions: [
-        TextButton(
-          onPressed: () => Navigator.of(context).pop(false),
-          child: Text(
-            cancelLabel,
-            style: const TextStyle(color: Colors.grey),
-          ),
-        ),
-        ElevatedButton(
-          onPressed: () => Navigator.of(context).pop(true),
-          style: ElevatedButton.styleFrom(
-            backgroundColor: confirmColor,
-            foregroundColor: Colors.white,
-            elevation: 0,
-            shape: RoundedRectangleBorder(
-              borderRadius: BorderRadius.circular(8),
+        Row(
+          children: [
+            Expanded(
+              child: OutlinedButton(
+                onPressed: () => Navigator.of(context).pop(false),
+                child: Text(cancelLabel),
+              ),
             ),
-          ),
-          child: Text(confirmLabel),
+            const SizedBox(width: 12),
+            Expanded(
+              child: FilledButton(
+                onPressed: () => Navigator.of(context).pop(true),
+                style: FilledButton.styleFrom(
+                  backgroundColor: confirmColor,
+                  foregroundColor: Colors.white,
+                ),
+                child: Text(confirmLabel),
+              ),
+            ),
+          ],
         ),
       ],
     );

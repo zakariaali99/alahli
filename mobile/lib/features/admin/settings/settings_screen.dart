@@ -3,11 +3,11 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../../core/providers/providers.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_strings.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/confirm_dialog.dart';
 import '../../../core/helpers/numeral_converter.dart';
 import '../../../core/helpers/ui_helpers.dart';
+import '../../../core/helpers/responsive_helper.dart';
 
 class SettingsScreen extends ConsumerStatefulWidget {
   const SettingsScreen({super.key});
@@ -111,7 +111,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
                 children: [
                   CircleAvatar(
                     radius: 30,
-                    backgroundColor: AppColors.primary.withOpacity(0.1),
+                    backgroundColor: AppColors.primary.withValues(alpha: 0.1),
                     backgroundImage: user?.photo != null ? NetworkImage(user!.photo!) : null,
                     child: user?.photo == null
                         ? Text(safeInitials(user?.firstNameAr), style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 20))
@@ -154,17 +154,18 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             ),
 
             GridView.count(
-              crossAxisCount: 2,
+              crossAxisCount: ResponsiveHelper.isSmallPhone(context) ? 1 : 2,
               shrinkWrap: true,
               physics: const NeverScrollableScrollPhysics(),
               crossAxisSpacing: 10,
-              mainAxisSpacing: 2,
-              childAspectRatio: 1.85,
+              mainAxisSpacing: 10,
+              childAspectRatio: ResponsiveHelper.isSmallPhone(context) ? 3.5 : ResponsiveHelper.getGridAspectRatio(context, itemHeight: 80),
               children: [
                 _buildQuickActionCard(Icons.credit_card, 'سجل الاشتراكات', '/subscriptions', context),
                 _buildQuickActionCard(Icons.qr_code_scanner, 'الفحص والتحقق', '/verify', context),
                 if (user?.role == 'super_admin') ...[
                   _buildQuickActionCard(Icons.business, 'الأكاديميات', '/academies', context),
+                  _buildQuickActionCard(Icons.card_membership, 'الباقات', '/packages', context),
                   _buildQuickActionCard(Icons.sports, 'المدربين', '/coaches', context),
                   _buildQuickActionCard(Icons.admin_panel_settings, 'إدارة الموظفين', '/staff', context),
                 ],
@@ -233,8 +234,8 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> {
             // Logout Card
             AppCard(
               onTap: _handleLogout,
-              color: AppColors.destructive.withOpacity(0.08),
-              border: Border.all(color: AppColors.destructive.withOpacity(0.3)),
+              color: AppColors.destructive.withValues(alpha: 0.08),
+              border: Border.all(color: AppColors.destructive.withValues(alpha: 0.3)),
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [

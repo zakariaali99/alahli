@@ -1,4 +1,5 @@
 import os
+import secrets
 from datetime import timedelta
 from pathlib import Path
 
@@ -8,9 +9,37 @@ from config.sentry import init_sentry
 
 BASE_DIR = Path(__file__).resolve().parent.parent.parent
 
-SECRET_KEY = os.environ.get("DJANGO_SECRET_KEY")
-if not SECRET_KEY:
-    raise RuntimeError("DJANGO_SECRET_KEY environment variable is not set.")
+
+def _get_secret_key() -> str:
+    env_secret = os.environ.get("DJANGO_SECRET_KEY")
+    if env_secret:
+        return env_secret
+
+    secrets_dir = BASE_DIR / ".secrets"
+    secrets_file = secrets_dir / "django_secret_key"
+
+    if secrets_file.exists():
+        file_secret = secrets_file.read_text(encoding="utf-8").strip()
+        if file_secret:
+            return file_secret
+
+    secrets_dir.mkdir(parents=True, exist_ok=True)
+    try:
+        os.chmod(secrets_dir, 0o700)
+    except OSError:
+        pass
+
+    generated_secret = secrets.token_urlsafe(64)
+    secrets_file.write_text(generated_secret, encoding="utf-8")
+    try:
+        os.chmod(secrets_file, 0o600)
+    except OSError:
+        pass
+
+    return generated_secret
+
+
+SECRET_KEY = _get_secret_key()
 
 init_sentry()
 
@@ -93,7 +122,7 @@ USE_TZ = True
 
 STATIC_URL = "static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
-MEDIA_URL = "media/"
+MEDIA_URL = "/media/"
 MEDIA_ROOT = BASE_DIR / "media"
 
 FILE_UPLOAD_MAX_MEMORY_SIZE = 5 * 1024 * 1024
@@ -119,13 +148,13 @@ REST_FRAMEWORK = {
         "rest_framework.filters.OrderingFilter",
     ],
     "DEFAULT_SCHEMA_CLASS": "drf_spectacular.openapi.AutoSchema",
-    "DEFAULT_THROTTLE_CLASSES": [
-        "rest_framework.throttling.AnonRateThrottle",
-        "rest_framework.throttling.UserRateThrottle",
-    ],
+    # "DEFAULT_THROTTLE_CLASSES": [
+    #     "rest_framework.throttling.AnonRateThrottle",
+    #     "rest_framework.throttling.UserRateThrottle",
+    # ],
     "DEFAULT_THROTTLE_RATES": {
-        "anon": "100/hour",
-        "user": "1000/hour",
+        "anon": "10000/hour",
+        "user": "100000/hour",
     },
 }
 

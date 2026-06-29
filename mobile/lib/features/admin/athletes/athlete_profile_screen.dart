@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../../../core/providers/providers.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/widgets/app_card.dart';
@@ -8,6 +9,8 @@ import '../../../core/widgets/status_badge.dart';
 import '../../../core/widgets/app_error_widget.dart';
 import '../../../core/widgets/loading_shimmer.dart';
 import '../../../core/helpers/numeral_converter.dart';
+import '../../../core/constants/api_endpoints.dart';
+import '../../../core/providers/paginated_providers.dart';
 
 class AthleteProfileScreen extends ConsumerWidget {
   final int athleteId;
@@ -17,7 +20,7 @@ class AthleteProfileScreen extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final athleteAsync = ref.watch(athleteDetailProvider(athleteId));
-    final subscriptionsAsync = ref.watch(subscriptionsProvider({'athleteId': athleteId}));
+    final subscriptionsAsync = ref.watch(subscriptionsProvider(SubscriptionFilter(athleteId: athleteId)));
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -29,7 +32,7 @@ class AthleteProfileScreen extends ConsumerWidget {
           return RefreshIndicator(
             onRefresh: () async {
               ref.invalidate(athleteDetailProvider(athleteId));
-              ref.invalidate(subscriptionsProvider({'athleteId': athleteId}));
+              ref.invalidate(subscriptionsProvider(SubscriptionFilter(athleteId: athleteId)));
             },
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
@@ -40,13 +43,16 @@ class AthleteProfileScreen extends ConsumerWidget {
                   AppCard(
                     child: Column(
                       children: [
-                        CircleAvatar(
-                          radius: 48,
-                          backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                          backgroundImage: athlete.photo != null ? NetworkImage(athlete.photo!) : null,
-                          child: athlete.photo == null
-                              ? const Icon(Icons.person, size: 48, color: AppColors.primary)
-                              : null,
+                        Hero(
+                          tag: 'athlete_avatar_${athlete.id}',
+                          child: CircleAvatar(
+                            radius: 48,
+                            backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                            backgroundImage: athlete.photo != null ? NetworkImage(athlete.photo!) : null,
+                            child: athlete.photo == null
+                                ? const Icon(Icons.person, size: 48, color: AppColors.primary)
+                                : null,
+                          ),
                         ),
                         const SizedBox(height: 16),
                         Text(
@@ -69,12 +75,22 @@ class AthleteProfileScreen extends ConsumerWidget {
                             borderRadius: BorderRadius.circular(16),
                             border: Border.all(color: AppColors.border.withValues(alpha: 0.5)),
                           ),
-                          child: QrImageView(
-                            data: athlete.membershipNumber,
-                            version: QrVersions.auto,
-                            size: 140.0,
-                            gapless: false,
-                            foregroundColor: Colors.black,
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 160, maxHeight: 160),
+                            child: QrImageView(
+                              data: athlete.membershipNumber,
+                              version: QrVersions.auto,
+                              size: 140.0,
+                              gapless: false,
+                              eyeStyle: const QrEyeStyle(
+                                color: Colors.black,
+                                eyeShape: QrEyeShape.square,
+                              ),
+                              dataModuleStyle: const QrDataModuleStyle(
+                                color: Colors.black,
+                                dataModuleShape: QrDataModuleShape.square,
+                              ),
+                            ),
                           ),
                         ),
                       ],
@@ -136,6 +152,7 @@ class AthleteProfileScreen extends ConsumerWidget {
                           final sub = subs[index];
                           return AppCard(
                             child: Row(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Expanded(
                                   child: Column(
@@ -159,6 +176,28 @@ class AthleteProfileScreen extends ConsumerWidget {
                                         'القيمة: ${NumberFormatter.formatCurrency(sub.amount)} د.ل',
                                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary),
                                       ),
+                                      if (sub.invoicePdfUrl != null && sub.invoicePdfUrl!.isNotEmpty)
+                                        Padding(
+                                          padding: const EdgeInsets.only(top: 8.0),
+                                          child: OutlinedButton.icon(
+                                            onPressed: () async {
+                                              String url = sub.invoicePdfUrl!;
+                                              if (!url.startsWith('http')) {
+                                                final origin = ApiEndpoints.baseUrl.replaceFirst(RegExp(r'/api/?$'), '');
+                                                url = url.startsWith('/') ? '$origin$url' : '$origin/$url';
+                                              }
+                                              final uri = Uri.parse(url);
+                                              await launchUrl(uri, mode: LaunchMode.externalApplication);
+                                            },
+                                            icon: const Icon(Icons.picture_as_pdf, size: 16),
+                                            label: const Text('عرض الإيصال'),
+                                            style: OutlinedButton.styleFrom(
+                                              foregroundColor: AppColors.primary,
+                                              side: const BorderSide(color: AppColors.primary),
+                                              visualDensity: VisualDensity.compact,
+                                            ),
+                                          ),
+                                        ),
                                     ],
                                   ),
                                 ),

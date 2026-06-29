@@ -4,7 +4,6 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../../core/providers/providers.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/widgets/app_card.dart';
-import '../../../core/widgets/app_error_widget.dart';
 import '../../../core/helpers/numeral_converter.dart';
 import '../../../core/helpers/safe_json.dart';
 
@@ -193,9 +192,9 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
                 Container(
                   padding: const EdgeInsets.all(16),
                   decoration: BoxDecoration(
-                    color: AppColors.destructive.withOpacity(0.1),
+                    color: AppColors.destructive.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.destructive.withOpacity(0.3)),
+                    border: Border.all(color: AppColors.destructive.withValues(alpha: 0.3)),
                   ),
                   child: Text(
                     _errorMsg!,
@@ -226,7 +225,7 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: active ? AppColors.secondary.withOpacity(0.1) : AppColors.destructive.withOpacity(0.1),
+        color: active ? AppColors.secondary.withValues(alpha: 0.1) : AppColors.destructive.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: active ? AppColors.secondary : AppColors.destructive,

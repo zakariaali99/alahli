@@ -47,6 +47,7 @@ dependencies:
   mobile_scanner: ^5.2.0
   fl_chart: ^0.70.2
   cached_network_image: ^3.4.1
+  image_picker: ^1.2.1
 
 dev_dependencies:
   flutter_test:

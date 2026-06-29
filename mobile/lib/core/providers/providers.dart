@@ -24,6 +24,7 @@ import '../models/group_model.dart';
 import '../models/dashboard_stats.dart';
 import '../helpers/secure_storage.dart';
 import '../services/push_service.dart';
+import '../providers/paginated_providers.dart';
 
 final apiClientProvider = Provider<ApiClient>((ref) {
   final client = ApiClient(baseUrl: ApiEndpoints.baseUrl);
@@ -190,11 +191,11 @@ final athletesProvider = FutureProvider.autoDispose.family<List<AthleteModel>, M
   );
 });
 
-final subscriptionsProvider = FutureProvider.autoDispose.family<List<SubscriptionModel>, Map<String, dynamic>>((ref, params) async {
+final subscriptionsProvider = FutureProvider.autoDispose.family<List<SubscriptionModel>, SubscriptionFilter>((ref, filter) async {
   return ref.watch(subscriptionRepositoryProvider).fetchSubscriptions(
-    status: params['status'] as String?,
-    search: params['search'] as String?,
-    athleteId: params['athleteId'] as int?,
+    status: filter.status,
+    search: filter.search,
+    athleteId: filter.athleteId,
   );
 });
 

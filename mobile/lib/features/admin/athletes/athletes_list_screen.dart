@@ -3,6 +3,8 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:dio/dio.dart';
 import '../../../core/providers/providers.dart';
+import '../../../core/providers/paginated_providers.dart';
+import '../../../core/providers/paginated_list_notifier.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/widgets/app_card.dart';
@@ -23,37 +25,49 @@ class AthletesListScreen extends ConsumerStatefulWidget {
 
 class _AthletesListScreenState extends ConsumerState<AthletesListScreen> {
   final _searchController = TextEditingController();
+  final _scrollController = ScrollController();
   int? _selectedDepartmentId;
   bool? _selectedActiveStatus;
   String _searchQuery = '';
 
   @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
     super.dispose();
   }
 
-  Map<String, dynamic> _getFilterParams() {
-    return {
-      'search': _searchQuery,
-      'departmentId': _selectedDepartmentId,
-      'isActive': _selectedActiveStatus,
-    };
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      final notifier = ref.read(athletesPaginatedProvider(_currentFilter()).notifier);
+      notifier.loadMore();
+    }
+  }
+
+  AthleteFilter _currentFilter() {
+    final user = ref.read(authProvider);
+    return AthleteFilter(
+      search: _searchQuery.isNotEmpty ? _searchQuery : null,
+      departmentId: user?.role == 'academy_manager' ? user?.academy : _selectedDepartmentId,
+      isActive: _selectedActiveStatus,
+    );
   }
 
   Future<void> _toggleAthleteStatus(AthleteModel athlete) async {
     final newStatus = !athlete.isActive;
     try {
       final repo = ref.read(athleteRepositoryProvider);
-      
-      // Construct FormData for partial patch
-      final data = FormData.fromMap({
-        'is_active': newStatus,
-      });
-
+      final data = FormData.fromMap({'is_active': newStatus});
       await repo.updateAthlete(athlete.id, data);
-      ref.invalidate(athletesProvider(_getFilterParams()));
-      
+      ref.read(athletesPaginatedProvider(_currentFilter()).notifier).refresh();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(content: Text(newStatus ? 'تم تنشيط الحساب بنجاح' : 'تم إلغاء تنشيط الحساب بنجاح')),
@@ -82,7 +96,7 @@ class _AthletesListScreenState extends ConsumerState<AthletesListScreen> {
     if (confirm == true) {
       try {
         await ref.read(athleteRepositoryProvider).deleteAthlete(athlete.id);
-        ref.invalidate(athletesProvider(_getFilterParams()));
+        ref.read(athletesPaginatedProvider(_currentFilter()).notifier).refresh();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('تم حذف اللاعب بنجاح')),
@@ -102,21 +116,16 @@ class _AthletesListScreenState extends ConsumerState<AthletesListScreen> {
   Widget build(BuildContext context) {
     final user = ref.watch(authProvider);
     final isDark = Theme.of(context).brightness == Brightness.dark;
-    
-    // Auto-scope to manager's academy
-    final filterParams = _getFilterParams();
-    if (user?.role == 'academy_manager') {
-      filterParams['departmentId'] = user?.academy;
-    }
+    final theme = Theme.of(context);
 
-    final athletesAsync = ref.watch(athletesProvider(filterParams));
+    final filter = _currentFilter();
+    final athletesState = ref.watch(athletesPaginatedProvider(filter));
     final departmentsAsync = ref.watch(departmentsProvider);
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('اللاعبين المشتركين', style: TextStyle(fontWeight: FontWeight.bold)),
         actions: [
-          // Clear filters button
           if (_selectedDepartmentId != null || _selectedActiveStatus != null || _searchQuery.isNotEmpty)
             IconButton(
               icon: const Icon(Icons.filter_alt_off),
@@ -139,12 +148,10 @@ class _AthletesListScreenState extends ConsumerState<AthletesListScreen> {
       ),
       body: Column(
         children: [
-          // Filters bar
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
             child: Column(
               children: [
-                // Search field
                 TextField(
                   controller: _searchController,
                   textAlign: TextAlign.right,
@@ -174,12 +181,10 @@ class _AthletesListScreenState extends ConsumerState<AthletesListScreen> {
                   },
                 ),
                 const SizedBox(height: 8),
-                // Horizontal filter chips
                 SingleChildScrollView(
                   scrollDirection: Axis.horizontal,
                   child: Row(
                     children: [
-                      // Active/Inactive filters
                       ChoiceChip(
                         label: const Text('نشط'),
                         selected: _selectedActiveStatus == true,
@@ -200,7 +205,6 @@ class _AthletesListScreenState extends ConsumerState<AthletesListScreen> {
                         },
                       ),
                       const SizedBox(width: 12),
-                      // Academy selection filter (only if super_admin/reception)
                       if (user?.role != 'academy_manager') ...[
                         departmentsAsync.when(
                           data: (depts) {
@@ -230,148 +234,169 @@ class _AthletesListScreenState extends ConsumerState<AthletesListScreen> {
             ),
           ),
 
-          // Athlete list
           Expanded(
             child: RefreshIndicator(
-              onRefresh: () async {
-                ref.invalidate(athletesProvider(filterParams));
-              },
-              child: athletesAsync.when(
-                data: (list) {
-                  if (list.isEmpty) {
-                    return const EmptyState(message: 'لا يوجد لاعبين يطابقون خيارات البحث');
-                  }
-                  return ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-                    itemCount: list.length,
-                    itemBuilder: (context, index) {
-                      final athlete = list[index];
-                      return AppCard(
-                        onTap: () => context.push('/athletes/${athlete.id}'),
-                        child: Row(
-                          children: [
-                            // Rounded avatar photo
-                            CircleAvatar(
-                              radius: 28,
-                              backgroundColor: AppColors.primary.withOpacity(0.1),
-                              backgroundImage: athlete.photo != null ? NetworkImage(athlete.photo!) : null,
-                              child: athlete.photo == null
-                                  ? const Icon(Icons.person, color: AppColors.primary, size: 28)
-                                  : null,
-                            ),
-                            const SizedBox(width: 16),
-                            // Details
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    athlete.fullName,
-                                    style: const TextStyle(
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'رقم العضوية: ${athlete.membershipNumber.toWesternDigits()}',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: isDark ? AppColors.darkMutedForeground : AppColors.mutedForeground,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 6),
-                                  // Badge row
-                                  Row(
-                                    children: [
-                                      if (athlete.departmentName != null) ...[
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                          decoration: BoxDecoration(
-                                            color: AppColors.primary.withOpacity(0.1),
-                                            borderRadius: BorderRadius.circular(4),
-                                          ),
-                                          child: Text(
-                                            athlete.departmentName!,
-                                            style: const TextStyle(
-                                              color: AppColors.primary,
-                                              fontSize: 10,
-                                              fontWeight: FontWeight.bold,
-                                            ),
-                                          ),
-                                        ),
-                                        const SizedBox(width: 8),
-                                      ],
-                                      StatusBadge(status: athlete.isActive ? 'active' : 'rejected'),
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                            PopupMenuButton<String>(
-                              icon: const Icon(Icons.more_vert),
-                              color: isDark ? AppColors.darkCard : Colors.white,
-                              onSelected: (val) {
-                                if (val == 'view') {
-                                  context.push('/athletes/${athlete.id}');
-                                } else if (val == 'toggle') {
-                                  _toggleAthleteStatus(athlete);
-                                } else if (val == 'delete') {
-                                  _deleteAthlete(athlete);
-                                }
-                              },
-                              itemBuilder: (context) => [
-                                const PopupMenuItem(
-                                  value: 'view',
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: [
-                                      Text(AppStrings.showProfile),
-                                      SizedBox(width: 8),
-                                      Icon(Icons.person_outline, size: 18),
-                                    ],
-                                  ),
-                                ),
-                                PopupMenuItem(
-                                  value: 'toggle',
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: [
-                                      Text(athlete.isActive ? 'إلغاء التنشيط' : 'تنشيط الحساب'),
-                                      const SizedBox(width: 8),
-                                      Icon(athlete.isActive ? Icons.block : Icons.check_circle_outline, size: 18),
-                                    ],
-                                  ),
-                                ),
-                                const PopupMenuItem(
-                                  value: 'delete',
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: [
-                                      Text('حذف الحساب', style: TextStyle(color: AppColors.destructive)),
-                                      SizedBox(width: 8),
-                                      Icon(Icons.delete_forever, color: AppColors.destructive, size: 18),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  );
-                },
-                loading: () => const ShimmerList(),
-                error: (err, stack) => AppErrorWidget(
-                  errorMessage: err.toString(),
-                  onRetry: () => ref.refresh(athletesProvider(filterParams)),
-                ),
-              ),
+              onRefresh: () => ref.read(athletesPaginatedProvider(filter).notifier).refresh(),
+              child: _buildBody(athletesState, isDark, theme),
             ),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildBody(PaginatedListState<AthleteModel> state, bool isDark, ThemeData theme) {
+    if (state.state == PaginatedState.loading) {
+      return const ShimmerList();
+    }
+
+    if (state.state == PaginatedState.error) {
+      return AppErrorWidget(
+        errorMessage: state.error ?? 'خطأ غير معروف',
+        onRetry: () => ref.read(athletesPaginatedProvider(_currentFilter()).notifier).refresh(),
+      );
+    }
+
+    if (state.items.isEmpty) {
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: const [
+          SizedBox(height: 100),
+          EmptyState(message: 'لا يوجد لاعبين يطابقون خيارات البحث'),
+        ],
+      );
+    }
+
+    return ListView.builder(
+      controller: _scrollController,
+      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+      itemCount: state.items.length + (state.hasNext ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (index == state.items.length) {
+          return const Padding(
+            padding: EdgeInsets.all(16),
+            child: Center(
+              child: SizedBox(
+                height: 24,
+                width: 24,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+          );
+        }
+
+        final athlete = state.items[index];
+        return AppCard(
+          onTap: () => context.push('/athletes/${athlete.id}'),
+          child: Row(
+            children: [
+              Hero(
+                tag: 'athlete_avatar_${athlete.id}',
+                child: CircleAvatar(
+                  radius: 28,
+                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                  backgroundImage: athlete.photo != null ? NetworkImage(athlete.photo!) : null,
+                  child: athlete.photo == null
+                      ? const Icon(Icons.person, color: AppColors.primary, size: 28)
+                      : null,
+                ),
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      athlete.fullName,
+                      style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'رقم العضوية: ${athlete.membershipNumber.toWesternDigits()}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark ? AppColors.darkMutedForeground : AppColors.mutedForeground,
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Row(
+                      children: [
+                        if (athlete.departmentName != null) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                            decoration: BoxDecoration(
+                              color: AppColors.primary.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: Text(
+                              athlete.departmentName!,
+                              style: const TextStyle(
+                                color: AppColors.primary,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                          ),
+                          const SizedBox(width: 8),
+                        ],
+                        StatusBadge(status: athlete.isActive ? 'active' : 'rejected'),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              PopupMenuButton<String>(
+                icon: const Icon(Icons.more_vert),
+                color: isDark ? AppColors.darkCard : Colors.white,
+                onSelected: (val) {
+                  if (val == 'view') {
+                    context.push('/athletes/${athlete.id}');
+                  } else if (val == 'toggle') {
+                    _toggleAthleteStatus(athlete);
+                  } else if (val == 'delete') {
+                    _deleteAthlete(athlete);
+                  }
+                },
+                itemBuilder: (context) => [
+                  const PopupMenuItem(
+                    value: 'view',
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Text(AppStrings.showProfile),
+                        SizedBox(width: 8),
+                        Icon(Icons.person_outline, size: 18),
+                      ],
+                    ),
+                  ),
+                  PopupMenuItem(
+                    value: 'toggle',
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Text(athlete.isActive ? 'إلغاء التنشيط' : 'تنشيط الحساب'),
+                        const SizedBox(width: 8),
+                        Icon(athlete.isActive ? Icons.block : Icons.check_circle_outline, size: 18),
+                      ],
+                    ),
+                  ),
+                  const PopupMenuItem(
+                    value: 'delete',
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Text('حذف الحساب', style: TextStyle(color: AppColors.destructive)),
+                        SizedBox(width: 8),
+                        Icon(Icons.delete_forever, color: AppColors.destructive, size: 18),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 }

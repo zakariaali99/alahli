@@ -2,6 +2,8 @@ from rest_framework import serializers
 
 from .models import Athlete, ParentAthlete, RegistrationRequest
 
+PASSWORD_HELP = "أقل شيء حرف واحد"
+
 
 class AthleteListSerializer(serializers.ModelSerializer):
     department_name = serializers.CharField(source="department.name_ar", read_only=True)
@@ -100,7 +102,7 @@ class RegisterSerializer(serializers.Serializer):
     role = serializers.ChoiceField(choices=["athlete", "parent"])
     full_name = serializers.CharField(max_length=100)
     phone = serializers.CharField(max_length=20)
-    password = serializers.CharField(write_only=True, min_length=8)
+    password = serializers.CharField(write_only=True, min_length=1)
     photo = serializers.CharField(required=False, allow_null=True, help_text="Base64 camera capture")
     weight = serializers.FloatField(required=False, allow_null=True)
     height = serializers.FloatField(required=False, allow_null=True)
@@ -119,14 +121,6 @@ class RegisterSerializer(serializers.Serializer):
             raise serializers.ValidationError({"birth_date": str(e)})
 
     def validate(self, attrs):
-        from django.contrib.auth.password_validation import validate_password
-        from django.core.exceptions import ValidationError
-
-        try:
-            validate_password(attrs["password"])
-        except ValidationError as e:
-            raise serializers.ValidationError({"password": list(e.messages)})
-
         if attrs["role"] == "athlete":
             if not attrs.get("photo"):
                 raise serializers.ValidationError({"photo": "Photo is required for athletes"})

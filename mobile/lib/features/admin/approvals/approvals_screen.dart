@@ -2,12 +2,15 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
 import '../../../core/providers/providers.dart';
+import '../../../core/providers/paginated_providers.dart';
+import '../../../core/providers/paginated_list_notifier.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/constants/app_strings.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/app_error_widget.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/loading_shimmer.dart';
+import '../../../core/widgets/staggered_list_item.dart';
 import '../../../core/helpers/numeral_converter.dart';
 import '../../../core/helpers/ui_helpers.dart';
 import 'package:intl/intl.dart';
@@ -39,7 +42,7 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> with SingleTi
   Future<void> _approveRegistration(RegistrationModel reg) async {
     try {
       await ref.read(registrationRepositoryProvider).approveRegistration(reg.id);
-      ref.invalidate(registrationsProvider);
+      ref.read(registrationsPaginatedProvider(RegistrationFilter(status: 'pending')).notifier).refresh();
       ref.invalidate(athletesProvider);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -58,7 +61,7 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> with SingleTi
   Future<void> _rejectRegistration(RegistrationModel reg) async {
     try {
       await ref.read(registrationRepositoryProvider).rejectRegistration(reg.id);
-      ref.invalidate(registrationsProvider);
+      ref.read(registrationsPaginatedProvider(RegistrationFilter(status: 'pending')).notifier).refresh();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('تم رفض طلب التسجيل')),
@@ -76,7 +79,7 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> with SingleTi
   Future<void> _approveSubscription(SubscriptionModel sub) async {
     try {
       await ref.read(subscriptionRepositoryProvider).updateSubscriptionStatus(sub.id, 'active');
-      ref.invalidate(subscriptionsProvider);
+      ref.read(subscriptionsPaginatedProvider(SubscriptionFilter(status: 'pending')).notifier).refresh();
       ref.invalidate(dashboardStatsProvider);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -95,7 +98,7 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> with SingleTi
   Future<void> _rejectSubscription(SubscriptionModel sub) async {
     try {
       await ref.read(subscriptionRepositoryProvider).updateSubscriptionStatus(sub.id, 'rejected');
-      ref.invalidate(subscriptionsProvider);
+      ref.read(subscriptionsPaginatedProvider(SubscriptionFilter(status: 'pending')).notifier).refresh();
       ref.invalidate(dashboardStatsProvider);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -132,7 +135,6 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> with SingleTi
     await showDialog(
       context: context,
       builder: (ctx) {
-        final isDark = Theme.of(ctx).brightness == Brightness.dark;
         return StatefulBuilder(
           builder: (context, setDlgState) {
             return AlertDialog(
@@ -236,7 +238,7 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> with SingleTi
                             formData: formData,
                           );
 
-                      ref.invalidate(registrationsProvider);
+                      ref.read(registrationsPaginatedProvider(RegistrationFilter(status: 'pending')).notifier).refresh();
                       if (context.mounted) Navigator.pop(context);
                     } catch (e) {
                       if (context.mounted) {
@@ -258,17 +260,11 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> with SingleTi
 
   @override
   Widget build(BuildContext context) {
-    final user = ref.watch(authProvider);
+    final regFilter = RegistrationFilter(status: 'pending');
+    final subFilter = SubscriptionFilter(status: 'pending');
 
-    final Map<String, dynamic> regParams = {'status': 'pending'};
-    final Map<String, dynamic> subParams = {'status': 'pending'};
-
-    if (user?.role == 'academy_manager') {
-      subParams['departmentId'] = user?.academy;
-    }
-
-    final registrationsAsync = ref.watch(registrationsProvider(regParams));
-    final subscriptionsAsync = ref.watch(subscriptionsProvider(subParams));
+    final regState = ref.watch(registrationsPaginatedProvider(regFilter));
+    final subState = ref.watch(subscriptionsPaginatedProvider(subFilter));
 
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
@@ -291,163 +287,197 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> with SingleTi
         children: [
           // Registrations Tab
           RefreshIndicator(
-            onRefresh: () async => ref.invalidate(registrationsProvider(regParams)),
-            child: registrationsAsync.when(
-              data: (list) {
-                if (list.isEmpty) {
-                  return const EmptyState(message: 'لا توجد طلبات تسجيل جديدة بانتظار المراجعة');
-                }
-                return ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: list.length,
-                  itemBuilder: (context, index) {
-                    final reg = list[index];
-                    final hasProfile = reg.athleteId != null;
-
-                    return AppCard(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(reg.userName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                decoration: BoxDecoration(
-                                  color: reg.roleChoice == 'athlete'
-                                      ? AppColors.primary.withOpacity(0.1)
-                                      : AppColors.secondary.withOpacity(0.1),
-                                  borderRadius: BorderRadius.circular(4),
-                                ),
-                                child: Text(
-                                  reg.roleChoice == 'athlete' ? 'لاعب' : 'ولي أمر',
-                                  style: TextStyle(
-                                    color: reg.roleChoice == 'athlete' ? AppColors.primary : AppColors.secondary,
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Text('الهاتف: ${reg.userPhone.toWesternDigits()}', style: const TextStyle(fontSize: 13)),
-                           Text('تاريخ الطلب: ${safeDateTimeParse(reg.createdAt) != null ? NumberFormatter.formatDateTime(safeDateTimeParse(reg.createdAt)!) : ''}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
-                          const Divider(height: 24),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              TextButton(
-                                onPressed: () => _rejectRegistration(reg),
-                                child: const Text(AppStrings.reject, style: TextStyle(color: AppColors.destructive)),
-                              ),
-                              const SizedBox(width: 12),
-                              if (reg.roleChoice == 'athlete' && !hasProfile)
-                                ElevatedButton.icon(
-                                  onPressed: () => _showCreateProfileDialog(reg),
-                                  icon: const Icon(Icons.person_add, size: 16),
-                                  label: const Text('إنشاء الملف الرياضي'),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColors.primary,
-                                    foregroundColor: Colors.white,
-                                    elevation: 0,
-                                  ),
-                                )
-                              else
-                                ElevatedButton(
-                                  onPressed: () => _approveRegistration(reg),
-                                  style: ElevatedButton.styleFrom(
-                                    backgroundColor: AppColors.secondary,
-                                    foregroundColor: Colors.white,
-                                    elevation: 0,
-                                  ),
-                                  child: const Text(AppStrings.approve),
-                                ),
-                            ],
-                          )
-                        ],
-                      ),
-                    );
-                  },
-                );
-              },
-              loading: () => const ShimmerList(),
-              error: (err, stack) => AppErrorWidget(
-                errorMessage: err.toString(),
-                onRetry: () => ref.refresh(registrationsProvider(regParams)),
-              ),
-            ),
+            onRefresh: () => ref.read(registrationsPaginatedProvider(regFilter).notifier).refresh(),
+            child: _buildRegistrationsTab(regState),
           ),
 
           // Subscriptions Tab
           RefreshIndicator(
-            onRefresh: () async => ref.invalidate(subscriptionsProvider(subParams)),
-            child: subscriptionsAsync.when(
-              data: (list) {
-                if (list.isEmpty) {
-                  return const EmptyState(message: 'لا توجد طلبات اشتراك جديدة بانتظار التفعيل');
-                }
-                return ListView.builder(
-                  padding: const EdgeInsets.all(16),
-                  itemCount: list.length,
-                  itemBuilder: (context, index) {
-                    final sub = list[index];
-
-                    return AppCard(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Text(sub.athleteName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
-                              Text(
-                                '${NumberFormatter.formatCurrency(sub.amount)} د.ل',
-                                style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 14),
-                              ),
-                            ],
-                          ),
-                          const SizedBox(height: 8),
-                          Text('رقم العضوية: ${sub.membershipNumber.toWesternDigits()}', style: const TextStyle(fontSize: 13)),
-                          Text('الباقة: ${sub.packageName}', style: const TextStyle(fontSize: 13)),
-                          Text('الأكاديمية: ${sub.departmentName}', style: const TextStyle(fontSize: 13)),
-                          Text('طريقة الدفع: ${sub.paymentMethod == 'cash' ? 'نقدي' : 'تحويل مصرفي'}', style: const TextStyle(fontSize: 13)),
-                          const Divider(height: 24),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              TextButton(
-                                onPressed: () => _rejectSubscription(sub),
-                                child: const Text(AppStrings.reject, style: TextStyle(color: AppColors.destructive)),
-                              ),
-                              const SizedBox(width: 12),
-                              ElevatedButton(
-                                onPressed: () => _approveSubscription(sub),
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: AppColors.secondary,
-                                  foregroundColor: Colors.white,
-                                  elevation: 0,
-                                ),
-                                child: const Text(AppStrings.approve),
-                              ),
-                            ],
-                          )
-                        ],
-                      ),
-                    );
-                  },
-                );
-              },
-              loading: () => const ShimmerList(),
-              error: (err, stack) => AppErrorWidget(
-                errorMessage: err.toString(),
-                onRetry: () => ref.refresh(subscriptionsProvider(subParams)),
-              ),
-            ),
+            onRefresh: () => ref.read(subscriptionsPaginatedProvider(subFilter).notifier).refresh(),
+            child: _buildSubscriptionsTab(subState),
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildRegistrationsTab(PaginatedListState<RegistrationModel> state) {
+    if (state.state == PaginatedState.loading) {
+      return const ShimmerList();
+    }
+
+    if (state.state == PaginatedState.error) {
+      return AppErrorWidget(
+        errorMessage: state.error ?? 'خطأ غير معروف',
+        onRetry: () => ref.read(registrationsPaginatedProvider(RegistrationFilter(status: 'pending')).notifier).refresh(),
+      );
+    }
+
+    if (state.items.isEmpty) {
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: const [
+          SizedBox(height: 100),
+          EmptyState(message: 'لا توجد طلبات تسجيل جديدة بانتظار المراجعة'),
+        ],
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: state.items.length,
+      itemBuilder: (context, index) {
+        final reg = state.items[index];
+        final hasProfile = reg.athleteId != null;
+
+        return StaggeredListItem(
+          index: index,
+          child: AppCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(reg.userName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                    Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                      decoration: BoxDecoration(
+                        color: reg.roleChoice == 'athlete'
+                            ? AppColors.primary.withValues(alpha: 0.1)
+                            : AppColors.secondary.withValues(alpha: 0.1),
+                        borderRadius: BorderRadius.circular(4),
+                      ),
+                      child: Text(
+                        reg.roleChoice == 'athlete' ? 'لاعب' : 'ولي أمر',
+                        style: TextStyle(
+                          color: reg.roleChoice == 'athlete' ? AppColors.primary : AppColors.secondary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text('الهاتف: ${reg.userPhone.toWesternDigits()}', style: const TextStyle(fontSize: 13)),
+                Text('تاريخ الطلب: ${safeDateTimeParse(reg.createdAt) != null ? NumberFormatter.formatDateTime(safeDateTimeParse(reg.createdAt)!) : ''}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                const Divider(height: 24),
+                Wrap(
+                  alignment: WrapAlignment.end,
+                  spacing: 12,
+                  runSpacing: 8,
+                  children: [
+                    TextButton(
+                      onPressed: () => _rejectRegistration(reg),
+                      child: const Text(AppStrings.reject, style: TextStyle(color: AppColors.destructive)),
+                    ),
+                    if (reg.roleChoice == 'athlete' && !hasProfile)
+                      ElevatedButton.icon(
+                        onPressed: () => _showCreateProfileDialog(reg),
+                        icon: const Icon(Icons.person_add, size: 16),
+                        label: const Text('إنشاء الملف الرياضي'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                        ),
+                      )
+                    else
+                      ElevatedButton(
+                        onPressed: () => _approveRegistration(reg),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.secondary,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                        ),
+                        child: const Text(AppStrings.approve),
+                      ),
+                  ],
+                )
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildSubscriptionsTab(PaginatedListState<SubscriptionModel> state) {
+    if (state.state == PaginatedState.loading) {
+      return const ShimmerList();
+    }
+
+    if (state.state == PaginatedState.error) {
+      return AppErrorWidget(
+        errorMessage: state.error ?? 'خطأ غير معروف',
+        onRetry: () => ref.read(subscriptionsPaginatedProvider(SubscriptionFilter(status: 'pending')).notifier).refresh(),
+      );
+    }
+
+    if (state.items.isEmpty) {
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: const [
+          SizedBox(height: 100),
+          EmptyState(message: 'لا توجد طلبات اشتراك جديدة بانتظار التفعيل'),
+        ],
+      );
+    }
+
+    return ListView.builder(
+      padding: const EdgeInsets.all(16),
+      itemCount: state.items.length,
+      itemBuilder: (context, index) {
+        final sub = state.items[index];
+
+        return StaggeredListItem(
+          index: index,
+          child: AppCard(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(sub.athleteName, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15)),
+                    Text(
+                      '${NumberFormatter.formatCurrency(sub.amount)} د.ل',
+                      style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primary, fontSize: 14),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 8),
+                Text('رقم العضوية: ${sub.membershipNumber.toWesternDigits()}', style: const TextStyle(fontSize: 13)),
+                Text('الباقة: ${sub.packageName}', style: const TextStyle(fontSize: 13)),
+                Text('الأكاديمية: ${sub.departmentName}', style: const TextStyle(fontSize: 13)),
+                Text('طريقة الدفع: ${sub.paymentMethod == 'cash' ? 'نقدي' : 'تحويل مصرفي'}', style: const TextStyle(fontSize: 13)),
+                const Divider(height: 24),
+                Wrap(
+                  alignment: WrapAlignment.end,
+                  spacing: 12,
+                  runSpacing: 8,
+                  children: [
+                    TextButton(
+                      onPressed: () => _rejectSubscription(sub),
+                      child: const Text(AppStrings.reject, style: TextStyle(color: AppColors.destructive)),
+                    ),
+                    ElevatedButton(
+                      onPressed: () => _approveSubscription(sub),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.secondary,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                      ),
+                      child: const Text(AppStrings.approve),
+                    ),
+                  ],
+                )
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

@@ -1,5 +1,6 @@
 import base64
 import datetime
+import secrets
 import uuid
 
 from django.core.files.base import ContentFile
@@ -25,6 +26,17 @@ from .serializers import (
     RegistrationRequestSerializer,
     RegistrationRejectSerializer,
 )
+
+
+def _split_full_name(full_name: str) -> tuple[str, str]:
+    normalized = (full_name or "").strip()
+    if not normalized:
+        return "", ""
+
+    parts = normalized.split()
+    if len(parts) == 1:
+        return parts[0], ""
+    return parts[0], " ".join(parts[1:])
 
 
 @api_view(["POST"])
@@ -85,6 +97,46 @@ class AthleteViewSet(viewsets.ModelViewSet):
         if self.action in ["create", "update", "partial_update", "destroy"]:
             return [IsReceptionOrAbove()]
         return [IsSuperAdminOrReadOnly()]
+
+    @transaction.atomic
+    def create(self, request, *args, **kwargs):
+        password = request.data.get("password", None)
+        serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+
+        if "is_active" not in request.data and "is_active" in serializer.validated_data:
+            del serializer.validated_data["is_active"]
+
+        athlete = serializer.save()
+
+        first_name, last_name = _split_full_name(athlete.full_name)
+        user, created = User.objects.get_or_create(
+            phone=athlete.phone,
+            defaults={
+                "first_name_ar": first_name or athlete.full_name,
+                "last_name_ar": last_name,
+                "role": User.Role.ATHLETE,
+                "is_active": athlete.is_active,
+            },
+        )
+
+        if created:
+            user.set_password(password or secrets.token_urlsafe(16))
+        elif password:
+            user.set_password(password)
+
+        if user.role != User.Role.ATHLETE:
+            user.role = User.Role.ATHLETE
+
+        user.first_name_ar = first_name or user.first_name_ar or athlete.full_name
+        user.last_name_ar = last_name
+        user.athlete = athlete
+        user.is_active = athlete.is_active
+        user.save()
+
+        headers = self.get_success_headers(serializer.data)
+        response_data = self.get_serializer(athlete).data
+        return Response(response_data, status=status.HTTP_201_CREATED, headers=headers)
 
     @action(detail=False, methods=["get"], url_path="verify/(?P<membership_number>[^/.]+)")
     def verify(self, request, membership_number=None):
@@ -231,7 +283,7 @@ class ParentAthleteViewSet(viewsets.ModelViewSet):
             phone=phone,
             first_name_ar=full_name,
             last_name_ar="",
-            password=User.objects.make_random_password(),
+            password=secrets.token_urlsafe(16),
             role="athlete",
         )
         registration = RegistrationRequest.objects.create(

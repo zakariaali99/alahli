@@ -21,4 +21,33 @@ class PackageRepository {
       throw Exception(e.response?.data?['detail'] ?? 'فشل تحميل الباقات');
     }
   }
+  Future<PackageModel> createPackage(Map<String, dynamic> data) async {
+    try {
+      final res = await apiClient.dio.post(ApiEndpoints.packages, data: data);
+      final resData = asMap(res.data);
+      if (resData == null) throw Exception('فشل إنشاء الباقة');
+      return PackageModel.fromJson(resData);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data?['detail'] ?? 'فشل إنشاء الباقة');
+    }
+  }
+
+  Future<PackageModel> updatePackage(int id, Map<String, dynamic> data) async {
+    try {
+      final res = await apiClient.dio.patch('${ApiEndpoints.packages}$id/', data: data);
+      final resData = asMap(res.data);
+      if (resData == null) throw Exception('فشل تعديل الباقة');
+      return PackageModel.fromJson(resData);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data?['detail'] ?? 'فشل تعديل الباقة');
+    }
+  }
+
+  Future<void> deletePackage(int id) async {
+    try {
+      await apiClient.dio.delete('${ApiEndpoints.packages}$id/');
+    } on DioException catch (e) {
+      throw Exception(e.response?.data?['detail'] ?? 'فشل حذف الباقة');
+    }
+  }
 }

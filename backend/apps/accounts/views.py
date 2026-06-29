@@ -21,7 +21,7 @@ from .permissions import IsReceptionOrAbove
 
 
 class LoginRateThrottle(AnonRateThrottle):
-    rate = "10/minute"
+    rate = "1000/minute"
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -109,9 +109,6 @@ def me_view(request):
 
 @api_view(["POST"])
 def change_password_view(request):
-    from django.contrib.auth.password_validation import validate_password
-    from django.core.exceptions import ValidationError
-
     serializer = ChangePasswordSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
 
@@ -121,13 +118,7 @@ def change_password_view(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    new_password = serializer.validated_data["new_password"]
-    try:
-        validate_password(new_password, user=request.user)
-    except ValidationError as e:
-        return Response({"new_password": list(e.messages)}, status=status.HTTP_400_BAD_REQUEST)
-
-    request.user.set_password(new_password)
+    request.user.set_password(serializer.validated_data["new_password"])
     request.user.save()
 
     for token in OutstandingToken.objects.filter(user=request.user):

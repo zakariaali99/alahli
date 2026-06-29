@@ -1,13 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/providers/providers.dart';
+import '../../../core/providers/paginated_providers.dart';
+import '../../../core/providers/paginated_list_notifier.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_strings.dart';
 import '../../../core/helpers/ui_helpers.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/app_error_widget.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/loading_shimmer.dart';
+import '../../../core/widgets/staggered_list_item.dart';
 import '../../../core/widgets/confirm_dialog.dart';
 import '../../../core/helpers/numeral_converter.dart';
 import '../../../core/models/user_model.dart';
@@ -21,20 +23,40 @@ class StaffScreen extends ConsumerStatefulWidget {
 
 class _StaffScreenState extends ConsumerState<StaffScreen> {
   final _searchController = TextEditingController();
+  final _scrollController = ScrollController();
   String _searchQuery = '';
   String? _selectedRoleFilter;
 
   @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
     super.dispose();
   }
 
-  Map<String, dynamic> _getFilterParams() {
-    return {
-      'search': _searchQuery,
-      'role': _selectedRoleFilter,
-    };
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      ref.read(staffPaginatedProvider(_currentFilter()).notifier).loadMore();
+    }
+  }
+
+  StaffFilter _currentFilter() {
+    return StaffFilter(
+      search: _searchQuery.isNotEmpty ? _searchQuery : null,
+      role: _selectedRoleFilter,
+    );
+  }
+
+  Future<void> _refreshStaff() async {
+    ref.read(staffPaginatedProvider(_currentFilter()).notifier).refresh();
   }
 
   Future<void> _showAddStaffDialog() async {
@@ -158,7 +180,7 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
         };
 
         await ref.read(staffRepositoryProvider).createStaff(data);
-        ref.invalidate(staffProvider);
+        await _refreshStaff();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('تم إضافة الموظف/المدير بنجاح')),
@@ -188,7 +210,7 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
     if (confirm == true) {
       try {
         await ref.read(staffRepositoryProvider).deleteStaff(staff.id);
-        ref.invalidate(staffProvider);
+        await _refreshStaff();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('تم حذف حساب الموظف بنجاح')),
@@ -219,8 +241,8 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final filter = _getFilterParams();
-    final staffAsync = ref.watch(staffProvider(filter));
+    final filter = _currentFilter();
+    final staffState = ref.watch(staffPaginatedProvider(filter));
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
@@ -287,107 +309,138 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
           // Staff List
           Expanded(
             child: RefreshIndicator(
-              onRefresh: () async => ref.invalidate(staffProvider(filter)),
-              child: staffAsync.when(
-                data: (list) {
-                  if (list.isEmpty) {
-                    return const EmptyState(message: 'لا يوجد موظفون يطابقون شروط البحث');
-                  }
-                  return ListView.builder(
-                    padding: const EdgeInsets.all(16),
-                    itemCount: list.length,
-                    itemBuilder: (context, index) {
-                      final staff = list[index];
-
-                      return AppCard(
-                        child: Row(
-                          children: [
-                            CircleAvatar(
-                              backgroundColor: AppColors.primary.withOpacity(0.1),
-                              backgroundImage: staff.photo != null ? NetworkImage(staff.photo!) : null,
-                              child: staff.photo == null
-                                   ? Text(safeInitials(staff.firstNameAr), style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold))
-                                  : null,
-                            ),
-                            const SizedBox(width: 16),
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(staff.fullNameAr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14)),
-                                  const SizedBox(height: 4),
-                                  Text('الهاتف: ${staff.phone.toWesternDigits()}', style: const TextStyle(fontSize: 12)),
-                                  const SizedBox(height: 6),
-                                  Row(
-                                    children: [
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                        decoration: BoxDecoration(
-                                          color: AppColors.primary.withOpacity(0.1),
-                                          borderRadius: BorderRadius.circular(4),
-                                        ),
-                                        child: Text(
-                                          _getRoleLabel(staff.role),
-                                          style: const TextStyle(color: AppColors.primary, fontSize: 10, fontWeight: FontWeight.bold),
-                                        ),
-                                      ),
-                                      if (staff.academyName != null && staff.academyName!.isNotEmpty) ...[
-                                        const SizedBox(width: 8),
-                                        Container(
-                                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
-                                          decoration: BoxDecoration(
-                                            color: AppColors.secondary.withOpacity(0.1),
-                                            borderRadius: BorderRadius.circular(4),
-                                          ),
-                                          child: Text(
-                                            staff.academyName!,
-                                            style: const TextStyle(color: AppColors.secondary, fontSize: 10, fontWeight: FontWeight.bold),
-                                          ),
-                                        ),
-                                      ],
-                                    ],
-                                  ),
-                                ],
-                              ),
-                            ),
-                            PopupMenuButton<String>(
-                              icon: const Icon(Icons.more_vert),
-                              color: isDark ? AppColors.darkCard : Colors.white,
-                              onSelected: (val) {
-                                if (val == 'delete') {
-                                  _deleteStaff(staff);
-                                }
-                              },
-                              itemBuilder: (ctx) => [
-                                const PopupMenuItem(
-                                  value: 'delete',
-                                  child: Row(
-                                    mainAxisAlignment: MainAxisAlignment.end,
-                                    children: [
-                                      Text('حذف الحساب', style: TextStyle(color: AppColors.destructive)),
-                                      SizedBox(width: 8),
-                                      Icon(Icons.delete_forever, color: AppColors.destructive, size: 18),
-                                    ],
-                                  ),
-                                ),
-                              ],
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  );
-                },
-                loading: () => const ShimmerList(),
-                error: (err, stack) => AppErrorWidget(
-                  errorMessage: err.toString(),
-                  onRetry: () => ref.refresh(staffProvider(filter)),
-                ),
-              ),
+              onRefresh: _refreshStaff,
+              child: _buildBody(staffState, isDark),
             ),
           )
         ],
       ),
+    );
+  }
+
+  Widget _buildBody(PaginatedListState<UserModel> state, bool isDark) {
+    if (state.state == PaginatedState.loading) {
+      return const ShimmerList();
+    }
+
+    if (state.state == PaginatedState.error) {
+      return AppErrorWidget(
+        errorMessage: state.error ?? 'خطأ غير معروف',
+        onRetry: _refreshStaff,
+      );
+    }
+
+    if (state.items.isEmpty) {
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: const [
+          SizedBox(height: 100),
+          EmptyState(message: 'لا يوجد موظفون يطابقون شروط البحث'),
+        ],
+      );
+    }
+
+    return ListView.builder(
+      controller: _scrollController,
+      padding: const EdgeInsets.all(16),
+      itemCount: state.items.length + (state.hasNext ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (index == state.items.length) {
+          return const Padding(
+            padding: EdgeInsets.all(16),
+            child: Center(
+              child: SizedBox(
+                height: 24,
+                width: 24,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+          );
+        }
+
+        final staff = state.items[index];
+
+        return StaggeredListItem(
+          index: index,
+          child: AppCard(
+            child: Row(
+              children: [
+                CircleAvatar(
+                  backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                  backgroundImage: staff.photo != null ? NetworkImage(staff.photo!) : null,
+                  child: staff.photo == null
+                      ? Text(safeInitials(staff.firstNameAr), style: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold))
+                      : null,
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        staff.fullNameAr,
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _getRoleLabel(staff.role),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark ? AppColors.darkMutedForeground : AppColors.mutedForeground,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        staff.phone.toWesternDigits(),
+                        style: TextStyle(
+                          fontSize: 12,
+                          color: isDark ? AppColors.darkMutedForeground : AppColors.mutedForeground,
+                        ),
+                      ),
+                      if (staff.academyName != null) ...[
+                        const SizedBox(height: 6),
+                        Container(
+                          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                          decoration: BoxDecoration(
+                            color: AppColors.secondary.withValues(alpha: 0.1),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                          child: Text(
+                            staff.academyName!,
+                            style: const TextStyle(color: AppColors.secondary, fontSize: 10, fontWeight: FontWeight.bold),
+                          ),
+                        ),
+                      ],
+                    ],
+                  ),
+                ),
+                PopupMenuButton<String>(
+                  icon: const Icon(Icons.more_vert),
+                  color: isDark ? AppColors.darkCard : Colors.white,
+                  onSelected: (val) {
+                    if (val == 'delete') {
+                      _deleteStaff(staff);
+                    }
+                  },
+                  itemBuilder: (ctx) => [
+                    const PopupMenuItem(
+                      value: 'delete',
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          Text('حذف الحساب', style: TextStyle(color: AppColors.destructive)),
+                          SizedBox(width: 8),
+                          Icon(Icons.delete_forever, color: AppColors.destructive, size: 18),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 }

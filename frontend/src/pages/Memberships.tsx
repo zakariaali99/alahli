@@ -6,6 +6,8 @@ import {
   CalendarRange,
   Crown,
   CheckCircle2,
+  Eye,
+  FileText,
   Search,
   Filter,
   MoreVertical,
@@ -16,7 +18,7 @@ import {
   ChevronLeft,
   ChevronRight,
 } from "lucide-react"
-import { useSubscriptions, useUpdateSubscription } from "@/lib/hooks/useSubscriptions"
+import { useRenewSubscription, useSubscriptions, useUpdateSubscription } from "@/lib/hooks/useSubscriptions"
 import { usePackages, type SubscriptionPackage } from "@/lib/hooks/usePackages"
 import { Button } from "@/components/ui/button"
 import { Input, Select } from "@/components/ui/input"
@@ -25,6 +27,7 @@ import { Badge } from "@/components/ui/badge"
 import { Link } from "react-router-dom"
 import { api } from "@/lib/api"
 import { useAuth } from "@/lib/auth"
+import { toAbsoluteMediaUrl } from "@/lib/media"
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -73,6 +76,14 @@ type FlashMessage = {
   text: string
 }
 
+type QuickRenewPackage = {
+  id: number
+  title: string
+  amount: number
+  durationType: "weeks" | "months"
+  durationValue: number
+}
+
 const ICON_OPTIONS = [
   { value: "CalendarDays", label: "تقويم يومي" },
   { value: "CalendarRange", label: "تقويم زمني" },
@@ -114,6 +125,27 @@ export default function MembershipsPage() {
   const [packageFieldErrors, setPackageFieldErrors] = useState<Record<string, string>>({})
   const [flash, setFlash] = useState<FlashMessage | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<SubscriptionPackage | null>(null)
+  const [detailsSub, setDetailsSub] = useState<any | null>(null)
+  const [showCreateSubModal, setShowCreateSubModal] = useState(false)
+  const [createSubLoading, setCreateSubLoading] = useState(false)
+  const [createSubError, setCreateSubError] = useState<string | null>(null)
+  const [athleteOptions, setAthleteOptions] = useState<Array<{ id: number; full_name: string; membership_number: string }>>([])
+  const [manualSubForm, setManualSubForm] = useState({
+    athlete: "",
+    start_date: "",
+    end_date: "",
+    amount: "",
+    package_name: "اشتراك إداري",
+    payment_method: "cash" as "cash" | "bank_transfer",
+    status: "active" as "active" | "pending",
+  })
+  const [manualInvoice, setManualInvoice] = useState<File | null>(null)
+  const [quickRenewPackage, setQuickRenewPackage] = useState<QuickRenewPackage | null>(null)
+  const [quickRenewAthlete, setQuickRenewAthlete] = useState("")
+  const [quickRenewSubId, setQuickRenewSubId] = useState("")
+  const [quickRenewSubs, setQuickRenewSubs] = useState<any[]>([])
+  const [quickRenewLoadingSubs, setQuickRenewLoadingSubs] = useState(false)
+  const [quickRenewError, setQuickRenewError] = useState<string | null>(null)
 
   const canManagePackages = user?.role === "super_admin" || user?.role === "reception"
 
@@ -134,6 +166,163 @@ export default function MembershipsPage() {
   const packages = packagesData?.results ?? []
 
   const updateSubscriptionMut = useUpdateSubscription()
+  const renewSubscriptionMut = useRenewSubscription()
+
+  const normalizeRenewMonths = (durationType: "weeks" | "months", durationValue: number) => {
+    const estimated = durationType === "weeks" ? Math.max(1, Math.ceil(durationValue / 4)) : Math.max(1, durationValue)
+    const allowed = [1, 3, 6, 12]
+    const match = allowed.find((m) => m >= estimated)
+    return match ?? 12
+  }
+
+  const openQuickRenew = async (pkg: QuickRenewPackage) => {
+    setQuickRenewPackage(pkg)
+    setQuickRenewAthlete("")
+    setQuickRenewSubId("")
+    setQuickRenewSubs([])
+    setQuickRenewError(null)
+    await loadAthletes()
+  }
+
+  const closeQuickRenew = () => {
+    if (renewSubscriptionMut.isPending) return
+    setQuickRenewPackage(null)
+    setQuickRenewAthlete("")
+    setQuickRenewSubId("")
+    setQuickRenewSubs([])
+    setQuickRenewError(null)
+  }
+
+  const loadAthleteSubscriptions = async (athleteId: string) => {
+    if (!athleteId) {
+      setQuickRenewSubs([])
+      setQuickRenewSubId("")
+      return
+    }
+
+    try {
+      setQuickRenewLoadingSubs(true)
+      setQuickRenewError(null)
+      const subsRes = await api.get<{ results: any[] } | any[]>("/subscriptions/", {
+        athlete: athleteId,
+        page_size: "100",
+      })
+      const items = (subsRes as any).results || subsRes
+      const subs = Array.isArray(items) ? items : []
+      setQuickRenewSubs(subs)
+
+      const preferred = subs.find((s: any) => s.status === "active") || subs[0]
+      setQuickRenewSubId(preferred ? String(preferred.id) : "")
+
+      if (!preferred) {
+        setQuickRenewError("لا توجد اشتراكات سابقة لهذا اللاعب لتجديدها")
+      }
+    } catch (err: any) {
+      setQuickRenewSubs([])
+      setQuickRenewSubId("")
+      setQuickRenewError(err?.message || "تعذر تحميل اشتراكات اللاعب")
+    } finally {
+      setQuickRenewLoadingSubs(false)
+    }
+  }
+
+  const submitQuickRenew = async (e: FormEvent) => {
+    e.preventDefault()
+    if (!quickRenewPackage) return
+    if (!quickRenewAthlete) {
+      setQuickRenewError("يرجى اختيار اللاعب")
+      return
+    }
+    if (!quickRenewSubId) {
+      setQuickRenewError("يرجى اختيار الاشتراك المراد تجديده")
+      return
+    }
+
+    try {
+      setQuickRenewError(null)
+      const months = normalizeRenewMonths(quickRenewPackage.durationType, quickRenewPackage.durationValue)
+      await renewSubscriptionMut.mutateAsync({
+        id: Number(quickRenewSubId),
+        months,
+        amount: quickRenewPackage.amount.toString(),
+      })
+
+      await queryClient.invalidateQueries({ queryKey: ["subscriptions"] })
+      setFlash({ type: "success", text: `تم تجديد الاشتراك بنجاح لمدة ${months} شهر` })
+      closeQuickRenew()
+    } catch (err: any) {
+      setQuickRenewError(err?.message || "تعذر تنفيذ التجديد السريع")
+    }
+  }
+
+  const loadAthletes = async () => {
+    try {
+      const athletesRes = await api.get<{ results: Array<{ id: number; full_name: string; membership_number: string }> } | Array<{ id: number; full_name: string; membership_number: string }>>("/athletes/", {
+        page_size: "300",
+        ordering: "-created_at",
+      })
+      const items = (athletesRes as any).results || athletesRes
+      setAthleteOptions(Array.isArray(items) ? items : [])
+    } catch {
+      setAthleteOptions([])
+    }
+  }
+
+  const openCreateSubscriptionModal = async () => {
+    setCreateSubError(null)
+    const today = new Date()
+    const nextMonth = new Date(today)
+    nextMonth.setMonth(nextMonth.getMonth() + 1)
+    setManualSubForm({
+      athlete: "",
+      start_date: today.toISOString().slice(0, 10),
+      end_date: nextMonth.toISOString().slice(0, 10),
+      amount: "",
+      package_name: "اشتراك إداري",
+      payment_method: "cash",
+      status: "active",
+    })
+    setManualInvoice(null)
+    setShowCreateSubModal(true)
+
+    await loadAthletes()
+  }
+
+  const submitManualSubscription = async (e: FormEvent) => {
+    e.preventDefault()
+    setCreateSubError(null)
+
+    if (!manualSubForm.athlete || !manualSubForm.start_date || !manualSubForm.end_date || !manualSubForm.amount) {
+      setCreateSubError("يرجى استكمال بيانات الاشتراك")
+      return
+    }
+    if (manualSubForm.payment_method === "bank_transfer" && !manualInvoice) {
+      setCreateSubError("يرجى رفع إيصال PDF عند اختيار التحويل المصرفي")
+      return
+    }
+
+    try {
+      setCreateSubLoading(true)
+      const payload = new FormData()
+      payload.append("athlete", manualSubForm.athlete)
+      payload.append("start_date", manualSubForm.start_date)
+      payload.append("end_date", manualSubForm.end_date)
+      payload.append("amount", manualSubForm.amount)
+      payload.append("package_name", manualSubForm.package_name)
+      payload.append("payment_method", manualSubForm.payment_method)
+      payload.append("status", manualSubForm.status)
+      if (manualInvoice) payload.append("invoice_pdf", manualInvoice)
+
+      await api.post("/subscriptions/", payload, { formData: true })
+      await queryClient.invalidateQueries({ queryKey: ["subscriptions"] })
+      setShowCreateSubModal(false)
+      setFlash({ type: "success", text: "تم إنشاء الاشتراك يدوياً بنجاح" })
+    } catch (err: any) {
+      setCreateSubError(err?.message || "تعذر إنشاء الاشتراك")
+    } finally {
+      setCreateSubLoading(false)
+    }
+  }
 
   const handleApprove = async (id: number) => {
     try {
@@ -341,12 +530,12 @@ export default function MembershipsPage() {
           <h1 className="text-3xl font-extrabold gradient-text">إدارة الاشتراكات</h1>
           <p className="text-muted-foreground mt-1 text-sm">تجديد، متابعة، وإدارة الباقات المالية للاعبين.</p>
         </div>
-        <Link className="w-full md:w-auto" to="/dashboard/athletes/add">
+        <button className="w-full md:w-auto" onClick={() => void openCreateSubscriptionModal()} type="button">
           <Button size="lg" className="w-full md:w-auto bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/25">
             <PlusCircle className="w-5 h-5" />
             اشتراك جديد
           </Button>
-        </Link>
+        </button>
       </motion.div>
 
       {/* ── Quick Renewal Packages ── */}
@@ -420,7 +609,13 @@ export default function MembershipsPage() {
                   )}
 
                   <button
-                    onClick={() => setFlash({ type: "info", text: "سيتم تفعيل التجديد قريباً" })}
+                    onClick={() => openQuickRenew({
+                      id: pkg.id,
+                      title: pkg.title,
+                      amount: Number(pkg.raw.price),
+                      durationType: pkg.raw.duration_type,
+                      durationValue: pkg.raw.duration_value,
+                    })}
                     className={`w-full py-2.5 rounded-xl text-sm font-bold transition-all active:scale-[0.97] ${
                       pkg.featured
                         ? "bg-primary text-primary-foreground shadow-md shadow-primary/30 hover:shadow-lg hover:shadow-primary/40 hover:bg-primary/90"
@@ -525,7 +720,8 @@ export default function MembershipsPage() {
                     <motion.tr
                       key={sub.id}
                       variants={itemVariants}
-                      className="bg-transparent border-b border-outline-variant/20 hover:bg-surface-container-lowest/50 transition-colors group"
+                      onClick={() => setDetailsSub(sub)}
+                      className="bg-transparent border-b border-outline-variant/20 hover:bg-surface-container-lowest/50 transition-colors group cursor-pointer"
                     >
                       <td className="px-6 py-4">
                         <div className="flex items-center gap-3">
@@ -560,7 +756,7 @@ export default function MembershipsPage() {
                               size="sm"
                               variant="ghost"
                               className="text-secondary hover:text-secondary hover:bg-secondary/10 px-2.5 py-1 h-7 text-xs font-bold rounded-lg flex items-center gap-1"
-                              onClick={() => handleApprove(sub.id)}
+                              onClick={(e) => { e.stopPropagation(); void handleApprove(sub.id) }}
                             >
                               <CheckCircle2 className="w-3.5 h-3.5" />
                               تأكيد
@@ -569,14 +765,21 @@ export default function MembershipsPage() {
                               size="sm"
                               variant="ghost"
                               className="text-error hover:text-error hover:bg-error/10 px-2.5 py-1 h-7 text-xs font-bold rounded-lg flex items-center gap-1"
-                              onClick={() => handleReject(sub.id)}
+                              onClick={(e) => { e.stopPropagation(); void handleReject(sub.id) }}
                             >
                               <X className="w-3.5 h-3.5" />
                               رفض
                             </Button>
                           </div>
                         ) : (
-                          <button className="p-1.5 text-muted-foreground hover:text-primary transition-colors rounded-lg hover:bg-surface-container">
+                          <button
+                            className="p-1.5 text-muted-foreground hover:text-primary transition-colors rounded-lg hover:bg-surface-container"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              setDetailsSub(sub)
+                            }}
+                            type="button"
+                          >
                             <MoreVertical className="w-4 h-4" />
                           </button>
                         )}
@@ -851,6 +1054,187 @@ export default function MembershipsPage() {
               <Button type="button" variant="ghost" onClick={closePackageModal}>إلغاء</Button>
               <Button type="submit" disabled={packageSubmitting}>
                 {packageSubmitting ? "جارٍ الحفظ..." : "حفظ"}
+              </Button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {detailsSub && (
+        <div className="fixed inset-0 z-50 bg-black/50 p-4 flex items-center justify-center" onClick={() => setDetailsSub(null)}>
+          <div className="w-full max-w-xl rounded-2xl border border-border bg-card p-5 space-y-4" onClick={(e) => e.stopPropagation()}>
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold">تفاصيل الاشتراك</h3>
+              <button type="button" onClick={() => setDetailsSub(null)}><X className="w-5 h-5 text-muted-foreground" /></button>
+            </div>
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div><p className="text-muted-foreground">اللاعب</p><p className="font-semibold">{detailsSub.athlete_name}</p></div>
+              <div><p className="text-muted-foreground">رقم العضوية</p><p className="font-semibold">{detailsSub.membership_number}</p></div>
+              <div><p className="text-muted-foreground">الباقة</p><p className="font-semibold">{detailsSub.package_name}</p></div>
+              <div><p className="text-muted-foreground">طريقة الدفع</p><p className="font-semibold">{detailsSub.payment_method === "bank_transfer" ? "تحويل بنكي" : "نقدي"}</p></div>
+              <div><p className="text-muted-foreground">البداية</p><p className="font-semibold">{formatDate(detailsSub.start_date)}</p></div>
+              <div><p className="text-muted-foreground">النهاية</p><p className="font-semibold">{formatDate(detailsSub.end_date)}</p></div>
+              <div><p className="text-muted-foreground">المبلغ</p><p className="font-semibold">{Number(detailsSub.amount).toLocaleString("ar-SA-u-nu-latn")} د.ل</p></div>
+              <div><p className="text-muted-foreground">الحالة</p><p className="font-semibold">{statusMap[detailsSub.status]?.label || detailsSub.status}</p></div>
+            </div>
+            <div className="flex flex-wrap justify-end gap-2">
+              {detailsSub.invoice_pdf_url && (
+                <a
+                  href={toAbsoluteMediaUrl(detailsSub.invoice_pdf_url) || "#"}
+                  target="_blank"
+                  rel="noreferrer"
+                  className="inline-flex items-center gap-2 rounded-lg border border-primary/25 bg-primary/8 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/12"
+                >
+                  <FileText className="w-4 h-4" /> عرض الإيصال
+                </a>
+              )}
+              <Link
+                to={`/dashboard/athletes/${detailsSub.athlete}`}
+                className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs font-semibold text-foreground hover:bg-surface-container"
+              >
+                <Eye className="w-4 h-4" /> فتح ملف اللاعب
+              </Link>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {showCreateSubModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 p-4 flex items-center justify-center" onClick={() => setShowCreateSubModal(false)}>
+          <form className="w-full max-w-2xl rounded-2xl border border-border bg-card p-5 space-y-4" onClick={(e) => e.stopPropagation()} onSubmit={submitManualSubscription}>
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold">إضافة اشتراك يدوي</h3>
+              <button type="button" onClick={() => setShowCreateSubModal(false)}><X className="w-5 h-5 text-muted-foreground" /></button>
+            </div>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label className="mb-1 block text-xs text-muted-foreground">اللاعب</label>
+                <select
+                  className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2 text-sm"
+                  value={manualSubForm.athlete}
+                  onChange={(e) => setManualSubForm((p) => ({ ...p, athlete: e.target.value }))}
+                  required
+                >
+                  <option value="">اختر لاعب</option>
+                  {athleteOptions.map((athlete) => (
+                    <option key={athlete.id} value={String(athlete.id)}>{athlete.full_name} ({athlete.membership_number})</option>
+                  ))}
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs text-muted-foreground">اسم الباقة</label>
+                <input className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2 text-sm" value={manualSubForm.package_name} onChange={(e) => setManualSubForm((p) => ({ ...p, package_name: e.target.value }))} />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs text-muted-foreground">تاريخ البداية</label>
+                <input type="date" className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2 text-sm" value={manualSubForm.start_date} onChange={(e) => setManualSubForm((p) => ({ ...p, start_date: e.target.value }))} required />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs text-muted-foreground">تاريخ النهاية</label>
+                <input type="date" className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2 text-sm" value={manualSubForm.end_date} onChange={(e) => setManualSubForm((p) => ({ ...p, end_date: e.target.value }))} required />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs text-muted-foreground">المبلغ</label>
+                <input type="number" step="0.01" min="0" className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2 text-sm" value={manualSubForm.amount} onChange={(e) => setManualSubForm((p) => ({ ...p, amount: e.target.value }))} required />
+              </div>
+              <div>
+                <label className="mb-1 block text-xs text-muted-foreground">الحالة</label>
+                <select className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2 text-sm" value={manualSubForm.status} onChange={(e) => setManualSubForm((p) => ({ ...p, status: e.target.value as "active" | "pending" }))}>
+                  <option value="active">نشط</option>
+                  <option value="pending">قيد الانتظار</option>
+                </select>
+              </div>
+              <div>
+                <label className="mb-1 block text-xs text-muted-foreground">طريقة الدفع</label>
+                <select className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2 text-sm" value={manualSubForm.payment_method} onChange={(e) => setManualSubForm((p) => ({ ...p, payment_method: e.target.value as "cash" | "bank_transfer" }))}>
+                  <option value="cash">نقدي</option>
+                  <option value="bank_transfer">تحويل مصرفي</option>
+                </select>
+              </div>
+              {manualSubForm.payment_method === "bank_transfer" && (
+                <div>
+                  <label className="mb-1 block text-xs text-muted-foreground">إيصال PDF</label>
+                  <input type="file" accept="application/pdf,.pdf" className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2 text-sm" onChange={(e) => setManualInvoice(e.target.files?.[0] || null)} />
+                </div>
+              )}
+            </div>
+            {createSubError && <p className="text-xs text-error">{createSubError}</p>}
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="ghost" onClick={() => setShowCreateSubModal(false)}>إلغاء</Button>
+              <Button type="submit" disabled={createSubLoading}>{createSubLoading ? "جارٍ الحفظ..." : "حفظ الاشتراك"}</Button>
+            </div>
+          </form>
+        </div>
+      )}
+
+      {quickRenewPackage && (
+        <div className="fixed inset-0 z-50 bg-black/50 p-4 flex items-center justify-center" onClick={closeQuickRenew}>
+          <form
+            className="w-full max-w-xl rounded-2xl border border-border bg-card p-5 space-y-4"
+            onClick={(e) => e.stopPropagation()}
+            onSubmit={submitQuickRenew}
+          >
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-bold">تجديد سريع - {quickRenewPackage.title}</h3>
+              <button type="button" onClick={closeQuickRenew}><X className="w-5 h-5 text-muted-foreground" /></button>
+            </div>
+
+            <div className="rounded-xl border border-border bg-surface-container-low p-3 text-sm">
+              <p>القيمة: <span className="font-semibold">{quickRenewPackage.amount.toLocaleString("ar-SA-u-nu-latn")} د.ل</span></p>
+              <p className="text-muted-foreground text-xs mt-1">
+                مدة التجديد المعتمدة: {normalizeRenewMonths(quickRenewPackage.durationType, quickRenewPackage.durationValue)} شهر
+              </p>
+            </div>
+
+            <div>
+              <label className="mb-1 block text-xs text-muted-foreground">اختر اللاعب</label>
+              <select
+                className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2 text-sm"
+                value={quickRenewAthlete}
+                onChange={(e) => {
+                  setQuickRenewAthlete(e.target.value)
+                  void loadAthleteSubscriptions(e.target.value)
+                }}
+                required
+              >
+                <option value="">اختر لاعب</option>
+                {athleteOptions.map((athlete) => (
+                  <option key={athlete.id} value={String(athlete.id)}>
+                    {athlete.full_name} ({athlete.membership_number})
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {quickRenewAthlete && (
+              <div>
+                <label className="mb-1 block text-xs text-muted-foreground">الاشتراك المستهدف</label>
+                {quickRenewLoadingSubs ? (
+                  <div className="rounded-xl border border-border bg-surface-container-low p-3 text-xs text-muted-foreground">جاري تحميل الاشتراكات...</div>
+                ) : (
+                  <select
+                    className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2 text-sm"
+                    value={quickRenewSubId}
+                    onChange={(e) => setQuickRenewSubId(e.target.value)}
+                    required
+                  >
+                    <option value="">اختر اشتراك</option>
+                    {quickRenewSubs.map((sub) => (
+                      <option key={sub.id} value={String(sub.id)}>
+                        {sub.package_name} - {statusMap[sub.status]?.label || sub.status} - ينتهي {formatDate(sub.end_date)}
+                      </option>
+                    ))}
+                  </select>
+                )}
+              </div>
+            )}
+
+            {quickRenewError && <p className="text-xs text-error">{quickRenewError}</p>}
+
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="ghost" onClick={closeQuickRenew}>إلغاء</Button>
+              <Button type="submit" disabled={renewSubscriptionMut.isPending || quickRenewLoadingSubs}>
+                {renewSubscriptionMut.isPending ? "جاري التجديد..." : "تنفيذ التجديد"}
               </Button>
             </div>
           </form>

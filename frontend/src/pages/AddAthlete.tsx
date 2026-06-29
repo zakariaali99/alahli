@@ -15,6 +15,8 @@ type AthleteForm = {
   full_name: string
   phone: string
   password: string
+  gender: "male" | "female"
+  department: string
   birth_day: string
   birth_month: string
   birth_year: string
@@ -33,6 +35,7 @@ type ParentForm = {
 
 const defaultAthleteForm: AthleteForm = {
   full_name: "", phone: "", password: "",
+  gender: "male", department: "",
   birth_day: "", birth_month: "", birth_year: "",
   weight: "", height: "",
 }
@@ -51,6 +54,7 @@ export default function AddAthletePage() {
   const [scenario, setScenario] = useState<Scenario>("choose")
   const [registration, setRegistration] = useState<RegistrationRequest | null>(null)
   const [loadingRegistration, setLoadingRegistration] = useState(false)
+  const [departments, setDepartments] = useState<Department[]>([])
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState(false)
@@ -58,6 +62,19 @@ export default function AddAthletePage() {
   const [athleteForm, setAthleteForm] = useState<AthleteForm>(defaultAthleteForm)
   const [parentForm, setParentForm] = useState<ParentForm>(defaultParentForm)
   const [photo, setPhoto] = useState<string | null>(null)
+
+  useEffect(() => {
+    const fetchDepartments = async () => {
+      try {
+        const res = await api.get<{ results: Department[] } | Department[]>("/departments/")
+        setDepartments(extractResults(res))
+      } catch {
+        setDepartments([])
+      }
+    }
+
+    void fetchDepartments()
+  }, [])
 
   useEffect(() => {
     if (!registrationId) return
@@ -82,8 +99,12 @@ export default function AddAthletePage() {
     e.preventDefault()
     setError("")
 
-    if (!athleteForm.full_name.trim() || !athleteForm.phone.trim() || !athleteForm.password.trim()) {
-      setError("يرجى تعبئة الاسم ورقم الهاتف وكلمة المرور")
+    if (!athleteForm.full_name.trim() || !athleteForm.phone.trim()) {
+      setError("يرجى تعبئة الاسم ورقم الهاتف")
+      return
+    }
+    if (!registrationId && !athleteForm.password.trim()) {
+      setError("يرجى تعبئة كلمة المرور")
       return
     }
     if (!athleteForm.birth_day || !athleteForm.birth_month || !athleteForm.birth_year) {
@@ -102,8 +123,11 @@ export default function AddAthletePage() {
         const fd = new FormData()
         fd.append("full_name", athleteForm.full_name.trim())
         fd.append("phone", athleteForm.phone.trim())
+        fd.append("gender", athleteForm.gender)
+        if (athleteForm.department) {
+          fd.append("department", athleteForm.department)
+        }
         fd.append("birth_date", `${athleteForm.birth_year}-${athleteForm.birth_month.padStart(2, "0")}-${athleteForm.birth_day.padStart(2, "0")}`)
-        fd.append("gender", "male")
         const created = await api.post<{ id: number }>(
           `/athletes/registrations/${registrationId}/create-athlete/`,
           fd,
@@ -114,20 +138,26 @@ export default function AddAthletePage() {
         return
       }
 
-      await api.post("/auth/register/", {
-        role: "athlete",
-        full_name: athleteForm.full_name.trim(),
-        phone: athleteForm.phone.trim(),
-        password: athleteForm.password,
-        photo,
-        weight: parseFloat(athleteForm.weight) || 0,
-        height: parseFloat(athleteForm.height) || 0,
-        birth_day: parseInt(athleteForm.birth_day),
-        birth_month: parseInt(athleteForm.birth_month),
-        birth_year: parseInt(athleteForm.birth_year),
-      })
-      setSuccess(true)
-      toast.success("تم تسجيل الرياضي بنجاح")
+      const fd = new FormData()
+      fd.append("full_name", athleteForm.full_name.trim())
+      fd.append("phone", athleteForm.phone.trim())
+      fd.append("password", athleteForm.password.trim())
+      fd.append("gender", athleteForm.gender)
+      if (athleteForm.department) {
+        fd.append("department", athleteForm.department)
+      }
+      fd.append("is_active", "true")
+      fd.append("birth_date", `${athleteForm.birth_year}-${athleteForm.birth_month.padStart(2, "0")}-${athleteForm.birth_day.padStart(2, "0")}`)
+
+      const weight = parseFloat(athleteForm.weight)
+      const height = parseFloat(athleteForm.height)
+      if (!Number.isNaN(weight) || !Number.isNaN(height)) {
+        fd.append("notes", `Weight: ${Number.isNaN(weight) ? "" : weight} | Height: ${Number.isNaN(height) ? "" : height}`)
+      }
+
+      const createdAthlete = await api.post<{ id: number }>("/athletes/", fd, { formData: true })
+      toast.success("تم إنشاء الرياضي وربطه بحسابه بنجاح")
+      navigate(`/dashboard/athletes/${createdAthlete.id}`)
     } catch (err: any) {
       setError(err?.message || "حدث خطأ أثناء التسجيل")
     } finally {
@@ -260,9 +290,54 @@ export default function AddAthletePage() {
                 <input className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors" dir="ltr" value={athleteForm.phone} onChange={(e) => setAthleteForm((p) => ({ ...p, phone: e.target.value }))} required />
               </FormField>
 
-              <FormField label="كلمة المرور" required>
-                <input className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors" type="password" value={athleteForm.password} onChange={(e) => setAthleteForm((p) => ({ ...p, password: e.target.value }))} required minLength={8} />
-              </FormField>
+              {!registrationId && (
+                <FormField label="كلمة المرور" required>
+                  <input className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors" type="password" value={athleteForm.password} onChange={(e) => setAthleteForm((p) => ({ ...p, password: e.target.value }))} required />
+                </FormField>
+              )}
+
+              {!registrationId && (
+                <div className="grid grid-cols-2 gap-3">
+                  <FormField label="الجنس" required>
+                    <select
+                      className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
+                      value={athleteForm.gender}
+                      onChange={(e) => setAthleteForm((p) => ({ ...p, gender: e.target.value as "male" | "female" }))}
+                    >
+                      <option value="male">ذكر</option>
+                      <option value="female">أنثى</option>
+                    </select>
+                  </FormField>
+                  <FormField label="الأكاديمية/القسم">
+                    <select
+                      className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
+                      value={athleteForm.department}
+                      onChange={(e) => setAthleteForm((p) => ({ ...p, department: e.target.value }))}
+                    >
+                      <option value="">بدون قسم</option>
+                      {departments.map((dept) => (
+                        <option key={dept.id} value={String(dept.id)}>{dept.name_ar}</option>
+                      ))}
+                    </select>
+                  </FormField>
+                </div>
+              )}
+
+              {registrationId && (
+                <FormField label="الأكاديمية/القسم" required>
+                  <select
+                    className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
+                    value={athleteForm.department}
+                    onChange={(e) => setAthleteForm((p) => ({ ...p, department: e.target.value }))}
+                    required
+                  >
+                    <option value="">اختر القسم</option>
+                    {departments.map((dept) => (
+                      <option key={dept.id} value={String(dept.id)}>{dept.name_ar}</option>
+                    ))}
+                  </select>
+                </FormField>
+              )}
 
               <FormField label="تاريخ الميلاد" required>
                 <div className="grid grid-cols-3 gap-2">
@@ -284,7 +359,7 @@ export default function AddAthletePage() {
               <div className="flex justify-between gap-2 pt-2">
                 <Button type="button" variant="ghost" onClick={() => setScenario("choose")}>رجوع</Button>
                 <Button type="submit" disabled={submitting || loadingRegistration}>
-                  {submitting ? <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> جاري...</span> : <>تسجيل <ArrowRight className="mr-1 h-4 w-4" /></>}
+                  {submitting ? <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> جاري...</span> : <>{registrationId ? "إنشاء الملف الرياضي" : "إنشاء الرياضي"} <ArrowRight className="mr-1 h-4 w-4" /></>}
                 </Button>
               </div>
             </form>
@@ -315,7 +390,7 @@ export default function AddAthletePage() {
               </FormField>
 
               <FormField label="كلمة المرور" required>
-                <input className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors" type="password" value={parentForm.password} onChange={(e) => setParentForm((p) => ({ ...p, password: e.target.value }))} required minLength={8} />
+                <input className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors" type="password" value={parentForm.password} onChange={(e) => setParentForm((p) => ({ ...p, password: e.target.value }))} required />
               </FormField>
 
               <FormField label="تاريخ الميلاد" required>

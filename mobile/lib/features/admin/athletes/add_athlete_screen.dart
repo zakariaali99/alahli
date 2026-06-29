@@ -4,10 +4,10 @@ import 'package:go_router/go_router.dart';
 import 'package:dio/dio.dart';
 import '../../../core/providers/providers.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_strings.dart';
-import '../../../core/widgets/app_error_widget.dart';
 import '../../../core/helpers/numeral_converter.dart';
 import 'package:intl/intl.dart';
+import 'dart:io';
+import 'package:image_picker/image_picker.dart';
 
 class AddAthleteScreen extends ConsumerStatefulWidget {
   const AddAthleteScreen({super.key});
@@ -29,6 +29,17 @@ class _AddAthleteScreenState extends ConsumerState<AddAthleteScreen> {
   DateTime? _selectedBirthDate;
   bool _isLoading = false;
   String? _errorMessage;
+  File? _selectedImage;
+  
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    final pickedFile = await picker.pickImage(source: ImageSource.gallery);
+    if (pickedFile != null) {
+      setState(() {
+        _selectedImage = File(pickedFile.path);
+      });
+    }
+  }
 
   @override
   void dispose() {
@@ -92,6 +103,10 @@ class _AddAthleteScreenState extends ConsumerState<AddAthleteScreen> {
         'is_active': true,
       };
 
+      if (_selectedImage != null) {
+        data['photo'] = await MultipartFile.fromFile(_selectedImage!.path);
+      }
+
       final formData = FormData.fromMap(data);
 
       await repo.createAthlete(formData);
@@ -142,9 +157,9 @@ class _AddAthleteScreenState extends ConsumerState<AddAthleteScreen> {
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: AppColors.destructive.withOpacity(0.1),
+                    color: AppColors.destructive.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(8),
-                    border: Border.all(color: AppColors.destructive.withOpacity(0.3)),
+                    border: Border.all(color: AppColors.destructive.withValues(alpha: 0.3)),
                   ),
                   child: Text(
                     _errorMessage!,

@@ -95,7 +95,6 @@ export default function RegisterParent() {
               value={form.password}
               onChange={(e) => setForm({ ...form, password: e.target.value })}
               required
-              minLength={8}
             />
           </div>
 

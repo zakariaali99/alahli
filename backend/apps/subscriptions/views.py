@@ -142,12 +142,23 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
         else:
-            if not hasattr(user, "athlete") or user.athlete is None:
+            athlete = getattr(user, "athlete", None)
+            if athlete is None:
+                latest_registration = user.registration_requests.select_related("athlete").order_by("-created_at").first()
+                if latest_registration and hasattr(latest_registration, "athlete"):
+                    athlete = latest_registration.athlete
+                else:
+                    athlete = Athlete.objects.filter(phone=user.phone).first()
+
+                if athlete is not None:
+                    user.athlete = athlete
+                    user.save(update_fields=["athlete"])
+
+            if athlete is None:
                 return Response(
                     {"detail": "No athlete profile found"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            athlete = user.athlete
 
         now = datetime.date.today()
         if package.duration_type == "weeks":

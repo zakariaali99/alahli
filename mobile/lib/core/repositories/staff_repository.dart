@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import '../network/api_client.dart';
 import '../models/user_model.dart';
+import '../models/paginated_response.dart';
 import '../constants/api_endpoints.dart';
 import '../helpers/safe_json.dart';
 
@@ -9,28 +10,43 @@ class StaffRepository {
 
   StaffRepository({required this.apiClient});
 
-  Future<List<UserModel>> fetchStaff({
+  Future<PaginatedResponse<UserModel>> fetchStaffPaginated({
     String? search,
     String? role,
+    int page = 1,
   }) async {
     try {
-      final Map<String, dynamic> query = {};
+      final Map<String, dynamic> query = {'page': page};
       if (search != null && search.isNotEmpty) query['search'] = search;
       if (role != null && role.isNotEmpty) query['role'] = role;
 
       final res = await apiClient.dio.get(ApiEndpoints.users, queryParameters: query);
-      
-      dynamic resultsList = res.data;
-      if (res.data is Map && res.data['results'] != null) {
-        resultsList = res.data['results'];
+      final data = asMap(res.data);
+
+      if (data != null && data['results'] != null) {
+        final results = asList(data['results'], (e) => UserModel.fromJson(asMap(e) ?? {})) ?? [];
+        final filtered = results.where((u) => u.role != 'athlete' && u.role != 'parent').toList();
+        return PaginatedResponse<UserModel>(
+          results: filtered,
+          count: asInt(data['count']) ?? filtered.length,
+          next: asString(data['next']),
+          previous: asString(data['previous']),
+        );
       }
 
-      final list = asList(resultsList, (e) => UserModel.fromJson(asMap(e) ?? {})) ?? [];
-      // Filter out athlete and parent roles to only show management staff
-      return list.where((user) => user.role != 'athlete' && user.role != 'parent').toList();
+      final list = asList(res.data, (e) => UserModel.fromJson(asMap(e) ?? {})) ?? [];
+      final filtered = list.where((u) => u.role != 'athlete' && u.role != 'parent').toList();
+      return PaginatedResponse<UserModel>(results: filtered, count: filtered.length);
     } on DioException catch (e) {
       throw Exception(e.response?.data?['detail'] ?? 'فشل تحميل الموظفين');
     }
+  }
+
+  Future<List<UserModel>> fetchStaff({
+    String? search,
+    String? role,
+  }) async {
+    return (await fetchStaffPaginated(search: search, role: role)).results;
   }
 
   Future<UserModel> createStaff(Map<String, dynamic> data) async {

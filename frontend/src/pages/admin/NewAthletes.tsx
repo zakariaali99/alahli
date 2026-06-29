@@ -7,6 +7,7 @@ import { api } from "@/lib/api"
 import { extractResults } from "@/lib/response"
 import type { RegistrationRequest, Subscription } from "@/lib/types"
 import { Building2, Check, Eye, FileText, UserRound, X } from "lucide-react"
+import { toAbsoluteMediaUrl } from "@/lib/media"
 
 function formatDate(value?: string | null) {
   if (!value) return "-"
@@ -180,7 +181,7 @@ export default function NewAthletes() {
                     {linkedSub?.invoice_pdf_url && (
                       <a
                         className="inline-flex items-center gap-1 rounded-lg border border-primary/25 bg-primary/8 px-3 py-1.5 text-xs font-semibold text-primary hover:bg-primary/12"
-                        href={linkedSub.invoice_pdf_url}
+                        href={toAbsoluteMediaUrl(linkedSub.invoice_pdf_url) || "#"}
                         rel="noreferrer"
                         target="_blank"
                       >

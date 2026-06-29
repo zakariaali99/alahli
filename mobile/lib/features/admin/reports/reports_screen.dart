@@ -5,8 +5,8 @@ import '../../../core/providers/providers.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/stat_card.dart';
-import '../../../core/widgets/app_error_widget.dart';
 import '../../../core/helpers/numeral_converter.dart';
+import '../../../core/helpers/responsive_helper.dart';
 import '../../../core/helpers/safe_json.dart';
 
 final monthlyRevenueProvider = FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) {
@@ -47,9 +47,9 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
       ),
       body: RefreshIndicator(
         onRefresh: () async {
-          ref.refresh(dashboardStatsProvider(academyIdFilter));
-          ref.refresh(monthlyRevenueProvider);
-          ref.refresh(departmentDistributionProvider);
+          ref.invalidate(dashboardStatsProvider(academyIdFilter));
+          ref.invalidate(monthlyRevenueProvider);
+          ref.invalidate(departmentDistributionProvider);
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
@@ -105,24 +105,25 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                         iconColor: AppColors.secondary,
                       ),
                       const SizedBox(height: 8),
-                      Row(
+                      GridView.count(
+                        crossAxisCount: ResponsiveHelper.isSmallPhone(context) ? 1 : 2,
+                        shrinkWrap: true,
+                        physics: const NeverScrollableScrollPhysics(),
+                        crossAxisSpacing: 8,
+                        mainAxisSpacing: 8,
+                        childAspectRatio: ResponsiveHelper.isSmallPhone(context) ? 3.5 : ResponsiveHelper.getGridAspectRatio(context, itemHeight: 90),
                         children: [
-                          Expanded(
-                            child: StatCard(
-                              title: 'نسبة تجديد الاشتراكات',
-                              value: '%${stats.renewalRate.toString().toWesternDigits()}',
-                              icon: Icons.sync,
-                              iconColor: Colors.purple,
-                            ),
+                          StatCard(
+                            title: 'نسبة تجديد الاشتراكات',
+                            value: '%${stats.renewalRate.toString().toWesternDigits()}',
+                            icon: Icons.sync,
+                            iconColor: Colors.purple,
                           ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: StatCard(
-                              title: 'الاشتراكات النشطة',
-                              value: stats.activeMemberships.toString().toWesternDigits(),
-                              icon: Icons.check_circle,
-                              iconColor: Colors.teal,
-                            ),
+                          StatCard(
+                            title: 'الاشتراكات النشطة',
+                            value: stats.activeMemberships.toString().toWesternDigits(),
+                            icon: Icons.check_circle,
+                            iconColor: Colors.teal,
                           ),
                         ],
                       ),
@@ -151,7 +152,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                     decoration: BoxDecoration(
                       color: isDark ? AppColors.darkCard : Colors.white,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: isDark ? AppColors.darkMuted : AppColors.border.withOpacity(0.5)),
+                      border: Border.all(color: isDark ? AppColors.darkMuted : AppColors.border.withValues(alpha: 0.5)),
                     ),
                     child: BarChart(
                       BarChartData(
@@ -217,7 +218,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                       decoration: BoxDecoration(
                         color: isDark ? AppColors.darkCard : Colors.white,
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: isDark ? AppColors.darkMuted : AppColors.border.withOpacity(0.5)),
+                        border: Border.all(color: isDark ? AppColors.darkMuted : AppColors.border.withValues(alpha: 0.5)),
                       ),
                       child: PieChart(
                         PieChartData(
@@ -237,7 +238,7 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                             return PieChartSectionData(
                               color: colors[idx % colors.length],
                               value: count.toDouble(),
-                              title: '${count.toString().toWesternDigits()}',
+                              title: count.toString().toWesternDigits(),
                               radius: 50,
                               titleStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.white),
                               badgeWidget: Container(

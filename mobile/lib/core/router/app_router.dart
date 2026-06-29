@@ -11,6 +11,7 @@ import '../../features/admin/athletes/athlete_profile_screen.dart';
 import '../../features/admin/athletes/add_athlete_screen.dart';
 import '../../features/admin/approvals/approvals_screen.dart';
 import '../../features/admin/subscriptions/subscriptions_screen.dart';
+import '../../features/admin/subscriptions/add_subscription_screen.dart';
 import '../../features/admin/academies/academies_screen.dart';
 import '../../features/admin/coaches/coaches_screen.dart';
 import '../../features/admin/staff/staff_screen.dart';
@@ -18,6 +19,7 @@ import '../../features/admin/reports/reports_screen.dart';
 import '../../features/admin/verify/verify_screen.dart';
 import '../../features/admin/notifications/notifications_screen.dart';
 import '../../features/admin/settings/settings_screen.dart';
+import '../../features/admin/packages/packages_screen.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
@@ -126,10 +128,22 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/subscriptions',
             builder: (context, state) => const SubscriptionsScreen(),
+            routes: [
+              GoRoute(
+                path: 'add',
+                parentNavigatorKey: _rootNavigatorKey,
+                pageBuilder: (context, state) =>
+                    _slideTransitionPage(child: const AddSubscriptionScreen(), state: state),
+              ),
+            ],
           ),
           GoRoute(
             path: '/academies',
             builder: (context, state) => const AcademiesScreen(),
+          ),
+          GoRoute(
+            path: '/packages',
+            builder: (context, state) => const PackagesScreen(),
           ),
           GoRoute(
             path: '/coaches',

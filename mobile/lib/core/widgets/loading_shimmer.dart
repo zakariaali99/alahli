@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import '../constants/app_colors.dart';
+import 'app_card.dart';
 
 class LoadingShimmer extends StatefulWidget {
   final double width;
@@ -35,10 +37,9 @@ class _LoadingShimmerState extends State<LoadingShimmer>
 
   @override
   Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final isDark = theme.brightness == Brightness.dark;
-    final baseColor = isDark ? Colors.grey[850]! : Colors.grey[200]!;
-    final highlightColor = isDark ? Colors.grey[700]! : Colors.grey[100]!;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final baseColor = isDark ? AppColors.darkShimmerBase : AppColors.shimmerBase;
+    final highlightColor = isDark ? AppColors.darkShimmerHighlight : AppColors.shimmerHighlight;
 
     return AnimatedBuilder(
       animation: _controller,
@@ -67,6 +68,44 @@ class _LoadingShimmerState extends State<LoadingShimmer>
   }
 }
 
+class ShimmerCard extends StatelessWidget {
+  const ShimmerCard({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return AppCard(
+      child: Row(
+        children: [
+          const LoadingShimmer(
+            width: 48,
+            height: 48,
+            borderRadius: 24,
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: const [
+                LoadingShimmer(
+                  width: double.infinity,
+                  height: 16,
+                  borderRadius: 4,
+                ),
+                SizedBox(height: 8),
+                LoadingShimmer(
+                  width: 120,
+                  height: 12,
+                  borderRadius: 4,
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class ShimmerList extends StatelessWidget {
   final int itemCount;
   final double itemHeight;
@@ -83,36 +122,9 @@ class ShimmerList extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       itemCount: itemCount,
       itemBuilder: (context, index) {
-        return Padding(
-          padding: const EdgeInsets.only(bottom: 8),
-          child: Row(
-            children: [
-              LoadingShimmer(
-                width: 48,
-                height: 48,
-                borderRadius: 24,
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    LoadingShimmer(
-                      width: double.infinity,
-                      height: 16,
-                      borderRadius: 4,
-                    ),
-                    const SizedBox(height: 8),
-                    LoadingShimmer(
-                      width: 180,
-                      height: 12,
-                      borderRadius: 4,
-                    ),
-                  ],
-                ),
-              ),
-            ],
-          ),
+        return const Padding(
+          padding: EdgeInsets.only(bottom: 8),
+          child: ShimmerCard(),
         );
       },
     );
@@ -137,12 +149,22 @@ class ShimmerGrid extends StatelessWidget {
       mainAxisSpacing: 12,
       childAspectRatio: 1.75,
       children: List.generate(itemCount, (index) {
-        return LoadingShimmer(
-          width: double.infinity,
-          height: 80,
-          borderRadius: 12,
+        return AppCard(
+          padding: const EdgeInsets.all(12),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: const [
+              LoadingShimmer(width: 32, height: 32, borderRadius: 8),
+              SizedBox(height: 12),
+              LoadingShimmer(width: 80, height: 10, borderRadius: 4),
+              SizedBox(height: 6),
+              LoadingShimmer(width: 120, height: 16, borderRadius: 4),
+            ],
+          ),
         );
       }),
     );
   }
 }
+

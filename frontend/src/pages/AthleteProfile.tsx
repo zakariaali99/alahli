@@ -13,6 +13,7 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { useAthlete } from "@/lib/hooks/useAthletes"
 import { useSubscriptions } from "@/lib/hooks/useSubscriptions"
 import { useToast } from "@/lib/toast"
+import { toAbsoluteMediaUrl } from "@/lib/media"
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -377,6 +378,17 @@ export default function AthleteProfilePage() {
                     transition={{ duration: 1, ease: [0.22, 1, 0.36, 1], delay: 0.3 }}
                   />
                 </div>
+                {subs.invoice_pdf_url && (
+                  <a
+                    href={toAbsoluteMediaUrl(subs.invoice_pdf_url) || "#"}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="mt-3 inline-flex items-center gap-2 rounded-lg border border-primary/25 bg-primary/8 px-3 py-2 text-xs font-semibold text-primary hover:bg-primary/12"
+                  >
+                    <Receipt className="w-4 h-4" />
+                    عرض الإيصال
+                  </a>
+                )}
               </div>
             </motion.div>
           )}
@@ -398,13 +410,14 @@ export default function AthleteProfilePage() {
                   <th className="py-3 px-4">تاريخ الانتهاء</th>
                   <th className="py-3 px-4">القيمة</th>
                   <th className="py-3 px-4">الحالة</th>
+                  <th className="py-3 px-4 text-center">المستند</th>
                   <th className="py-3 px-4 rounded-tl-xl text-center">تجديدات</th>
                 </tr>
               </thead>
               <tbody className="text-sm text-foreground">
                 {subscriptions.length === 0 ? (
                   <tr>
-                    <td colSpan={6} className="py-12 text-center text-muted-foreground">
+                    <td colSpan={7} className="py-12 text-center text-muted-foreground">
                       لا يوجد سجل اشتراكات
                     </td>
                   </tr>
@@ -429,6 +442,21 @@ export default function AthleteProfilePage() {
                           }`} />
                           {sub.status === "active" ? "نشط" : sub.status === "expired" ? "منتهي" : "قيد الانتظار"}
                         </span>
+                      </td>
+                      <td className="py-4 px-4 text-center">
+                        {sub.invoice_pdf_url ? (
+                          <a
+                            href={toAbsoluteMediaUrl(sub.invoice_pdf_url) || "#"}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="inline-flex items-center gap-1.5 rounded-lg border border-primary/25 bg-primary/8 px-2.5 py-1 text-[11px] font-semibold text-primary hover:bg-primary/12"
+                          >
+                            <Receipt className="w-3.5 h-3.5" />
+                            عرض
+                          </a>
+                        ) : (
+                          <span className="text-xs text-muted-foreground">-</span>
+                        )}
                       </td>
                       <td className="py-4 px-4 text-center">
                         <span className="inline-flex items-center justify-center w-7 h-7 rounded-full bg-surface-container-low text-xs font-bold text-foreground">

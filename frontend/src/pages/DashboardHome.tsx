@@ -194,7 +194,7 @@ export default function DashboardPage() {
               </div>
               <div className="text-right flex-1">
                 <p className="font-bold text-foreground">اشتراك جديد</p>
-                <p className="text-xs text-muted-foreground mt-0.5">إضافة اشتراك للاعب موجود</p>
+                <p className="text-xs text-muted-foreground mt-0.5">إضافة اشتراك يدوي للاعب موجود</p>
               </div>
               <ArrowLeft className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
             </Button>

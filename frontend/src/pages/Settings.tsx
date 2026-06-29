@@ -398,7 +398,6 @@ export default function SettingsPage() {
                       placeholder="أدخل كلمة المرور الجديدة"
                       className="w-full bg-surface-container-low/50 text-sm text-foreground rounded-xl py-3.5 px-4 pe-11 border border-border/30 focus:border-primary/50 focus:ring-2 focus:ring-primary/20 outline-none transition-all placeholder:text-muted-foreground/50"
                       required
-                      minLength={8}
                     />
                     <Button
                       type="button"
@@ -410,10 +409,6 @@ export default function SettingsPage() {
                       {showNewPw ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                     </Button>
                   </div>
-                  <p className="text-xs text-muted-foreground/70 mt-1 flex items-center gap-1.5">
-                    <AlertTriangle className="w-3 h-3" />
-                    يجب أن تكون 8 أحرف على الأقل
-                  </p>
                 </div>
                 <Button
                   type="submit"

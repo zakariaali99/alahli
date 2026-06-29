@@ -1,9 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../../../core/providers/providers.dart';
+import '../../../core/providers/paginated_providers.dart';
+import '../../../core/providers/paginated_list_notifier.dart';
 import '../../../core/constants/app_colors.dart';
-import '../../../core/constants/app_strings.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/status_badge.dart';
 import '../../../core/widgets/app_error_widget.dart';
@@ -24,18 +26,37 @@ class _SubscriptionsScreenState extends ConsumerState<SubscriptionsScreen> {
   String? _selectedStatus;
   String _searchQuery = '';
   final _searchController = TextEditingController();
+  final _scrollController = ScrollController();
+
+  @override
+  void initState() {
+    super.initState();
+    _scrollController.addListener(_onScroll);
+  }
 
   @override
   void dispose() {
     _searchController.dispose();
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
     super.dispose();
   }
 
-  Map<String, dynamic> _getFilterParams() {
-    return {
-      'status': _selectedStatus,
-      'search': _searchQuery,
-    };
+  void _onScroll() {
+    if (_scrollController.position.pixels >=
+        _scrollController.position.maxScrollExtent - 200) {
+      final notifier = ref.read(subscriptionsPaginatedProvider(_currentFilter()).notifier);
+      notifier.loadMore();
+    }
+  }
+
+  SubscriptionFilter _currentFilter() {
+    final user = ref.read(authProvider);
+    return SubscriptionFilter(
+      status: _selectedStatus,
+      search: _searchQuery.isNotEmpty ? _searchQuery : null,
+      athleteId: user?.role == 'academy_manager' ? null : null,
+    );
   }
 
   Future<void> _renewSub(SubscriptionModel sub) async {
@@ -64,7 +85,6 @@ class _SubscriptionsScreenState extends ConsumerState<SubscriptionsScreen> {
                 onChanged: (val) {
                   if (val != null) {
                     monthsController.text = val.toString();
-                    // Auto-adjust price
                     amountController.text = (sub.amount / (sub.renewals.firstOrNull?.months ?? 1) * val).toString();
                   }
                 },
@@ -97,13 +117,14 @@ class _SubscriptionsScreenState extends ConsumerState<SubscriptionsScreen> {
       try {
         final months = int.parse(monthsController.text);
         final amount = double.parse(amountController.text.toWesternDigits());
-        
+
         await ref.read(subscriptionRepositoryProvider).renewSubscription(
               id: sub.id,
               months: months,
               amount: amount,
             );
-        ref.invalidate(subscriptionsProvider);
+        ref.read(subscriptionsPaginatedProvider(_currentFilter()).notifier).refresh();
+        ref.invalidate(dashboardStatsProvider);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('تم تجديد الاشتراك بنجاح وتمديد الصلاحية')),
@@ -148,7 +169,6 @@ class _SubscriptionsScreenState extends ConsumerState<SubscriptionsScreen> {
               if (sub.invoicePdfUrl != null && sub.invoicePdfUrl!.isNotEmpty)
                 ElevatedButton.icon(
                   onPressed: () async {
-                    // Check if it is relative path or absolute
                     String url = sub.invoicePdfUrl!;
                     if (!url.startsWith('http')) {
                       url = '${ApiEndpoints.baseUrl}$url';
@@ -188,23 +208,23 @@ class _SubscriptionsScreenState extends ConsumerState<SubscriptionsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final user = ref.watch(authProvider);
-
-    final params = _getFilterParams();
-    if (user?.role == 'academy_manager') {
-      params['departmentId'] = user?.academy;
-    }
-
-    final subscriptionsAsync = ref.watch(subscriptionsProvider(params));
     final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    final filter = _currentFilter();
+    final subsState = ref.watch(subscriptionsPaginatedProvider(filter));
 
     return Scaffold(
       appBar: AppBar(
         title: const Text('سجل الاشتراكات', style: TextStyle(fontWeight: FontWeight.bold)),
       ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () => context.push('/subscriptions/add'),
+        backgroundColor: AppColors.primary,
+        foregroundColor: Colors.white,
+        child: const Icon(Icons.add),
+      ),
       body: Column(
         children: [
-          // Filter & Search Header
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             child: Column(
@@ -245,85 +265,111 @@ class _SubscriptionsScreenState extends ConsumerState<SubscriptionsScreen> {
             ),
           ),
 
-          // Subscriptions list
           Expanded(
             child: RefreshIndicator(
-              onRefresh: () async => ref.invalidate(subscriptionsProvider(params)),
-              child: subscriptionsAsync.when(
-                data: (list) {
-                  if (list.isEmpty) {
-                    return const EmptyState(message: 'لا توجد اشتراكات مطابقة للبحث');
-                  }
-                  return ListView.builder(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-                    itemCount: list.length,
-                    itemBuilder: (context, index) {
-                      final sub = list[index];
-                      return AppCard(
-                        onTap: () => _showDetailBottomSheet(sub),
-                        child: Row(
-                          children: [
-                            Expanded(
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: [
-                                  Text(
-                                    sub.athleteName,
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    'الباقة: ${sub.packageName}',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: isDark ? AppColors.darkMutedForeground : AppColors.mutedForeground,
-                                    ),
-                                  ),
-                                  Text(
-                                    'تاريخ الانتهاء: ${sub.endDate.toWesternDigits()}',
-                                    style: TextStyle(
-                                      fontSize: 12,
-                                      color: isDark ? AppColors.darkMutedForeground : AppColors.mutedForeground,
-                                    ),
-                                  ),
-                                  const SizedBox(height: 4),
-                                  Text(
-                                    '${NumberFormatter.formatCurrency(sub.amount)} د.ل',
-                                    style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary),
-                                  ),
-                                ],
-                              ),
-                            ),
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.end,
-                              children: [
-                                StatusBadge(status: sub.status),
-                                if (sub.isExpired) ...[
-                                  const SizedBox(height: 8),
-                                  IconButton(
-                                    icon: const Icon(Icons.autorenew, color: AppColors.secondary),
-                                    onPressed: () => _renewSub(sub),
-                                    tooltip: 'تجديد الاشتراك',
-                                  ),
-                                ],
-                              ],
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  );
-                },
-                loading: () => const ShimmerList(),
-                error: (err, stack) => AppErrorWidget(
-                  errorMessage: err.toString(),
-                  onRetry: () => ref.refresh(subscriptionsProvider(params)),
-                ),
-              ),
+              onRefresh: () => ref.read(subscriptionsPaginatedProvider(filter).notifier).refresh(),
+              child: _buildBody(subsState, isDark),
             ),
-          )
+          ),
         ],
       ),
+    );
+  }
+
+  Widget _buildBody(PaginatedListState<SubscriptionModel> state, bool isDark) {
+    if (state.state == PaginatedState.loading) {
+      return const ShimmerList();
+    }
+
+    if (state.state == PaginatedState.error) {
+      return AppErrorWidget(
+        errorMessage: state.error ?? 'خطأ غير معروف',
+        onRetry: () => ref.read(subscriptionsPaginatedProvider(_currentFilter()).notifier).refresh(),
+      );
+    }
+
+    if (state.items.isEmpty) {
+      return ListView(
+        physics: const AlwaysScrollableScrollPhysics(),
+        children: const [
+          SizedBox(height: 100),
+          EmptyState(message: 'لا توجد اشتراكات مطابقة للبحث'),
+        ],
+      );
+    }
+
+    return ListView.builder(
+      controller: _scrollController,
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+      itemCount: state.items.length + (state.hasNext ? 1 : 0),
+      itemBuilder: (context, index) {
+        if (index == state.items.length) {
+          return const Padding(
+            padding: EdgeInsets.all(16),
+            child: Center(
+              child: SizedBox(
+                height: 24,
+                width: 24,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              ),
+            ),
+          );
+        }
+
+        final sub = state.items[index];
+        return AppCard(
+          onTap: () => _showDetailBottomSheet(sub),
+          child: Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      sub.athleteName,
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'الباقة: ${sub.packageName}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark ? AppColors.darkMutedForeground : AppColors.mutedForeground,
+                      ),
+                    ),
+                    Text(
+                      'تاريخ الانتهاء: ${sub.endDate.toWesternDigits()}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark ? AppColors.darkMutedForeground : AppColors.mutedForeground,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '${NumberFormatter.formatCurrency(sub.amount)} د.ل',
+                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary),
+                    ),
+                  ],
+                ),
+              ),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  StatusBadge(status: sub.status),
+                  if (sub.isExpired) ...[
+                    const SizedBox(height: 8),
+                    IconButton(
+                      icon: const Icon(Icons.autorenew, color: AppColors.secondary),
+                      onPressed: () => _renewSub(sub),
+                      tooltip: 'تجديد الاشتراك',
+                    ),
+                  ],
+                ],
+              ),
+            ],
+          ),
+        );
+      },
     );
   }
 

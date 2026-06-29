@@ -1,13 +1,17 @@
 import pytest
+from apps.athletes.models import Athlete, RegistrationRequest
 from rest_framework import status
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from apps.accounts.tests.factories import (
     AthleteFactory,
+    DepartmentFactory,
     SubscriptionFactory,
     UserFactory,
 )
+from apps.departments.models import Group, Sport
+from apps.packages.models import SubscriptionPackage
 from apps.subscriptions.models import Subscription
 
 
@@ -89,3 +93,130 @@ class TestSubscriptionRenew:
             "amount": "300.00",
         })
         assert response.status_code == status.HTTP_403_FORBIDDEN
+
+
+@pytest.mark.django_db
+class TestSubscriptionCheckoutAthleteFallback:
+    def test_checkout_links_user_to_registration_athlete_when_user_athlete_null(self, api_client):
+        athlete_user = UserFactory(role="athlete", is_staff=False)
+        refresh = RefreshToken.for_user(athlete_user)
+        api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
+
+        department = DepartmentFactory()
+        sport = Sport.objects.create(name="swim", name_ar="سباحة", department=department)
+        group = Group.objects.create(
+            name="g1",
+            name_ar="المجموعة 1",
+            sport=sport,
+            days=["monday"],
+            start_time="16:00",
+            end_time="17:00",
+        )
+        package = SubscriptionPackage.objects.create(
+            name="Basic",
+            price="100.00",
+            duration_type="months",
+            duration_value=1,
+            max_athletes=1,
+        )
+
+        registration = RegistrationRequest.objects.create(user=athlete_user, role_choice=RegistrationRequest.RoleChoice.ATHLETE)
+        athlete_profile = Athlete.objects.create(
+            full_name="لاعب اختبار",
+            phone=athlete_user.phone,
+            birth_date="2005-01-01",
+            gender="male",
+            department=department,
+            registration=registration,
+            is_active=False,
+        )
+
+        response = api_client.post(
+            "/api/subscriptions/checkout/",
+            {
+                "sport_id": sport.id,
+                "group_id": group.id,
+                "package_id": package.id,
+                "payment_method": "cash",
+            },
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED
+        athlete_user.refresh_from_db()
+        assert athlete_user.athlete_id == athlete_profile.id
+
+    def test_checkout_links_user_to_athlete_by_phone_when_registration_not_linked(self, api_client):
+        athlete_user = UserFactory(role="athlete", is_staff=False)
+        refresh = RefreshToken.for_user(athlete_user)
+        api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
+
+        department = DepartmentFactory()
+        sport = Sport.objects.create(name="karate", name_ar="كاراتيه", department=department)
+        group = Group.objects.create(
+            name="g2",
+            name_ar="المجموعة 2",
+            sport=sport,
+            days=["tuesday"],
+            start_time="16:00",
+            end_time="17:00",
+        )
+        package = SubscriptionPackage.objects.create(
+            name="Basic 2",
+            price="120.00",
+            duration_type="months",
+            duration_value=1,
+            max_athletes=1,
+        )
+
+        athlete_profile = Athlete.objects.create(
+            full_name="لاعب مطابق للهاتف",
+            phone=athlete_user.phone,
+            birth_date="2004-01-01",
+            gender="male",
+            department=department,
+            is_active=False,
+        )
+
+        response = api_client.post(
+            "/api/subscriptions/checkout/",
+            {
+                "sport_id": sport.id,
+                "group_id": group.id,
+                "package_id": package.id,
+                "payment_method": "cash",
+            },
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED
+        athlete_user.refresh_from_db()
+        assert athlete_user.athlete_id == athlete_profile.id
+
+    def test_checkout_works_when_user_has_athlete(self, api_client):
+        department = DepartmentFactory()
+        sport = Sport.objects.create(name="judo", name_ar="جودو", department=department)
+        group = Group.objects.create(
+            name="g3", name_ar="المجموعة 3", sport=sport,
+            days=["wednesday"], start_time="16:00", end_time="17:00",
+        )
+        package = SubscriptionPackage.objects.create(
+            name="Basic 3", price="100.00",
+            duration_type="months", duration_value=1, max_athletes=1,
+        )
+
+        athlete = AthleteFactory(department=department, is_active=True)
+        user = athlete.user
+        refresh = RefreshToken.for_user(user)
+        api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
+
+        response = api_client.post(
+            "/api/subscriptions/checkout/",
+            {
+                "sport_id": sport.id,
+                "group_id": group.id,
+                "package_id": package.id,
+                "payment_method": "cash",
+            },
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert response.data["status"] == "pending"

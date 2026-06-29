@@ -1,6 +1,7 @@
 import 'package:dio/dio.dart';
 import '../network/api_client.dart';
 import '../models/athlete_model.dart';
+import '../models/paginated_response.dart';
 import '../constants/api_endpoints.dart';
 import '../helpers/safe_json.dart';
 
@@ -9,30 +10,47 @@ class AthleteRepository {
 
   AthleteRepository({required this.apiClient});
 
-  Future<List<AthleteModel>> fetchAthletes({
+  Future<PaginatedResponse<AthleteModel>> fetchAthletesPaginated({
     String? search,
     int? departmentId,
     bool? isActive,
+    int page = 1,
   }) async {
     try {
-      final Map<String, dynamic> query = {};
+      final Map<String, dynamic> query = {'page': page};
       if (search != null && search.isNotEmpty) query['search'] = search;
       if (departmentId != null) query['department'] = departmentId;
       if (isActive != null) query['is_active'] = isActive;
 
       final res = await apiClient.dio.get(ApiEndpoints.athletes, queryParameters: query);
-      
-      // Check if it is paginated or not
-      dynamic resultsList = res.data;
-      if (res.data is Map && res.data['results'] != null) {
-        resultsList = res.data['results'];
+      final data = asMap(res.data);
+
+      if (data != null && data['results'] != null) {
+        return PaginatedResponse<AthleteModel>(
+          results: asList(data['results'], (e) => AthleteModel.fromJson(asMap(e) ?? {})) ?? [],
+          count: asInt(data['count']) ?? 0,
+          next: asString(data['next']),
+          previous: asString(data['previous']),
+        );
       }
 
-      final list = asList(resultsList, (e) => AthleteModel.fromJson(asMap(e) ?? {})) ?? [];
-      return list;
+      final list = asList(res.data, (e) => AthleteModel.fromJson(asMap(e) ?? {})) ?? [];
+      return PaginatedResponse<AthleteModel>(results: list, count: list.length);
     } on DioException catch (e) {
       throw Exception(e.response?.data?['detail'] ?? 'فشل تحميل اللاعبين');
     }
+  }
+
+  Future<List<AthleteModel>> fetchAthletes({
+    String? search,
+    int? departmentId,
+    bool? isActive,
+  }) async {
+    return (await fetchAthletesPaginated(
+      search: search,
+      departmentId: departmentId,
+      isActive: isActive,
+    )).results;
   }
 
   Future<AthleteModel> fetchAthlete(int id) async {

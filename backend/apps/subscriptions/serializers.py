@@ -25,6 +25,9 @@ class SubscriptionSerializer(serializers.ModelSerializer):
 
     def get_invoice_pdf_url(self, obj):
         if obj.invoice_pdf:
+            request = self.context.get("request")
+            if request:
+                return request.build_absolute_uri(obj.invoice_pdf.url)
             return obj.invoice_pdf.url
         return None
 

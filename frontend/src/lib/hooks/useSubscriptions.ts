@@ -18,9 +18,14 @@ interface Subscription {
   athlete_name: string
   department_name: string
   membership_number: string
+  group: number | null
+  group_name: string
   start_date: string
   end_date: string
   amount: string
+  payment_method: "cash" | "bank_transfer"
+  invoice_pdf: string | null
+  invoice_pdf_url: string | null
   status: "active" | "expired" | "pending" | "rejected"
   package_name: string
   renewals: Renewal[]
