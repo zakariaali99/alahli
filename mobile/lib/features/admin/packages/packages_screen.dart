@@ -24,34 +24,61 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
     final athletesController = TextEditingController(text: package?.maxAthletes.toString() ?? '1');
     final formKey = GlobalKey<FormState>();
 
-    final confirm = await showDialog<bool>(
+    final confirm = await showModalBottomSheet<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(package == null ? 'إضافة باقة جديدة' : 'تعديل الباقة', textAlign: TextAlign.right),
-        content: Form(
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).brightness == Brightness.dark ? AppColors.darkCard : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(ctx).viewInsets.bottom,
+          left: 16,
+          right: 16,
+          top: 24,
+        ),
+        child: Form(
           key: formKey,
           child: SingleChildScrollView(
             child: Column(
               mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                Text(
+                  package == null ? 'إضافة باقة جديدة' : 'تعديل الباقة',
+                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.right,
+                ),
+                const SizedBox(height: 16),
                 TextFormField(
                   controller: nameController,
                   textAlign: TextAlign.right,
-                  decoration: const InputDecoration(labelText: 'اسم الباقة'),
+                  decoration: InputDecoration(
+                    labelText: 'اسم الباقة',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
                   validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 TextFormField(
                   controller: priceController,
                   keyboardType: const TextInputType.numberWithOptions(decimal: true),
                   textAlign: TextAlign.right,
-                  decoration: const InputDecoration(labelText: 'السعر (د.ل)'),
+                  decoration: InputDecoration(
+                    labelText: 'السعر (د.ل)',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
                   validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 DropdownButtonFormField<String>(
                   value: typeController.text,
-                  decoration: const InputDecoration(labelText: 'نوع المدة'),
+                  decoration: InputDecoration(
+                    labelText: 'نوع المدة',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  dropdownColor: Theme.of(context).brightness == Brightness.dark ? AppColors.darkCard : Colors.white,
                   items: const [
                     DropdownMenuItem(value: 'months', child: Text('أشهر')),
                     DropdownMenuItem(value: 'weeks', child: Text('أسابيع')),
@@ -60,40 +87,56 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
                     if (val != null) typeController.text = val;
                   },
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 TextFormField(
                   controller: valueController,
                   keyboardType: TextInputType.number,
                   textAlign: TextAlign.right,
-                  decoration: const InputDecoration(labelText: 'قيمة المدة'),
+                  decoration: InputDecoration(
+                    labelText: 'قيمة المدة',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
                   validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 12),
                 TextFormField(
                   controller: athletesController,
                   keyboardType: TextInputType.number,
                   textAlign: TextAlign.right,
-                  decoration: const InputDecoration(labelText: 'أقصى عدد لاعبين'),
+                  decoration: InputDecoration(
+                    labelText: 'أقصى عدد لاعبين',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
                   validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
                 ),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: const Text('إلغاء'),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      onPressed: () {
+                        if (formKey.currentState!.validate()) {
+                          Navigator.pop(ctx, true);
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: Text(package == null ? 'إضافة' : 'تعديل'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
               ],
             ),
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('إلغاء'),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              if (formKey.currentState!.validate()) {
-                Navigator.pop(ctx, true);
-              }
-            },
-            child: Text(package == null ? 'إضافة' : 'تعديل'),
-          ),
-        ],
       ),
     );
 

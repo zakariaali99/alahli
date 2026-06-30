@@ -8,7 +8,7 @@ import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/loading_shimmer.dart';
 import '../../../core/widgets/staggered_list_item.dart';
 import '../../../core/helpers/numeral_converter.dart';
-import '../../../core/models/user_model.dart';
+import '../../../core/models/trainer_model.dart';
 import '../../../core/helpers/ui_helpers.dart';
 
 class CoachesScreen extends ConsumerStatefulWidget {
@@ -22,7 +22,7 @@ class _CoachesScreenState extends ConsumerState<CoachesScreen> {
   Future<void> _showAddTrainerDialog() async {
     final nameController = TextEditingController();
     final initialsController = TextEditingController();
-    final roleController = TextEditingController();
+    final roleController = TextEditingController(text: 'مدرب');
     final expController = TextEditingController(text: '0');
     final formKey = GlobalKey<FormState>();
 
@@ -40,7 +40,7 @@ class _CoachesScreenState extends ConsumerState<CoachesScreen> {
                   controller: nameController,
                   textAlign: TextAlign.right,
                   decoration: InputDecoration(
-                    labelText: 'الاسم الأول (عربي)',
+                    labelText: 'الاسم الكامل (عربي)',
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
@@ -50,7 +50,7 @@ class _CoachesScreenState extends ConsumerState<CoachesScreen> {
                   controller: initialsController,
                   textAlign: TextAlign.right,
                   decoration: InputDecoration(
-                    labelText: 'الاسم الأخير (عربي)',
+                    labelText: 'اللقب / الاختصار',
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
@@ -58,10 +58,10 @@ class _CoachesScreenState extends ConsumerState<CoachesScreen> {
                 const SizedBox(height: 12),
                 TextFormField(
                   controller: expController,
-                  keyboardType: TextInputType.phone,
+                  keyboardType: TextInputType.number,
                   textAlign: TextAlign.right,
                   decoration: InputDecoration(
-                    labelText: 'رقم الهاتف',
+                    labelText: 'سنوات الخبرة',
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
@@ -70,9 +70,8 @@ class _CoachesScreenState extends ConsumerState<CoachesScreen> {
                 TextFormField(
                   controller: roleController,
                   textAlign: TextAlign.right,
-                  obscureText: true,
                   decoration: InputDecoration(
-                    labelText: 'كلمة المرور',
+                    labelText: 'الدور (مثال: مدرب لياقة)',
                     border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                   validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
@@ -101,16 +100,14 @@ class _CoachesScreenState extends ConsumerState<CoachesScreen> {
     if (confirm == true) {
       try {
         final data = {
-          'first_name_ar': nameController.text.trim(),
-          'last_name_ar': initialsController.text.trim(),
-          'phone': expController.text.trim(),
-          'password': roleController.text.trim(),
-          'role': 'trainer',
-          'is_active': true,
+          'full_name_ar': nameController.text.trim(),
+          'initials': initialsController.text.trim(),
+          'experience_years': int.tryParse(expController.text.trim()) ?? 0,
+          'role': roleController.text.trim(),
         };
 
-        await ref.read(staffRepositoryProvider).createStaff(data);
-        ref.invalidate(staffProvider);
+        await ref.read(trainerRepositoryProvider).createTrainer(data);
+        ref.invalidate(trainersProvider);
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('تم إضافة المدرب بنجاح')),
@@ -126,7 +123,7 @@ class _CoachesScreenState extends ConsumerState<CoachesScreen> {
     }
   }
 
-  void _showTrainerDetails(UserModel coach) {
+  void _showTrainerDetails(TrainerModel coach) {
     final isDark = Theme.of(context).brightness == Brightness.dark;
     showModalBottomSheet(
       context: context,
@@ -147,11 +144,11 @@ class _CoachesScreenState extends ConsumerState<CoachesScreen> {
                   CircleAvatar(
                     backgroundColor: AppColors.primary,
                     radius: 28,
-                    backgroundImage: coach.photo != null && coach.photo!.isNotEmpty
-                        ? NetworkImage(coach.photo!)
+                    backgroundImage: coach.profileImage != null && coach.profileImage!.isNotEmpty
+                        ? NetworkImage(coach.profileImage!)
                         : null,
-                    child: coach.photo == null || coach.photo!.isEmpty
-                        ? Text(safeInitials(coach.firstNameAr), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18))
+                    child: coach.profileImage == null || coach.profileImage!.isEmpty
+                        ? Text(safeInitials(coach.fullNameAr), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18))
                         : null,
                   ),
                   const SizedBox(width: 16),
@@ -160,12 +157,12 @@ class _CoachesScreenState extends ConsumerState<CoachesScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          coach.fullNameAr ?? '',
+                          coach.fullNameAr,
                           style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                         ),
-                        const Text(
-                          'مدرب',
-                          style: TextStyle(fontSize: 13, color: Colors.grey),
+                        Text(
+                          coach.role,
+                          style: const TextStyle(fontSize: 13, color: Colors.grey),
                         ),
                       ],
                     ),
@@ -173,9 +170,13 @@ class _CoachesScreenState extends ConsumerState<CoachesScreen> {
                 ],
               ),
               const Divider(height: 24),
-              Text('رقم الهاتف: ${coach.phone.toWesternDigits()}', style: const TextStyle(fontSize: 14)),
+              Text('سنوات الخبرة: ${coach.experienceYears}', style: const TextStyle(fontSize: 14)),
               const SizedBox(height: 12),
-              Text('حالة الحساب: ${coach.isActive ? 'نشط' : 'غير نشط'}', style: TextStyle(fontSize: 14, color: coach.isActive ? Colors.teal : Colors.red)),
+              Text('التقييم: ${coach.rating} (${coach.reviewsCount} مراجعة)', style: const TextStyle(fontSize: 14)),
+              if (coach.bio != null && coach.bio!.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                Text('نبذة: ${coach.bio}', style: const TextStyle(fontSize: 14)),
+              ],
               const SizedBox(height: 24),
               ElevatedButton(
                 onPressed: () => Navigator.pop(ctx),
@@ -192,8 +193,9 @@ class _CoachesScreenState extends ConsumerState<CoachesScreen> {
     );
   }
 
+  @override
   Widget build(BuildContext context) {
-    final trainersAsync = ref.watch(staffProvider(const {'role': 'trainer'}));
+    final trainersAsync = ref.watch(trainersProvider);
     final user = ref.watch(authProvider);
 
     return Scaffold(
@@ -209,7 +211,7 @@ class _CoachesScreenState extends ConsumerState<CoachesScreen> {
             )
           : null,
       body: RefreshIndicator(
-        onRefresh: () async => ref.invalidate(staffProvider),
+        onRefresh: () async => ref.invalidate(trainersProvider),
         child: trainersAsync.when(
           data: (list) {
             if (list.isEmpty) {
@@ -224,42 +226,42 @@ class _CoachesScreenState extends ConsumerState<CoachesScreen> {
                 return StaggeredListItem(
                   index: index,
                   child: AppCard(
-                  onTap: () => _showTrainerDetails(coach),
-                  border: Border.all(color: AppColors.primary.withValues(alpha: 0.4), width: 1.5), // Match academy cards layout style
-                  child: Row(
-                    children: [
-                      CircleAvatar(
-                        backgroundColor: AppColors.primary,
-                        radius: 24,
-                        backgroundImage: coach.photo != null && coach.photo!.isNotEmpty
-                            ? NetworkImage(coach.photo!)
-                            : null,
-                        child: coach.photo == null || coach.photo!.isEmpty
-                            ? Text(safeInitials(coach.firstNameAr), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))
-                            : null,
-                      ),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              coach.fullNameAr ?? '',
-                              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
-                            ),
-                            const SizedBox(height: 4),
-                            const Text(
-                              'مدرب',
-                              style: TextStyle(fontSize: 12, color: Colors.grey),
-                            ),
-                          ],
+                    onTap: () => _showTrainerDetails(coach),
+                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.4), width: 1.5),
+                    child: Row(
+                      children: [
+                        CircleAvatar(
+                          backgroundColor: AppColors.primary,
+                          radius: 24,
+                          backgroundImage: coach.profileImage != null && coach.profileImage!.isNotEmpty
+                              ? NetworkImage(coach.profileImage!)
+                              : null,
+                          child: coach.profileImage == null || coach.profileImage!.isEmpty
+                              ? Text(safeInitials(coach.fullNameAr), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))
+                              : null,
                         ),
-                      ),
-                      const SizedBox(width: 8),
-                      const Icon(Icons.chevron_right, color: Colors.grey),
-                    ],
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                coach.fullNameAr,
+                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                              ),
+                              const SizedBox(height: 4),
+                              Text(
+                                coach.role,
+                                style: const TextStyle(fontSize: 12, color: Colors.grey),
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        const Icon(Icons.chevron_right, color: Colors.grey),
+                      ],
+                    ),
                   ),
-                ),
                 );
               },
             );
@@ -267,7 +269,7 @@ class _CoachesScreenState extends ConsumerState<CoachesScreen> {
           loading: () => const ShimmerList(),
           error: (err, stack) => AppErrorWidget(
             errorMessage: err.toString(),
-            onRetry: () => ref.refresh(staffProvider(const {'role': 'trainer'})),
+            onRetry: () => ref.refresh(trainersProvider),
           ),
         ),
       ),

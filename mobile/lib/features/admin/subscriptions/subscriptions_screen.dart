@@ -64,52 +64,92 @@ class _SubscriptionsScreenState extends ConsumerState<SubscriptionsScreen> {
     final amountController = TextEditingController(text: sub.amount.toString());
     final formKey = GlobalKey<FormState>();
 
-    final confirm = await showDialog<bool>(
+    final confirm = await showModalBottomSheet<bool>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('تجديد الاشتراك للاعب', textAlign: TextAlign.right),
-        content: Form(
+      isScrollControlled: true,
+      backgroundColor: Theme.of(context).brightness == Brightness.dark ? AppColors.darkCard : Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(
+          bottom: MediaQuery.of(ctx).viewInsets.bottom,
+          left: 16,
+          right: 16,
+          top: 24,
+        ),
+        child: Form(
           key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              DropdownButtonFormField<int>(
-                value: 1,
-                decoration: const InputDecoration(labelText: 'المدة (بالأشهر)'),
-                items: const [
-                  DropdownMenuItem(value: 1, child: Text('شهر واحد (1)')),
-                  DropdownMenuItem(value: 3, child: Text('3 أشهر')),
-                  DropdownMenuItem(value: 6, child: Text('6 أشهر')),
-                  DropdownMenuItem(value: 12, child: Text('سنة كاملة (12)')),
-                ],
-                onChanged: (val) {
-                  if (val != null) {
-                    monthsController.text = val.toString();
-                    amountController.text = (sub.amount / (sub.renewals.firstOrNull?.months ?? 1) * val).toString();
-                  }
-                },
-              ),
-              const SizedBox(height: 12),
-              TextFormField(
-                controller: amountController,
-                keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                textAlign: TextAlign.right,
-                decoration: const InputDecoration(labelText: 'القيمة المالية (د.ل)'),
-                validator: (v) => v == null || v.isEmpty ? 'يرجى تحديد القيمة' : null,
-              ),
-            ],
+          child: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  'تجديد الاشتراك للاعب',
+                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                  textAlign: TextAlign.right,
+                ),
+                const SizedBox(height: 16),
+                DropdownButtonFormField<int>(
+                  value: 1,
+                  decoration: InputDecoration(
+                    labelText: 'المدة (بالأشهر)',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  dropdownColor: Theme.of(context).brightness == Brightness.dark ? AppColors.darkCard : Colors.white,
+                  items: const [
+                    DropdownMenuItem(value: 1, child: Text('شهر واحد (1)')),
+                    DropdownMenuItem(value: 3, child: Text('3 أشهر')),
+                    DropdownMenuItem(value: 6, child: Text('6 أشهر')),
+                    DropdownMenuItem(value: 12, child: Text('سنة كاملة (12)')),
+                  ],
+                  onChanged: (val) {
+                    if (val != null) {
+                      monthsController.text = val.toString();
+                      amountController.text = (sub.amount / (sub.renewals.firstOrNull?.months ?? 1) * val).toString();
+                    }
+                  },
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: amountController,
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  textAlign: TextAlign.right,
+                  decoration: InputDecoration(
+                    labelText: 'القيمة المالية (د.ل)',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  validator: (v) => v == null || v.isEmpty ? 'يرجى تحديد القيمة' : null,
+                ),
+                const SizedBox(height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.end,
+                  children: [
+                    TextButton(
+                      onPressed: () => Navigator.pop(ctx, false),
+                      child: const Text('إلغاء'),
+                    ),
+                    const SizedBox(width: 8),
+                    ElevatedButton(
+                      onPressed: () {
+                        if (formKey.currentState!.validate()) {
+                          Navigator.pop(ctx, true);
+                        }
+                      },
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: AppColors.primary,
+                        foregroundColor: Colors.white,
+                      ),
+                      child: const Text('تجديد وتفعيل'),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 16),
+              ],
+            ),
           ),
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('إلغاء'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            child: const Text('تجديد وتفعيل'),
-          ),
-        ],
       ),
     );
 
