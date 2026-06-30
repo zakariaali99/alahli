@@ -99,14 +99,14 @@ class SubscriptionRepository {
     }
   }
 
-  Future<SubscriptionModel> createSubscription(Map<String, dynamic> data) async {
+  Future<SubscriptionModel> createSubscription(dynamic data) async {
     try {
       final res = await apiClient.dio.post(ApiEndpoints.subscriptions, data: data);
       final resData = asMap(res.data);
       if (resData == null) throw Exception('فشل إنشاء الاشتراك');
       return SubscriptionModel.fromJson(resData);
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? 'فشل إنشاء الاشتراك');
+      throw Exception(e.response?.data?['detail'] ?? e.response?.data?.toString() ?? 'فشل إنشاء الاشتراك');
     }
   }
 }

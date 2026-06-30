@@ -36,7 +36,7 @@ class AthleteProfileScreen extends ConsumerWidget {
             },
             child: SingleChildScrollView(
               physics: const AlwaysScrollableScrollPhysics(),
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 16.0, bottom: 120.0),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
@@ -216,6 +216,10 @@ class AthleteProfileScreen extends ConsumerWidget {
                                         style: const TextStyle(fontSize: 12),
                                       ),
                                       const SizedBox(height: 4),
+                                      Text(
+                                        'طريقة الدفع: ${sub.paymentMethod == 'cash' ? 'نقدي' : 'تحويل مصرفي'}',
+                                        style: const TextStyle(fontSize: 12),
+                                      ),
                                       Text(
                                         'القيمة: ${NumberFormatter.formatCurrency(sub.amount)} د.ل',
                                         style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13, color: AppColors.primary),

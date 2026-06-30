@@ -93,7 +93,7 @@ class StatCard extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              fontSize: 28,
+                              fontSize: 22,
                               fontWeight: FontWeight.w900,
                               color: isDark ? Colors.white : AppColors.foreground,
                               letterSpacing: -0.5,
@@ -107,7 +107,7 @@ class StatCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontSize: 28,
+                          fontSize: 22,
                           fontWeight: FontWeight.w900,
                           color: isDark ? Colors.white : AppColors.foreground,
                           letterSpacing: -0.5,

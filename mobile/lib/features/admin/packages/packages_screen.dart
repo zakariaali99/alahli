@@ -53,209 +53,217 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
               ),
               child: Form(
                 key: formKey,
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(
-                        package == null ? 'إضافة باقة جديدة' : 'تعديل الباقة',
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                        textAlign: TextAlign.right,
-                      ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: nameController,
-                        textAlign: TextAlign.right,
-                        decoration: InputDecoration(
-                          labelText: 'اسم الباقة',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
-                      ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: descriptionController,
-                        textAlign: TextAlign.right,
-                        maxLines: 2,
-                        decoration: InputDecoration(
-                          labelText: 'الوصف',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: priceController,
-                        keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                        textAlign: TextAlign.right,
-                        decoration: InputDecoration(
-                          labelText: 'السعر (د.ل)',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
-                      ),
-                      const SizedBox(height: 12),
-                      departmentsAsync.when(
-                        data: (list) {
-                          return DropdownButtonFormField<int?>(
-                            value: selectedDeptId,
-                            decoration: InputDecoration(
-                              labelText: 'القسم / الأكاديمية (اختياري)',
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                            ),
-                            dropdownColor: Theme.of(context).brightness == Brightness.dark ? AppColors.darkCard : Colors.white,
-                            items: [
-                              const DropdownMenuItem(value: null, child: Text('باقة عامة')),
-                              ...list.map((d) => DropdownMenuItem(value: d.id, child: Text(d.nameAr))),
-                            ],
-                            onChanged: (v) => setDlgState(() => selectedDeptId = v),
-                          );
-                        },
-                        loading: () => const SizedBox.shrink(),
-                        error: (e, s) => const SizedBox.shrink(),
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: DropdownButtonFormField<String>(
-                              value: typeController.text,
-                              decoration: InputDecoration(
-                                labelText: 'نوع المدة',
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                              ),
-                              dropdownColor: Theme.of(context).brightness == Brightness.dark ? AppColors.darkCard : Colors.white,
-                              items: const [
-                                DropdownMenuItem(value: 'months', child: Text('أشهر')),
-                                DropdownMenuItem(value: 'weeks', child: Text('أسابيع')),
-                              ],
-                              onChanged: (val) {
-                                if (val != null) setDlgState(() => typeController.text = val);
-                              },
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: TextFormField(
-                              controller: valueController,
-                              keyboardType: TextInputType.number,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    Text(
+                      package == null ? 'إضافة باقة جديدة' : 'تعديل الباقة',
+                      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                      textAlign: TextAlign.right,
+                    ),
+                    const SizedBox(height: 16),
+                    Flexible(
+                      child: SingleChildScrollView(
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            TextFormField(
+                              controller: nameController,
                               textAlign: TextAlign.right,
                               decoration: InputDecoration(
-                                labelText: 'قيمة المدة',
+                                labelText: 'اسم الباقة',
                                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                               ),
                               validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: athletesController,
-                        keyboardType: TextInputType.number,
-                        textAlign: TextAlign.right,
-                        decoration: InputDecoration(
-                          labelText: 'أقصى عدد لاعبين',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
-                      ),
-                      const SizedBox(height: 12),
-                      DropdownButtonFormField<String>(
-                        value: tagController.text,
-                        decoration: InputDecoration(
-                          labelText: 'علامة الباقة المميزة',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        dropdownColor: Theme.of(context).brightness == Brightness.dark ? AppColors.darkCard : Colors.white,
-                        items: const [
-                          DropdownMenuItem(value: 'normal', child: Text('عادية')),
-                          DropdownMenuItem(value: 'discount', child: Text('خصم')),
-                          DropdownMenuItem(value: 'special', child: Text('خاصة')),
-                        ],
-                        onChanged: (val) {
-                          if (val != null) setDlgState(() => tagController.text = val);
-                        },
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextFormField(
-                              controller: iconNameController,
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: descriptionController,
                               textAlign: TextAlign.right,
+                              maxLines: 2,
                               decoration: InputDecoration(
-                                labelText: 'اسم الأيقونة',
+                                labelText: 'الوصف',
                                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: TextFormField(
-                              controller: colorClassController,
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: priceController,
+                              keyboardType: const TextInputType.numberWithOptions(decimal: true),
                               textAlign: TextAlign.right,
                               decoration: InputDecoration(
-                                labelText: 'فئة اللون (كلاس)',
+                                labelText: 'السعر (د.ل)',
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
+                            ),
+                            const SizedBox(height: 12),
+                            departmentsAsync.when(
+                              data: (list) {
+                                return DropdownButtonFormField<int?>(
+                                  value: selectedDeptId,
+                                  decoration: InputDecoration(
+                                    labelText: 'القسم / الأكاديمية (اختياري)',
+                                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                  ),
+                                  dropdownColor: Theme.of(context).brightness == Brightness.dark ? AppColors.darkCard : Colors.white,
+                                  items: [
+                                    const DropdownMenuItem(value: null, child: Text('باقة عامة')),
+                                    ...list.map((d) => DropdownMenuItem(value: d.id, child: Text(d.nameAr))),
+                                  ],
+                                  onChanged: (v) => setDlgState(() => selectedDeptId = v),
+                                );
+                              },
+                              loading: () => const SizedBox.shrink(),
+                              error: (e, s) => const SizedBox.shrink(),
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: DropdownButtonFormField<String>(
+                                    value: typeController.text,
+                                    decoration: InputDecoration(
+                                      labelText: 'نوع المدة',
+                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                    ),
+                                    dropdownColor: Theme.of(context).brightness == Brightness.dark ? AppColors.darkCard : Colors.white,
+                                    items: const [
+                                      DropdownMenuItem(value: 'months', child: Text('أشهر')),
+                                      DropdownMenuItem(value: 'weeks', child: Text('أسابيع')),
+                                    ],
+                                    onChanged: (val) {
+                                      if (val != null) setDlgState(() => typeController.text = val);
+                                    },
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: TextFormField(
+                                    controller: valueController,
+                                    keyboardType: TextInputType.number,
+                                    textAlign: TextAlign.right,
+                                    decoration: InputDecoration(
+                                      labelText: 'قيمة المدة',
+                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                    ),
+                                    validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: athletesController,
+                              keyboardType: TextInputType.number,
+                              textAlign: TextAlign.right,
+                              decoration: InputDecoration(
+                                labelText: 'أقصى عدد لاعبين',
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
+                            ),
+                            const SizedBox(height: 12),
+                            DropdownButtonFormField<String>(
+                              value: tagController.text,
+                              decoration: InputDecoration(
+                                labelText: 'علامة الباقة المميزة',
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              dropdownColor: Theme.of(context).brightness == Brightness.dark ? AppColors.darkCard : Colors.white,
+                              items: const [
+                                DropdownMenuItem(value: 'normal', child: Text('عادية')),
+                                DropdownMenuItem(value: 'discount', child: Text('خصم')),
+                                DropdownMenuItem(value: 'special', child: Text('خاصة')),
+                              ],
+                              onChanged: (val) {
+                                if (val != null) setDlgState(() => tagController.text = val);
+                              },
+                            ),
+                            const SizedBox(height: 12),
+                            Row(
+                              children: [
+                                Expanded(
+                                  child: TextFormField(
+                                    controller: iconNameController,
+                                    textAlign: TextAlign.right,
+                                    decoration: InputDecoration(
+                                      labelText: 'اسم الأيقونة',
+                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                    ),
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Expanded(
+                                  child: TextFormField(
+                                    controller: colorClassController,
+                                    textAlign: TextAlign.right,
+                                    decoration: InputDecoration(
+                                      labelText: 'فئة اللون (كلاس)',
+                                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: orderController,
+                              keyboardType: TextInputType.number,
+                              textAlign: TextAlign.right,
+                              decoration: InputDecoration(
+                                labelText: 'الترتيب',
                                 border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                               ),
                             ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: orderController,
-                        keyboardType: TextInputType.number,
-                        textAlign: TextAlign.right,
-                        decoration: InputDecoration(
-                          labelText: 'الترتيب',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: featuresController,
-                        textAlign: TextAlign.right,
-                        maxLines: 3,
-                        decoration: InputDecoration(
-                          labelText: 'الميزات (كل ميزة في سطر منفصل)',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      SwitchListTile(
-                        title: const Text('نشط ومتاح للجميع', textAlign: TextAlign.right),
-                        value: isActive,
-                        onChanged: (val) => setDlgState(() => isActive = val),
-                        activeColor: AppColors.secondary,
-                      ),
-                      const SizedBox(height: 24),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(ctx, false),
-                            child: const Text('إلغاء'),
-                          ),
-                          const SizedBox(width: 8),
-                          ElevatedButton(
-                            onPressed: () {
-                              if (formKey.currentState!.validate()) {
-                                Navigator.pop(ctx, true);
-                              }
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              foregroundColor: Colors.white,
+                            const SizedBox(height: 12),
+                            TextFormField(
+                              controller: featuresController,
+                              textAlign: TextAlign.right,
+                              maxLines: 3,
+                              decoration: InputDecoration(
+                                labelText: 'الميزات (كل ميزة في سطر منفصل)',
+                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
                             ),
-                            child: Text(package == null ? 'إضافة' : 'تعديل'),
-                          ),
-                        ],
+                            const SizedBox(height: 12),
+                            SwitchListTile(
+                              title: const Text('نشط ومتاح للجميع', textAlign: TextAlign.right),
+                              value: isActive,
+                              onChanged: (val) => setDlgState(() => isActive = val),
+                              activeColor: AppColors.secondary,
+                            ),
+                          ],
+                        ),
                       ),
-                      const SizedBox(height: 24),
-                    ],
-                  ),
+                    ),
+                    const SizedBox(height: 16),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        TextButton(
+                          onPressed: () => Navigator.pop(ctx, false),
+                          child: const Text('إلغاء'),
+                        ),
+                        const SizedBox(width: 8),
+                        ElevatedButton(
+                          onPressed: () {
+                            if (formKey.currentState!.validate()) {
+                              Navigator.pop(ctx, true);
+                            }
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: AppColors.primary,
+                            foregroundColor: Colors.white,
+                          ),
+                          child: Text(package == null ? 'إضافة' : 'تعديل'),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 16),
+                  ],
                 ),
               ),
             );

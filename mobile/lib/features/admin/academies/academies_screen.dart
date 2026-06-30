@@ -105,90 +105,98 @@ class _AcademiesScreenState extends ConsumerState<AcademiesScreen> {
         ),
         child: Form(
           key: formKey,
-          child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                Text(
-                  academy == null ? 'إضافة أكاديمية جديدة' : 'تعديل الأكاديمية',
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  textAlign: TextAlign.right,
-                ),
-                const SizedBox(height: 16),
-                TextFormField(
-                  controller: nameArController,
-                  textAlign: TextAlign.right,
-                  decoration: InputDecoration(
-                    labelText: 'الاسم بالعربية',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: nameController,
-                  textAlign: TextAlign.right,
-                  decoration: InputDecoration(
-                    labelText: 'الاسم بالإنجليزية',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: bankController,
-                  textAlign: TextAlign.right,
-                  decoration: InputDecoration(
-                    labelText: 'رقم الحساب البنكي',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: ibanController,
-                  textAlign: TextAlign.right,
-                  decoration: InputDecoration(
-                    labelText: 'رقم الآيبان (IBAN)',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: colorController,
-                  textAlign: TextAlign.right,
-                  decoration: InputDecoration(
-                    labelText: 'اللون (Hex)',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
-                ),
-                const SizedBox(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx, false),
-                      child: const Text('إلغاء'),
-                    ),
-                    const SizedBox(width: 8),
-                    ElevatedButton(
-                      onPressed: () {
-                        if (formKey.currentState!.validate()) {
-                          Navigator.pop(ctx, true);
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Text(
+                academy == null ? 'إضافة أكاديمية جديدة' : 'تعديل الأكاديمية',
+                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.right,
+              ),
+              const SizedBox(height: 16),
+              Flexible(
+                child: SingleChildScrollView(
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      TextFormField(
+                        controller: nameArController,
+                        textAlign: TextAlign.right,
+                        decoration: InputDecoration(
+                          labelText: 'الاسم بالعربية',
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
                       ),
-                      child: Text(academy == null ? 'إضافة' : 'حفظ'),
-                    ),
-                  ],
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: nameController,
+                        textAlign: TextAlign.right,
+                        decoration: InputDecoration(
+                          labelText: 'الاسم بالإنجليزية',
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: bankController,
+                        textAlign: TextAlign.right,
+                        decoration: InputDecoration(
+                          labelText: 'رقم الحساب البنكي',
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: ibanController,
+                        textAlign: TextAlign.right,
+                        decoration: InputDecoration(
+                          labelText: 'رقم الآيبان (IBAN)',
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      TextFormField(
+                        controller: colorController,
+                        textAlign: TextAlign.right,
+                        decoration: InputDecoration(
+                          labelText: 'اللون (Hex)',
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
+                      ),
+                    ],
+                  ),
                 ),
-                const SizedBox(height: 24),
-              ],
-            ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  TextButton(
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: const Text('إلغاء'),
+                  ),
+                  const SizedBox(width: 8),
+                  ElevatedButton(
+                    onPressed: () {
+                      if (formKey.currentState!.validate()) {
+                        Navigator.pop(ctx, true);
+                      }
+                    },
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: AppColors.primary,
+                      foregroundColor: Colors.white,
+                    ),
+                    child: Text(academy == null ? 'إضافة' : 'حفظ'),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+            ],
           ),
         ),
       ),

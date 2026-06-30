@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:file_picker/file_picker.dart';
+import 'package:dio/dio.dart';
 import '../../../core/providers/providers.dart';
 import '../../../core/providers/paginated_providers.dart';
 import '../../../core/constants/app_colors.dart';
@@ -24,14 +26,42 @@ class _AddSubscriptionScreenState extends ConsumerState<AddSubscriptionScreen> {
   GroupModel? _selectedGroup;
   String _paymentMethod = 'cash';
   DateTime _startDate = DateTime.now();
+  PlatformFile? _selectedInvoiceFile;
 
   bool _isSubmitting = false;
+
+  Future<void> _pickInvoice() async {
+    try {
+      final result = await FilePicker.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf', 'jpg', 'jpeg', 'png'],
+      );
+      if (result != null && result.files.isNotEmpty) {
+        setState(() {
+          _selectedInvoiceFile = result.files.first;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('خطأ في اختيار الملف: $e')),
+        );
+      }
+    }
+  }
 
   void _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedAthlete == null || _selectedPackage == null || _selectedGroup == null) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('الرجاء اختيار اللاعب والباقة والمجموعة')),
+      );
+      return;
+    }
+
+    if (_paymentMethod == 'bank_transfer' && _selectedInvoiceFile == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('يرجى رفع إيصال الدفع (PDF أو صورة) عند اختيار التحويل المصرفي')),
       );
       return;
     }
@@ -43,7 +73,7 @@ class _AddSubscriptionScreenState extends ConsumerState<AddSubscriptionScreen> {
           ? _startDate.add(Duration(days: 7 * _selectedPackage!.durationValue))
           : DateTime(_startDate.year, _startDate.month + _selectedPackage!.durationValue, _startDate.day);
 
-      final data = {
+      final Map<String, dynamic> map = {
         'athlete': _selectedAthlete!.id,
         'package_name': _selectedPackage!.name,
         'group': _selectedGroup!.id,
@@ -54,14 +84,33 @@ class _AddSubscriptionScreenState extends ConsumerState<AddSubscriptionScreen> {
         'status': 'active', // Admin creates active by default
       };
 
-      await ref.read(subscriptionRepositoryProvider).createSubscription(data);
+      if (_paymentMethod == 'bank_transfer' && _selectedInvoiceFile != null) {
+        if (_selectedInvoiceFile!.path != null) {
+          map['invoice_pdf'] = await MultipartFile.fromFile(
+            _selectedInvoiceFile!.path!,
+            filename: _selectedInvoiceFile!.name,
+          );
+        } else if (_selectedInvoiceFile!.bytes != null) {
+          map['invoice_pdf'] = MultipartFile.fromBytes(
+            _selectedInvoiceFile!.bytes!,
+            filename: _selectedInvoiceFile!.name,
+          );
+        }
+      }
+
+      if (!mounted) return;
+      final formData = FormData.fromMap(map);
+
+      await ref.read(subscriptionRepositoryProvider).createSubscription(formData);
       ref.invalidate(subscriptionsPaginatedProvider);
       
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(content: Text('تم إضافة الاشتراك بنجاح')),
         );
-        context.pop();
+        if (context.mounted) {
+          context.pop();
+        }
       }
     } catch (e) {
       if (mounted) {
@@ -88,7 +137,7 @@ class _AddSubscriptionScreenState extends ConsumerState<AddSubscriptionScreen> {
         data: (athletes) => packagesAsync.when(
           data: (packages) => groupsAsync.when(
             data: (groups) => SingleChildScrollView(
-              padding: const EdgeInsets.all(16.0),
+              padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 16.0, bottom: 120.0),
               child: Form(
                 key: _formKey,
                 child: Column(
@@ -151,9 +200,73 @@ class _AddSubscriptionScreenState extends ConsumerState<AddSubscriptionScreen> {
                         DropdownMenuItem(value: 'cash', child: Text('نقدي')),
                         DropdownMenuItem(value: 'bank_transfer', child: Text('تحويل مصرفي')),
                       ],
-                      onChanged: (val) => setState(() => _paymentMethod = val!),
+                      onChanged: (val) {
+                        setState(() {
+                          _paymentMethod = val!;
+                          if (_paymentMethod != 'bank_transfer') {
+                            _selectedInvoiceFile = null;
+                          }
+                        });
+                      },
                     ),
                     const SizedBox(height: 16),
+
+                    // File Picker Section for Bank Transfer
+                    if (_paymentMethod == 'bank_transfer') ...[
+                      InkWell(
+                        onTap: _pickInvoice,
+                        borderRadius: BorderRadius.circular(12),
+                        child: Container(
+                          padding: const EdgeInsets.all(16),
+                          decoration: BoxDecoration(
+                            border: Border.all(
+                              color: _selectedInvoiceFile != null ? AppColors.secondary : Colors.grey,
+                              style: BorderStyle.solid,
+                              width: 1.5,
+                            ),
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Row(
+                            children: [
+                              Icon(
+                                _selectedInvoiceFile != null ? Icons.check_circle : Icons.upload_file_outlined,
+                                color: _selectedInvoiceFile != null ? AppColors.secondary : Colors.grey,
+                              ),
+                              const SizedBox(width: 12),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      _selectedInvoiceFile != null
+                                          ? _selectedInvoiceFile!.name
+                                          : 'رفع إيصال التحويل المصرفي',
+                                      style: TextStyle(
+                                        fontWeight: _selectedInvoiceFile != null ? FontWeight.bold : FontWeight.normal,
+                                        fontSize: 14,
+                                      ),
+                                      maxLines: 1,
+                                      overflow: TextOverflow.ellipsis,
+                                    ),
+                                    if (_selectedInvoiceFile != null)
+                                      Text(
+                                        'الحجم: ${(_selectedInvoiceFile!.size / 1024).toStringAsFixed(1)} KB',
+                                        style: const TextStyle(fontSize: 11, color: Colors.grey),
+                                      ),
+                                  ],
+                                ),
+                              ),
+                              if (_selectedInvoiceFile != null)
+                                IconButton(
+                                  icon: const Icon(Icons.close, color: AppColors.destructive, size: 20),
+                                  onPressed: () => setState(() => _selectedInvoiceFile = null),
+                                ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                    ],
 
                     InkWell(
                       onTap: () async {

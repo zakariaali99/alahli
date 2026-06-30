@@ -212,7 +212,8 @@ class _SubscriptionsScreenState extends ConsumerState<SubscriptionsScreen> {
                   onPressed: () async {
                     String url = sub.invoicePdfUrl!;
                     if (!url.startsWith('http')) {
-                      url = '${ApiEndpoints.baseUrl}$url';
+                      final origin = ApiEndpoints.baseUrl.replaceFirst(RegExp(r'/api/?$'), '');
+                      url = url.startsWith('/') ? '$origin$url' : '$origin/$url';
                     }
                     final uri = Uri.parse(url);
                     if (await canLaunchUrl(uri)) {
@@ -425,6 +426,13 @@ class _SubscriptionsScreenState extends ConsumerState<SubscriptionsScreen> {
                     ),
                     Text(
                       'تاريخ الانتهاء: ${sub.endDate.toWesternDigits()}',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: isDark ? AppColors.darkMutedForeground : AppColors.mutedForeground,
+                      ),
+                    ),
+                    Text(
+                      'طريقة الدفع: ${sub.paymentMethod == 'cash' ? 'نقدي' : 'تحويل مصرفي'}',
                       style: TextStyle(
                         fontSize: 12,
                         color: isDark ? AppColors.darkMutedForeground : AppColors.mutedForeground,
