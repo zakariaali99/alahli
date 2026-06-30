@@ -41,7 +41,7 @@ if settings.DEBUG:
 # SPA catch-all — checked before router's API root at ^$
 urlpatterns += [
     re_path(r"^(?P<path>logo\.\w+)$", serve_frontend_assets),
-    re_path(r"^assets/(?P<path>.*)$", serve_frontend_assets),
+    re_path(r"^(?P<path>assets/.*)$", serve_frontend_assets),
     re_path(r"^(?!api/|admin/|static/|media/).*$", serve_spa),
 ]
 
