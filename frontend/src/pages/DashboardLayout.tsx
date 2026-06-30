@@ -256,13 +256,22 @@ export default function DashboardLayout() {
 
             {/* Right: Actions */}
             <div className="mr-auto flex items-center gap-3 md:mr-0">
+              <Button
+                onClick={handleLogout}
+                variant="ghost"
+                size="sm"
+                className="text-error hover:bg-error/10 hover:text-error"
+              >
+                <LogOut className="w-4 h-4 shrink-0" />
+                <span className="hidden sm:inline">تسجيل الخروج</span>
+              </Button>
               <div className="flex items-center gap-2.5">
                 <div className="hidden text-left sm:block">
                   <p className="text-sm font-semibold text-foreground leading-tight">
                     {user.full_name_ar || "المسؤول"}
                   </p>
                   <p className="text-[11px] text-muted-foreground">
-                    {user.role === "super_admin" ? "مدير النظام" : user.role === "reception" ? "موظف استقبال" : user.role === "academy_manager" ? "مدير الأكاديمية" : "مشاهد"}
+                    {user.is_superuser || user.role === "super_admin" ? "مدير النظام" : user.role === "reception" ? "موظف استقبال" : user.role === "academy_manager" ? "مدير الأكاديمية" : "مشاهد"}
                   </p>
                 </div>
                 <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-primary-container flex items-center justify-center text-white font-bold text-sm shadow-md shrink-0">

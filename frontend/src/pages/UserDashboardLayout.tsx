@@ -29,7 +29,7 @@ export default function UserDashboardLayout() {
       return
     }
 
-    if (user.role === "super_admin" || user.role === "reception") {
+    if (user.is_superuser || user.role === "super_admin" || user.role === "reception") {
       navigate("/dashboard", { replace: true })
     }
   }, [isLoading, user, navigate])

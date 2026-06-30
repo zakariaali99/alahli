@@ -3,7 +3,7 @@ from django.db.models import Case, IntegerField, Value, When
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 
-from apps.accounts.permissions import IsReceptionOrAbove
+from apps.accounts.permissions import IsReceptionOrAbove, is_admin_user
 
 from .models import SubscriptionPackage
 from .serializers import SubscriptionPackageSerializer
@@ -26,7 +26,7 @@ class SubscriptionPackageViewSet(viewsets.ModelViewSet):
             output_field=IntegerField(),
         )
         queryset = SubscriptionPackage.objects.annotate(tag_priority=tag_order)
-        if self.request.user.role not in ["super_admin", "reception"]:
+        if not (is_admin_user(self.request.user) or self.request.user.role == "reception"):
             queryset = queryset.filter(is_active=True)
         department_id = self.request.query_params.get("department")
         if department_id:

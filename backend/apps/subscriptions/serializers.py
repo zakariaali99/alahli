@@ -1,5 +1,7 @@
 from rest_framework import serializers
 
+from apps.packages.models import SubscriptionPackage
+
 from .models import AttendanceLog, Renewal, Subscription
 
 
@@ -17,6 +19,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
     department_name = serializers.CharField(source="athlete.department.name_ar", read_only=True)
     group_name = serializers.CharField(source="group.name_ar", read_only=True, default="")
     invoice_pdf_url = serializers.SerializerMethodField()
+    package_id = serializers.IntegerField(write_only=True, required=False)
 
     class Meta:
         model = Subscription
@@ -30,6 +33,17 @@ class SubscriptionSerializer(serializers.ModelSerializer):
                 return request.build_absolute_uri(obj.invoice_pdf.url)
             return obj.invoice_pdf.url
         return None
+
+    def create(self, validated_data):
+        package_id = validated_data.pop("package_id", None)
+        if package_id:
+            try:
+                package = SubscriptionPackage.objects.get(id=package_id)
+                validated_data["package_name"] = package.name
+                validated_data["amount"] = package.price
+            except SubscriptionPackage.DoesNotExist:
+                raise serializers.ValidationError({"package_id": "Package not found"})
+        return super().create(validated_data)
 
 
 class RenewSubscriptionSerializer(serializers.Serializer):

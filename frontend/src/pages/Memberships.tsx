@@ -137,7 +137,8 @@ export default function MembershipsPage() {
     start_date: "",
     end_date: "",
     amount: "",
-    package_name: "اشتراك إداري",
+    package_name: "",
+    package_id: "",
     payment_method: "cash" as "cash" | "bank_transfer",
     status: "active" as "active" | "pending",
   })
@@ -150,7 +151,7 @@ export default function MembershipsPage() {
   const [quickRenewError, setQuickRenewError] = useState<string | null>(null)
   const [departments, setDepartments] = useState<Array<{ id: number; name_ar: string }>>([])
 
-  const canManagePackages = user?.role === "super_admin" || user?.role === "reception"
+  const canManagePackages = user?.is_superuser || user?.role === "super_admin" || user?.role === "reception"
 
   useEffect(() => {
     if (!flash) return
@@ -290,7 +291,8 @@ export default function MembershipsPage() {
       start_date: today.toISOString().slice(0, 10),
       end_date: nextMonth.toISOString().slice(0, 10),
       amount: "",
-      package_name: "اشتراك إداري",
+      package_name: "",
+      package_id: "",
       payment_method: "cash",
       status: "active",
     })
@@ -323,6 +325,7 @@ export default function MembershipsPage() {
       payload.append("package_name", manualSubForm.package_name)
       payload.append("payment_method", manualSubForm.payment_method)
       payload.append("status", manualSubForm.status)
+      if (manualSubForm.package_id) payload.append("package_id", String(manualSubForm.package_id))
       if (manualInvoice) payload.append("invoice_pdf", manualInvoice)
 
       await api.post("/subscriptions/", payload, { formData: true })
@@ -1151,12 +1154,65 @@ export default function MembershipsPage() {
                 </select>
               </div>
               <div>
+                <label className="mb-1 block text-xs text-muted-foreground">اختر الباقة</label>
+                <select
+                  className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2 text-sm"
+                  value={manualSubForm.package_id}
+                  onChange={(e) => {
+                    const id = e.target.value
+                    const pkg = packages.find((p) => p.id === Number(id))
+                    if (id && pkg) {
+                      const start = manualSubForm.start_date || new Date().toISOString().slice(0, 10)
+                      const date = new Date(start)
+                      if (pkg.duration_type === "weeks") {
+                        date.setDate(date.getDate() + pkg.duration_value * 7)
+                      } else {
+                        date.setMonth(date.getMonth() + pkg.duration_value)
+                      }
+                      setManualSubForm((prev) => ({
+                        ...prev,
+                        package_id: id,
+                        package_name: pkg.name,
+                        amount: pkg.price,
+                        end_date: date.toISOString().slice(0, 10),
+                      }))
+                    } else {
+                      setManualSubForm((prev) => ({ ...prev, package_id: id, package_name: "", amount: "" }))
+                    }
+                  }}
+                >
+                  <option value="">بدون باقة (إدخال يدوي)</option>
+                  {packages.map((pkg) => (
+                    <option key={pkg.id} value={String(pkg.id)}>
+                      {pkg.name} - {Number(pkg.price).toLocaleString("ar-SA-u-nu-latn")} د.ل
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div>
                 <label className="mb-1 block text-xs text-muted-foreground">اسم الباقة</label>
-                <input className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2 text-sm" value={manualSubForm.package_name} onChange={(e) => setManualSubForm((p) => ({ ...p, package_name: e.target.value }))} />
+                <input className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2 text-sm" value={manualSubForm.package_name} onChange={(e) => setManualSubForm((p) => ({ ...p, package_name: e.target.value }))} placeholder={manualSubForm.package_id ? "" : "أدخل اسم الباقة يدوياً"} />
               </div>
               <div>
                 <label className="mb-1 block text-xs text-muted-foreground">تاريخ البداية</label>
-                <input type="date" className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2 text-sm" value={manualSubForm.start_date} onChange={(e) => setManualSubForm((p) => ({ ...p, start_date: e.target.value }))} required />
+                <input type="date" className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2 text-sm" value={manualSubForm.start_date} onChange={(e) => {
+                  const start = e.target.value
+                  const id = manualSubForm.package_id
+                  let end = ""
+                  if (id) {
+                    const pkg = packages.find((p) => p.id === Number(id))
+                    if (pkg) {
+                      const date = new Date(start)
+                      if (pkg.duration_type === "weeks") {
+                        date.setDate(date.getDate() + pkg.duration_value * 7)
+                      } else {
+                        date.setMonth(date.getMonth() + pkg.duration_value)
+                      }
+                      end = date.toISOString().slice(0, 10)
+                    }
+                  }
+                  setManualSubForm((p) => ({ ...p, start_date: start, end_date: end || p.end_date }))
+                }} required />
               </div>
               <div>
                 <label className="mb-1 block text-xs text-muted-foreground">تاريخ النهاية</label>

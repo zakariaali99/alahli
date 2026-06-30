@@ -8,7 +8,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from apps.accounts.permissions import IsReceptionOrAbove
+from apps.accounts.permissions import IsReceptionOrAbove, is_admin_user
 from apps.athletes.models import Athlete, ParentAthlete
 from apps.departments.models import Group, Sport
 from apps.packages.models import SubscriptionPackage
@@ -65,7 +65,7 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
         # Staff can renew any subscription
         # Athletes can only renew their own
         # Parents can only renew their children's
-        if user.role not in ["super_admin", "reception"]:
+        if not (is_admin_user(user) or user.role == "reception"):
             if hasattr(user, "athlete") and user.athlete is not None:
                 if subscription.athlete != user.athlete:
                     return Response(

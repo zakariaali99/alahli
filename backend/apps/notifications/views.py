@@ -3,7 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from apps.accounts.permissions import IsReceptionOrAbove
+from apps.accounts.permissions import IsReceptionOrAbove, is_admin_user
 
 from .models import Announcement, Device, Notification
 from .serializers import AnnouncementSerializer, DeviceSerializer, NotificationSerializer
@@ -15,7 +15,7 @@ class NotificationViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        if user.role in ["super_admin", "reception"]:
+        if is_admin_user(user) or user.role == "reception":
             qs = Notification.objects.all()
             athlete_id = self.request.query_params.get("athlete")
             if athlete_id:

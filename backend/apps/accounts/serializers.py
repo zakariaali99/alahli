@@ -18,7 +18,7 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ["id", "phone", "first_name_ar", "last_name_ar", "full_name_ar", "role", "is_active", "photo", "athlete_detail", "academy", "academy_name"]
+        fields = ["id", "phone", "first_name_ar", "last_name_ar", "full_name_ar", "role", "is_superuser", "is_active", "photo", "athlete_detail", "academy", "academy_name"]
         read_only_fields = ["id"]
 
     def get_athlete_detail(self, obj):

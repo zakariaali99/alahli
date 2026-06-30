@@ -8,6 +8,7 @@ interface User {
   last_name_ar: string
   full_name_ar: string
   role: "super_admin" | "reception" | "trainer" | "athlete" | "parent" | "viewer" | "academy_manager"
+  is_superuser: boolean
   is_active: boolean
   photo: string | null
   academy?: number | null
