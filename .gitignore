@@ -31,6 +31,8 @@ design/
 .playwright-mcp/
 
 # browser snapshot exports (not project source files)
+dist.zip
+backend_static/dist.zip
 login-page
 login-page-redesigned
 
@@ -55,8 +57,7 @@ mobile/android/app/*.keystore
 # media files (uploaded data — not code)
 backend/media/
 
-# frontend build copied into Django (build artifact)
-backend/frontend_build/
+
 
 # mobile
 mobile/.dart_tool/
