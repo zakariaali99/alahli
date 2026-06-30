@@ -1,4 +1,23 @@
+from django.db.backends.signals import connection_created
+from django.dispatch import receiver
+
 from .base import *
+
+
+@receiver(connection_created)
+def setup_sqlite_pragmas(sender, connection, **kwargs):
+    if connection.vendor == "sqlite":
+        with connection.cursor() as cursor:
+            cursor.execute("PRAGMA journal_mode=WAL")
+            cursor.execute("PRAGMA synchronous=NORMAL")
+            cursor.execute("PRAGMA cache_size=-64000")
+            cursor.execute("PRAGMA mmap_size=268435456")
+
+
+MIDDLEWARE = [
+    "django.middleware.gzip.GZipMiddleware",
+    "django.middleware.http.ConditionalGetMiddleware",
+] + MIDDLEWARE
 
 DEBUG = os.environ.get("DJANGO_DEBUG", "False") == "True"
 
