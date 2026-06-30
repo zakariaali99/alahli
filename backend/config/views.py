@@ -32,3 +32,11 @@ def serve_frontend_assets(request, path):
         raise Http404()
     content_type = MIME_TYPES.get(file_path.suffix, "application/octet-stream")
     return FileResponse(open(file_path, "rb"), content_type=content_type)
+
+
+def serve_media(request, path):
+    file_path = settings.MEDIA_ROOT / path
+    if not file_path.exists() or not file_path.is_file():
+        raise Http404()
+    content_type = MIME_TYPES.get(file_path.suffix, "application/octet-stream")
+    return FileResponse(open(file_path, "rb"), content_type=content_type)

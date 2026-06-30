@@ -5,7 +5,7 @@ from django.urls import include, path, re_path
 from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView
 from rest_framework.routers import DefaultRouter
 
-from config.views import serve_frontend_assets, serve_spa
+from config.views import serve_frontend_assets, serve_media, serve_spa
 
 from apps.accounts.health import health_check
 from apps.subscriptions.views import AttendanceLogViewSet
@@ -40,6 +40,7 @@ if settings.DEBUG:
 
 # SPA catch-all — checked before router's API root at ^$
 urlpatterns += [
+    re_path(r"^media/(?P<path>.*)$", serve_media),
     re_path(r"^(?P<path>logo\.\w+)$", serve_frontend_assets),
     re_path(r"^(?P<path>assets/.*)$", serve_frontend_assets),
     re_path(r"^(?!api/|admin/|static/|media/).*$", serve_spa),
