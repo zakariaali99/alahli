@@ -64,7 +64,7 @@ export default function SubscriptionPage() {
     if (isParent) {
       fetchAthletes()
     } else {
-      setData((prev) => ({ ...prev, athleteId: user?.id ?? null }))
+      setData((prev) => ({ ...prev, athleteId: user?.athlete_detail?.id ?? null }))
       fetchAcademies()
     }
   }, [isParent, user?.id])
@@ -175,7 +175,7 @@ export default function SubscriptionPage() {
   }
 
   const submitCheckout = async () => {
-    const checkoutAthleteId = isParent ? data.athleteId : (data.athleteId ?? user?.id ?? null)
+    const checkoutAthleteId = isParent ? data.athleteId : (data.athleteId ?? user?.athlete_detail?.id ?? null)
     if (!checkoutAthleteId) {
       setError("تعذر تحديد الرياضي لهذا الاشتراك")
       return

@@ -15,10 +15,12 @@ export default function CameraCapture({ onCapture, buttonText = "خذ صورة �
   const [open, setOpen] = useState(false)
   const [captured, setCaptured] = useState<string | null>(null)
   const [error, setError] = useState("")
+  const [videoReady, setVideoReady] = useState(false)
 
   const startCamera = useCallback(async () => {
     try {
       setError("")
+      setVideoReady(false)
       const stream = await navigator.mediaDevices.getUserMedia({
         video: { facingMode: "user", width: 512, height: 512 },
       })
@@ -37,6 +39,7 @@ export default function CameraCapture({ onCapture, buttonText = "خذ صورة �
     const video = videoRef.current
     const canvas = canvasRef.current
     if (!video || !canvas) return
+    if (video.readyState < 2) return
     canvas.width = 512
     canvas.height = 512
     const ctx = canvas.getContext("2d")
@@ -88,7 +91,7 @@ export default function CameraCapture({ onCapture, buttonText = "خذ صورة �
       {open && (
         <div className="fixed inset-0 z-50 bg-black/90 flex flex-col items-center justify-center p-4">
           <div className="relative w-full max-w-sm">
-            <video ref={videoRef} autoPlay playsInline className="w-full rounded-2xl" />
+            <video ref={videoRef} autoPlay playsInline className="w-full rounded-2xl" onPlaying={() => setVideoReady(true)} />
             <canvas ref={canvasRef} className="hidden" />
           </div>
 
@@ -105,7 +108,7 @@ export default function CameraCapture({ onCapture, buttonText = "خذ صورة �
                 </Button>
               </>
             ) : (
-              <Button onClick={capture} size="lg" className="w-16 h-16 rounded-full">
+              <Button onClick={capture} size="lg" className="w-16 h-16 rounded-full" disabled={!videoReady}>
                 <Camera className="w-6 h-6" />
               </Button>
             )}

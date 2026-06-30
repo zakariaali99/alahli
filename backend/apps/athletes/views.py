@@ -45,6 +45,17 @@ def register_view(request):
     serializer = RegisterSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
 
+    photo_file = None
+    if serializer.validated_data["role"] == "athlete":
+        photo_data = serializer.validated_data.get("photo")
+        if photo_data:
+            try:
+                img_format, imgstr = photo_data.split(";base64,", 1)
+                ext = img_format.split("/")[-1] if "/" in img_format else "jpg"
+                photo_file = ContentFile(base64.b64decode(imgstr), name=f"{uuid.uuid4().hex}.{ext}")
+            except Exception:
+                return Response({"photo": "Invalid photo format"}, status=status.HTTP_400_BAD_REQUEST)
+
     with transaction.atomic():
         user = User.objects.create_user(
             phone=serializer.validated_data["phone"],
@@ -59,17 +70,43 @@ def register_view(request):
             role_choice=serializer.validated_data["role"],
         )
 
-    from apps.notifications.tasks import send_admin_push_notification
+        if serializer.validated_data["role"] == "athlete":
+            weight = serializer.validated_data.get("weight")
+            height = serializer.validated_data.get("height")
+            notes_parts = []
+            if weight is not None:
+                notes_parts.append(f"Weight: {weight}")
+            if height is not None:
+                notes_parts.append(f"Height: {height}")
 
-    send_admin_push_notification.delay(
-        title="تسجيل لاعب جديد",
-        body=f"طلب تسجيل جديد من {serializer.validated_data['full_name']} - {serializer.validated_data['phone']}",
-        notification_type="new_registration",
-        entity_id=registration.id,
-    )
+            athlete = Athlete.objects.create(
+                full_name=serializer.validated_data["full_name"],
+                phone=serializer.validated_data["phone"],
+                birth_date=serializer.validated_data["birth_date"],
+                gender="male",
+                photo=photo_file,
+                notes=" | ".join(notes_parts) if notes_parts else "",
+                is_active=False,
+                registration=registration,
+            )
+            user.athlete = athlete
+            user.save(update_fields=["athlete"])
+
+    try:
+        from apps.notifications.tasks import send_admin_push_notification
+
+        send_admin_push_notification.delay(
+            title="تسجيل لاعب جديد",
+            body=f"طلب تسجيل جديد من {serializer.validated_data['full_name']} - {serializer.validated_data['phone']}",
+            notification_type="new_registration",
+            entity_id=registration.id,
+        )
+    except Exception:
+        import logging
+        logging.getLogger(__name__).exception("Failed to send push notification for registration")
 
     return Response(
-        {"message": "Registration submitted. Awaiting admin review and profile creation."},
+        {"message": "تم التسجيل بنجاح", "registration_id": registration.id},
         status=status.HTTP_201_CREATED,
     )
 
@@ -175,15 +212,21 @@ class RegistrationRequestViewSet(viewsets.ReadOnlyModelViewSet):
         if registration.role_choice != RegistrationRequest.RoleChoice.ATHLETE:
             return Response({"detail": "Only athlete registrations can create athlete profiles"}, status=status.HTTP_400_BAD_REQUEST)
 
-        if hasattr(registration, "athlete"):
-            return Response({"detail": "Athlete profile already exists", "athlete_id": registration.athlete.id}, status=status.HTTP_400_BAD_REQUEST)
+        if hasattr(registration, "athlete") and registration.athlete:
+            return Response(
+                AthleteDetailSerializer(registration.athlete, context={"request": request}).data,
+                status=status.HTTP_200_OK,
+            )
 
         serializer = AthleteDetailSerializer(data=request.data, context={"request": request})
         serializer.is_valid(raise_exception=True)
         athlete = serializer.save(registration=registration, is_active=False)
 
-        registration.user.athlete = athlete
-        registration.user.save(update_fields=["athlete"])
+        user = registration.user
+        user.athlete = athlete
+        if user.role != User.Role.ATHLETE:
+            user.role = User.Role.ATHLETE
+        user.save(update_fields=["athlete", "role"])
 
         return Response(AthleteDetailSerializer(athlete, context={"request": request}).data, status=status.HTTP_201_CREATED)
 

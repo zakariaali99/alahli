@@ -143,20 +143,28 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
                 )
         else:
             athlete = getattr(user, "athlete", None)
-            if athlete is None:
-                latest_registration = user.registration_requests.select_related("athlete").order_by("-created_at").first()
-                if latest_registration and hasattr(latest_registration, "athlete"):
-                    athlete = latest_registration.athlete
-                else:
-                    athlete = Athlete.objects.filter(phone=user.phone).first()
 
-                if athlete is not None:
-                    user.athlete = athlete
-                    user.save(update_fields=["athlete"])
+            if athlete is None:
+                reg = user.registration_requests.select_related("athlete").order_by("-created_at").first()
+                if reg and hasattr(reg, "athlete") and reg.athlete:
+                    athlete = reg.athlete
+
+            if athlete is None:
+                athlete = Athlete.objects.filter(phone=user.phone).first()
+
+            if athlete is None and data.get("athlete_id"):
+                try:
+                    athlete = Athlete.objects.get(id=data["athlete_id"])
+                except Athlete.DoesNotExist:
+                    pass
+
+            if athlete is not None and getattr(user, "athlete", None) is None:
+                user.athlete = athlete
+                user.save(update_fields=["athlete"])
 
             if athlete is None:
                 return Response(
-                    {"detail": "No athlete profile found"},
+                    {"detail": "لم يتم العثور على ملف رياضي لهذا الحساب"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
@@ -181,14 +189,18 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
             subscription.invoice_pdf = data["invoice_pdf"]
             subscription.save(update_fields=["invoice_pdf"])
 
-        from apps.notifications.tasks import send_admin_push_notification
+        try:
+            from apps.notifications.tasks import send_admin_push_notification
 
-        send_admin_push_notification.delay(
-            title="اشتراك جديد بانتظار الموافقة",
-            body=f"طلب اشتراك جديد لـ {athlete.full_name} - باقة {package.name}",
-            notification_type="new_subscription",
-            entity_id=subscription.id,
-        )
+            send_admin_push_notification.delay(
+                title="اشتراك جديد بانتظار الموافقة",
+                body=f"طلب اشتراك جديد لـ {athlete.full_name} - باقة {package.name}",
+                notification_type="new_subscription",
+                entity_id=subscription.id,
+            )
+        except Exception:
+            import logging
+            logging.getLogger(__name__).exception("Failed to send push notification for subscription")
 
         bank_details = None
         if data["payment_method"] == "bank_transfer":
