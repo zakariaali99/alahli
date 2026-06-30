@@ -105,6 +105,29 @@ class WhatsAppService:
             return False, str(e.reason)
 
 
+def send_admin_push_sync(title: str, body: str, notification_type: str, entity_id: int = None) -> int:
+    from apps.accounts.models import User
+    from apps.notifications.models import Device
+
+    admin_roles = [User.Role.SUPER_ADMIN, User.Role.RECEPTION, "academy_manager"]
+    tokens = list(
+        Device.objects.filter(user__role__in=admin_roles, is_active=True)
+        .values_list("fcm_token", flat=True)
+    )
+
+    if not tokens:
+        logger.info("No admin devices registered for push notification")
+        return 0
+
+    data = {"type": notification_type}
+    if entity_id:
+        data["id"] = str(entity_id)
+
+    count = FCMService.send_push(tokens, title, body, data=data)
+    logger.info("Admin push sent to %d/%d devices: %s", count, len(tokens), title)
+    return count
+
+
 class FCMService:
     @staticmethod
     def send_push(device_tokens: list, title: str, body: str, data: Optional[dict] = None) -> int:

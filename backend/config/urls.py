@@ -7,7 +7,7 @@ from rest_framework.routers import DefaultRouter
 
 from config.views import serve_frontend_assets, serve_media, serve_spa
 
-from apps.accounts.health import health_check
+from apps.accounts.health import health_check, push_health_check
 from apps.subscriptions.views import AttendanceLogViewSet
 
 router = DefaultRouter()
@@ -16,6 +16,7 @@ router.register(r"attendance", AttendanceLogViewSet, basename="attendance")
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/health/", health_check, name="health-check"),
+    path("api/health/push/", push_health_check, name="health-push"),
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
     path("api/auth/", include("apps.accounts.urls")),

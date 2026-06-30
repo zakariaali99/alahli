@@ -214,9 +214,9 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
             subscription.save(update_fields=["invoice_pdf"])
 
         try:
-            from apps.notifications.tasks import send_admin_push_notification
+            from apps.notifications.services import send_admin_push_sync
 
-            send_admin_push_notification.delay(
+            send_admin_push_sync(
                 title="اشتراك جديد بانتظار الموافقة",
                 body=f"طلب اشتراك جديد لـ {athlete.full_name} - باقة {package.name}",
                 notification_type="new_subscription",

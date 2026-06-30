@@ -18,9 +18,9 @@ def expire_memberships():
     count = expired.update(status=Subscription.Status.EXPIRED)
 
     if count > 0:
-        from apps.notifications.tasks import send_admin_push_notification
+        from apps.notifications.services import send_admin_push_sync
 
-        send_admin_push_notification.delay(
+        send_admin_push_sync(
             title="انتهاء اشتراكات",
             body=f"انتهى {count} اشتراك اليوم. يرجى مراجعة قائمة الاشتراكات المنتهية.",
             notification_type="subscription_expired",

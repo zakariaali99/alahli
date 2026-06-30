@@ -94,9 +94,9 @@ def register_view(request):
             user.save(update_fields=["athlete"])
 
     try:
-        from apps.notifications.tasks import send_admin_push_notification
+        from apps.notifications.services import send_admin_push_sync
 
-        send_admin_push_notification.delay(
+        send_admin_push_sync(
             title="تسجيل لاعب جديد",
             body=f"طلب تسجيل جديد من {serializer.validated_data['full_name']} - {serializer.validated_data['phone']}",
             notification_type="new_registration",
