@@ -55,6 +55,9 @@ mobile/android/app/*.keystore
 # media files (uploaded data — not code)
 backend/media/
 
+# frontend build copied into Django (build artifact)
+backend/frontend_build/
+
 # mobile
 mobile/.dart_tool/
 mobile/.packages
