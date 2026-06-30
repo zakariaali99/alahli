@@ -238,6 +238,10 @@ WHATSAPP_AUTO_SEND_ENABLED = os.environ.get("WHATSAPP_AUTO_SEND_ENABLED", "False
 
 # Firebase Cloud Messaging
 FCM_CREDENTIALS_PATH = os.environ.get("FCM_CREDENTIALS_PATH", "")
+if not FCM_CREDENTIALS_PATH:
+    matches = sorted(BASE_DIR.glob("*-firebase-adminsdk-*.json"))
+    if matches:
+        FCM_CREDENTIALS_PATH = str(matches[0])
 
 # Bank Account Details (for bank transfer payments)
 BANK_ACCOUNT_NUMBER = os.environ.get("BANK_ACCOUNT_NUMBER", "")
