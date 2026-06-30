@@ -7,6 +7,7 @@ import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/app_error_widget.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/loading_shimmer.dart';
+import '../../../core/widgets/form_bottom_sheet.dart';
 import '../../../core/helpers/numeral_converter.dart';
 import '../../../core/helpers/ui_helpers.dart';
 import '../../../core/models/department_model.dart';
@@ -94,109 +95,72 @@ class _AcademiesScreenState extends ConsumerState<AcademiesScreen> {
       isScrollControlled: true,
       backgroundColor: Theme.of(context).brightness == Brightness.dark ? AppColors.darkCard : Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(ctx).viewInsets.bottom,
-          left: 16,
-          right: 16,
-          top: 24,
-        ),
-        child: Form(
-          key: formKey,
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
-            children: [
-              Text(
-                academy == null ? 'إضافة أكاديمية جديدة' : 'تعديل الأكاديمية',
-                style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                textAlign: TextAlign.right,
-              ),
-              const SizedBox(height: 16),
-              Flexible(
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      TextFormField(
-                        controller: nameArController,
-                        textAlign: TextAlign.right,
-                        decoration: InputDecoration(
-                          labelText: 'الاسم بالعربية',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
-                      ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: nameController,
-                        textAlign: TextAlign.right,
-                        decoration: InputDecoration(
-                          labelText: 'الاسم بالإنجليزية',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
-                      ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: bankController,
-                        textAlign: TextAlign.right,
-                        decoration: InputDecoration(
-                          labelText: 'رقم الحساب البنكي',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: ibanController,
-                        textAlign: TextAlign.right,
-                        decoration: InputDecoration(
-                          labelText: 'رقم الآيبان (IBAN)',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: colorController,
-                        textAlign: TextAlign.right,
-                        decoration: InputDecoration(
-                          labelText: 'اللون (Hex)',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
-                      ),
-                    ],
+        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+        child: PinnedBottomSheet(
+          title: academy == null ? 'إضافة أكاديمية جديدة' : 'تعديل الأكاديمية',
+          submitLabel: academy == null ? 'إضافة' : 'حفظ',
+          onSubmit: () {
+            if (formKey.currentState!.validate()) {
+              Navigator.pop(ctx, true);
+            }
+          },
+          body: Form(
+            key: formKey,
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                TextFormField(
+                  controller: nameArController,
+                  textAlign: TextAlign.right,
+                  decoration: InputDecoration(
+                    labelText: 'الاسم بالعربية',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: nameController,
+                  textAlign: TextAlign.right,
+                  decoration: InputDecoration(
+                    labelText: 'الاسم بالإنجليزية',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  ),
+                  validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: bankController,
+                  textAlign: TextAlign.right,
+                  decoration: InputDecoration(
+                    labelText: 'رقم الحساب البنكي',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
                 ),
-              ),
-              const SizedBox(height: 16),
-              Row(
-                mainAxisAlignment: MainAxisAlignment.end,
-                children: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(ctx, false),
-                    child: const Text('إلغاء'),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: ibanController,
+                  textAlign: TextAlign.right,
+                  decoration: InputDecoration(
+                    labelText: 'رقم الآيبان (IBAN)',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                  const SizedBox(width: 8),
-                  ElevatedButton(
-                    onPressed: () {
-                      if (formKey.currentState!.validate()) {
-                        Navigator.pop(ctx, true);
-                      }
-                    },
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: AppColors.primary,
-                      foregroundColor: Colors.white,
-                    ),
-                    child: Text(academy == null ? 'إضافة' : 'حفظ'),
+                ),
+                const SizedBox(height: 12),
+                TextFormField(
+                  controller: colorController,
+                  textAlign: TextAlign.right,
+                  decoration: InputDecoration(
+                    labelText: 'اللون (Hex)',
+                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                   ),
-                ],
-              ),
-              const SizedBox(height: 16),
-            ],
+                  validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
+                ),
+              ],
+            ),
           ),
         ),
       ),
@@ -244,28 +208,23 @@ class _AcademiesScreenState extends ConsumerState<AcademiesScreen> {
       isScrollControlled: true,
       backgroundColor: Theme.of(context).brightness == Brightness.dark ? AppColors.darkCard : Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) => Padding(
-        padding: EdgeInsets.only(
-          bottom: MediaQuery.of(ctx).viewInsets.bottom,
-          left: 16,
-          right: 16,
-          top: 24,
-        ),
-        child: Form(
-          key: formKey,
-          child: SingleChildScrollView(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+        child: PinnedBottomSheet(
+          title: sport == null ? 'إضافة رياضة جديدة' : 'تعديل الرياضة',
+          submitLabel: sport == null ? 'إضافة' : 'حفظ',
+          onSubmit: () {
+            if (formKey.currentState!.validate()) {
+              Navigator.pop(ctx, true);
+            }
+          },
+          body: Form(
+            key: formKey,
             child: Column(
-              mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(
-                  sport == null ? 'إضافة رياضة جديدة' : 'تعديل الرياضة',
-                  style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                  textAlign: TextAlign.right,
-                ),
-                const SizedBox(height: 16),
                 TextFormField(
                   controller: nameArController,
                   textAlign: TextAlign.right,
@@ -285,30 +244,6 @@ class _AcademiesScreenState extends ConsumerState<AcademiesScreen> {
                   ),
                   validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
                 ),
-                const SizedBox(height: 24),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.end,
-                  children: [
-                    TextButton(
-                      onPressed: () => Navigator.pop(ctx, false),
-                      child: const Text('إلغاء'),
-                    ),
-                    const SizedBox(width: 8),
-                    ElevatedButton(
-                      onPressed: () {
-                        if (formKey.currentState!.validate()) {
-                          Navigator.pop(ctx, true);
-                        }
-                      },
-                      style: ElevatedButton.styleFrom(
-                        backgroundColor: AppColors.primary,
-                        foregroundColor: Colors.white,
-                      ),
-                      child: Text(sport == null ? 'إضافة' : 'حفظ'),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 24),
               ],
             ),
           ),
@@ -361,161 +296,130 @@ class _AcademiesScreenState extends ConsumerState<AcademiesScreen> {
       isScrollControlled: true,
       backgroundColor: Theme.of(context).brightness == Brightness.dark ? AppColors.darkCard : Colors.white,
       shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (ctx) {
         final trainersAsync = ref.watch(trainersProvider);
-        return StatefulBuilder(
-          builder: (context, setDlgState) {
-            return Padding(
-              padding: EdgeInsets.only(
-                bottom: MediaQuery.of(ctx).viewInsets.bottom,
-                left: 16,
-                right: 16,
-                top: 24,
-              ),
-              child: Form(
+        return Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          child: PinnedBottomSheet(
+            title: group == null ? 'إضافة مجموعة جديدة' : 'تعديل المجموعة',
+            submitLabel: group == null ? 'إضافة' : 'حفظ',
+            onSubmit: () {
+              if (formKey.currentState!.validate()) {
+                if (selectedDays.isEmpty) {
+                  ScaffoldMessenger.of(context).showSnackBar(
+                    const SnackBar(content: Text('يرجى اختيار يوم واحد على الأقل')),
+                  );
+                  return;
+                }
+                Navigator.pop(ctx, true);
+              }
+            },
+            body: StatefulBuilder(
+              builder: (context, setDlgState) => Form(
                 key: formKey,
-                child: SingleChildScrollView(
-                  child: Column(
-                    mainAxisSize: MainAxisSize.min,
-                    crossAxisAlignment: CrossAxisAlignment.stretch,
-                    children: [
-                      Text(
-                        group == null ? 'إضافة مجموعة جديدة' : 'تعديل المجموعة',
-                        style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                        textAlign: TextAlign.right,
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    TextFormField(
+                      controller: nameArController,
+                      textAlign: TextAlign.right,
+                      decoration: InputDecoration(
+                        labelText: 'الاسم بالعربية',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      const SizedBox(height: 16),
-                      TextFormField(
-                        controller: nameArController,
-                        textAlign: TextAlign.right,
-                        decoration: InputDecoration(
-                          labelText: 'الاسم بالعربية',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
+                      validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
+                    ),
+                    const SizedBox(height: 12),
+                    TextFormField(
+                      controller: nameController,
+                      textAlign: TextAlign.right,
+                      decoration: InputDecoration(
+                        labelText: 'الاسم بالإنجليزية',
+                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                       ),
-                      const SizedBox(height: 12),
-                      TextFormField(
-                        controller: nameController,
-                        textAlign: TextAlign.right,
-                        decoration: InputDecoration(
-                          labelText: 'الاسم بالإنجليزية',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
-                      ),
-                      const SizedBox(height: 12),
-                      trainersAsync.when(
-                        data: (list) {
-                          return DropdownButtonFormField<int?>(
-                            value: selectedCoachId,
+                      validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
+                    ),
+                    const SizedBox(height: 12),
+                    trainersAsync.when(
+                      data: (list) {
+                        return DropdownButtonFormField<int?>(
+                          value: selectedCoachId,
+                          decoration: InputDecoration(
+                            labelText: 'المدرب',
+                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                          ),
+                          dropdownColor: Theme.of(context).brightness == Brightness.dark ? AppColors.darkCard : Colors.white,
+                          items: [
+                            const DropdownMenuItem(value: null, child: Text('بدون مدرب')),
+                            ...list.map((c) => DropdownMenuItem(value: c.id, child: Text(c.fullNameAr))),
+                          ],
+                          onChanged: (v) => setDlgState(() => selectedCoachId = v),
+                        );
+                      },
+                      loading: () => const SizedBox.shrink(),
+                      error: (e, s) => const SizedBox.shrink(),
+                    ),
+                    const SizedBox(height: 12),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: TextFormField(
+                            controller: startTimeController,
+                            textAlign: TextAlign.right,
                             decoration: InputDecoration(
-                              labelText: 'المدرب',
+                              labelText: 'وقت البداية',
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                             ),
-                            dropdownColor: Theme.of(context).brightness == Brightness.dark ? AppColors.darkCard : Colors.white,
-                            items: [
-                              const DropdownMenuItem(value: null, child: Text('بدون مدرب')),
-                              ...list.map((c) => DropdownMenuItem(value: c.id, child: Text(c.fullNameAr))),
-                            ],
-                            onChanged: (v) => setDlgState(() => selectedCoachId = v),
-                          );
-                        },
-                        loading: () => const SizedBox.shrink(),
-                        error: (e, s) => const SizedBox.shrink(),
-                      ),
-                      const SizedBox(height: 12),
-                      Row(
-                        children: [
-                          Expanded(
-                            child: TextFormField(
-                              controller: startTimeController,
-                              textAlign: TextAlign.right,
-                              decoration: InputDecoration(
-                                labelText: 'وقت البداية',
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                              ),
-                              validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
+                            validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
+                          ),
+                        ),
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: TextFormField(
+                            controller: endTimeController,
+                            textAlign: TextAlign.right,
+                            decoration: InputDecoration(
+                              labelText: 'وقت النهاية',
+                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                             ),
+                            validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
                           ),
-                          const SizedBox(width: 8),
-                          Expanded(
-                            child: TextFormField(
-                              controller: endTimeController,
-                              textAlign: TextAlign.right,
-                              decoration: InputDecoration(
-                                labelText: 'وقت النهاية',
-                                border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                              ),
-                              validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 12),
-                      const Text(
-                        'أيام التدريب',
-                        style: TextStyle(fontSize: 12, color: Colors.grey),
-                        textAlign: TextAlign.right,
-                      ),
-                      const SizedBox(height: 8),
-                      Wrap(
-                        spacing: 8,
-                        children: _weekDays.map((day) {
-                          final isChecked = selectedDays.contains(day['value']);
-                          return FilterChip(
-                            label: Text(day['label']!),
-                            selected: isChecked,
-                            onSelected: (val) {
-                              setDlgState(() {
-                                if (val) {
-                                  selectedDays.add(day['value']!);
-                                } else {
-                                  selectedDays.remove(day['value']!);
-                                }
-                              });
-                            },
-                          );
-                        }).toList(),
-                      ),
-                      const SizedBox(height: 24),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          TextButton(
-                            onPressed: () => Navigator.pop(ctx, false),
-                            child: const Text('إلغاء'),
-                          ),
-                          const SizedBox(width: 8),
-                          ElevatedButton(
-                            onPressed: () {
-                              if (formKey.currentState!.validate()) {
-                                if (selectedDays.isEmpty) {
-                                  ScaffoldMessenger.of(context).showSnackBar(
-                                    const SnackBar(content: Text('يرجى اختيار يوم واحد على الأقل')),
-                                  );
-                                  return;
-                                }
-                                Navigator.pop(ctx, true);
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 12),
+                    const Text(
+                      'أيام التدريب',
+                      style: TextStyle(fontSize: 12, color: Colors.grey),
+                      textAlign: TextAlign.right,
+                    ),
+                    const SizedBox(height: 8),
+                    Wrap(
+                      spacing: 8,
+                      children: _weekDays.map((day) {
+                        final isChecked = selectedDays.contains(day['value']);
+                        return FilterChip(
+                          label: Text(day['label']!),
+                          selected: isChecked,
+                          onSelected: (val) {
+                            setDlgState(() {
+                              if (val) {
+                                selectedDays.add(day['value']!);
+                              } else {
+                                selectedDays.remove(day['value']!);
                               }
-                            },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: AppColors.primary,
-                              foregroundColor: Colors.white,
-                            ),
-                            child: Text(group == null ? 'إضافة' : 'حفظ'),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 24),
-                    ],
-                  ),
+                            });
+                          },
+                        );
+                      }).toList(),
+                    ),
+                  ],
                 ),
               ),
-            );
-          },
+            ),
+          ),
         );
       },
     );

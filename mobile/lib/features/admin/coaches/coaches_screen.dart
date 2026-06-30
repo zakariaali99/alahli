@@ -8,6 +8,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/app_error_widget.dart';
 import '../../../core/widgets/empty_state.dart';
+import '../../../core/widgets/form_bottom_sheet.dart';
 import '../../../core/widgets/loading_shimmer.dart';
 import '../../../core/widgets/staggered_list_item.dart';
 import '../../../core/models/trainer_model.dart';
@@ -89,7 +90,7 @@ class _CoachesScreenState extends ConsumerState<CoachesScreen> {
     final passwordController = TextEditingController();
     bool isActive = coach?.isActive ?? true;
     File? selectedImage;
-    bool isSubmitting = false;
+    bool submitting = false;
 
     final formKey = GlobalKey<FormState>();
     final isDark = Theme.of(context).brightness == Brightness.dark;
@@ -101,28 +102,63 @@ class _CoachesScreenState extends ConsumerState<CoachesScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (ctx) => StatefulBuilder(
-        builder: (context, setDlgState) => Padding(
-          padding: EdgeInsets.only(
-            bottom: MediaQuery.of(ctx).viewInsets.bottom,
-            left: 20,
-            right: 20,
-            top: 24,
-          ),
-          child: Form(
-            key: formKey,
-            child: SingleChildScrollView(
+      builder: (ctx) => Padding(
+        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+        child: PinnedBottomSheet(
+          title: coach == null ? 'إضافة مدرب جديد' : 'تعديل بيانات المدرب',
+          submitLabel: coach == null ? 'إضافة المدرب' : 'حفظ التعديلات',
+          onSubmit: () async {
+            if (submitting) return;
+            if (!formKey.currentState!.validate()) return;
+            submitting = true;
+            try {
+              final map = {
+                'first_name_ar': firstNameController.text.trim(),
+                'last_name_ar': lastNameController.text.trim(),
+                'phone': phoneController.text.trim().toWesternDigits(),
+                'role': 'trainer',
+                'is_active': isActive,
+              };
+              if (passwordController.text.isNotEmpty) {
+                map['password'] = passwordController.text;
+              }
+              if (selectedImage != null) {
+                map['photo'] = await MultipartFile.fromFile(selectedImage!.path);
+              }
+              if (!context.mounted) return;
+              final formData = FormData.fromMap(map);
+
+              if (coach == null) {
+                await ref.read(trainerRepositoryProvider).createTrainer(formData);
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('تم إضافة المدرب بنجاح')),
+                );
+              } else {
+                await ref.read(trainerRepositoryProvider).updateTrainer(coach.id, formData);
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('تم تحديث المدرب بنجاح')),
+                );
+              }
+              ref.invalidate(trainersProvider);
+              Navigator.pop(ctx);
+            } catch (e) {
+              if (context.mounted) {
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text('خطأ: $e')),
+                );
+              }
+            } finally {
+              submitting = false;
+            }
+          },
+          body: StatefulBuilder(
+            builder: (context, setDlgState) => Form(
+              key: formKey,
               child: Column(
-                mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  Text(
-                    coach == null ? 'إضافة مدرب جديد' : 'تعديل بيانات المدرب',
-                    style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                    textAlign: TextAlign.right,
-                  ),
-                  const SizedBox(height: 16),
-                  
                   // Photo Selection
                   Center(
                     child: Stack(
@@ -160,7 +196,6 @@ class _CoachesScreenState extends ConsumerState<CoachesScreen> {
                     ),
                   ),
                   const SizedBox(height: 16),
-
                   Row(
                     children: [
                       Expanded(
@@ -226,78 +261,6 @@ class _CoachesScreenState extends ConsumerState<CoachesScreen> {
                     onChanged: (val) => setDlgState(() => isActive = val),
                     activeColor: AppColors.secondary,
                   ),
-                  const SizedBox(height: 24),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      TextButton(
-                        onPressed: isSubmitting ? null : () => Navigator.pop(ctx),
-                        child: const Text('إلغاء'),
-                      ),
-                      const SizedBox(width: 10),
-                      ElevatedButton(
-                        onPressed: isSubmitting
-                            ? null
-                            : () async {
-                                if (!formKey.currentState!.validate()) return;
-                                setDlgState(() => isSubmitting = true);
-                                try {
-                                  final map = {
-                                    'first_name_ar': firstNameController.text.trim(),
-                                    'last_name_ar': lastNameController.text.trim(),
-                                    'phone': phoneController.text.trim().toWesternDigits(),
-                                    'role': 'trainer',
-                                    'is_active': isActive,
-                                  };
-                                  if (passwordController.text.isNotEmpty) {
-                                    map['password'] = passwordController.text;
-                                  }
-                                  if (selectedImage != null) {
-                                    map['photo'] = await MultipartFile.fromFile(selectedImage!.path);
-                                  }
-                                  if (!context.mounted) return;
-                                  final formData = FormData.fromMap(map);
-
-                                  if (coach == null) {
-                                    await ref.read(trainerRepositoryProvider).createTrainer(formData);
-                                    if (!context.mounted) return;
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('تم إضافة المدرب بنجاح')),
-                                    );
-                                  } else {
-                                    await ref.read(trainerRepositoryProvider).updateTrainer(coach.id, formData);
-                                    if (!context.mounted) return;
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      const SnackBar(content: Text('تم تحديث المدرب بنجاح')),
-                                    );
-                                  }
-                                  ref.invalidate(trainersProvider);
-                                  Navigator.pop(ctx);
-                                } catch (e) {
-                                  if (context.mounted) {
-                                    ScaffoldMessenger.of(context).showSnackBar(
-                                      SnackBar(content: Text('خطأ: $e')),
-                                    );
-                                  }
-                                } finally {
-                                  setDlgState(() => isSubmitting = false);
-                                }
-                              },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: AppColors.primary,
-                          foregroundColor: Colors.white,
-                        ),
-                        child: isSubmitting
-                            ? const SizedBox(
-                                width: 20,
-                                height: 20,
-                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                              )
-                            : Text(coach == null ? 'إضافة المدرب' : 'حفظ التعديلات'),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 24),
                 ],
               ),
             ),
