@@ -25,7 +25,9 @@ class LoginRateThrottle(AnonRateThrottle):
 
 
 class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.all().order_by("-id")
+    queryset = User.objects.filter(
+        role__in=["super_admin", "reception", "academy_manager", "trainer", "viewer"]
+    ).order_by("-id")
     permission_classes = [IsReceptionOrAbove]
     filterset_fields = ["role"]
     search_fields = ["phone", "full_name_ar"]

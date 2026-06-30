@@ -41,23 +41,21 @@ class _StatusBadgeState extends State<StatusBadge> with SingleTickerProviderStat
     Color bgColor;
     Color fgColor;
     String label;
-    bool isActive = false;
 
     switch (widget.status.toLowerCase()) {
       case 'active':
       case 'approved':
-        bgColor = AppColors.secondaryContainer;
+        bgColor = AppColors.secondary.withValues(alpha: 0.15);
         fgColor = AppColors.secondary;
         label = 'نشط';
-        isActive = true;
         break;
       case 'expired':
-        bgColor = AppColors.destructive.withValues(alpha: 0.1);
+        bgColor = AppColors.destructive.withValues(alpha: 0.15);
         fgColor = AppColors.destructive;
         label = 'منتهي';
         break;
       case 'inactive':
-        bgColor = AppColors.border.withValues(alpha: 0.2);
+        bgColor = AppColors.mutedForeground.withValues(alpha: 0.15);
         fgColor = AppColors.mutedForeground;
         label = 'غير نشط';
         break;
@@ -67,7 +65,7 @@ class _StatusBadgeState extends State<StatusBadge> with SingleTickerProviderStat
         label = 'معلق';
         break;
       case 'rejected':
-        bgColor = AppColors.mutedForeground.withValues(alpha: 0.1);
+        bgColor = AppColors.mutedForeground.withValues(alpha: 0.15);
         fgColor = AppColors.mutedForeground;
         label = 'مرفوض';
         break;
@@ -80,18 +78,11 @@ class _StatusBadgeState extends State<StatusBadge> with SingleTickerProviderStat
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
       decoration: BoxDecoration(
         color: isDark ? bgColor.withValues(alpha: 0.1) : bgColor,
         borderRadius: BorderRadius.circular(20),
-        border: isActive 
-            ? null 
-            : Border.all(color: fgColor.withValues(alpha: 0.3), width: 1),
-        gradient: isActive && !isDark ? LinearGradient(
-          colors: [bgColor, bgColor.withValues(alpha: 0.5)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ) : null,
+        border: Border.all(color: fgColor.withValues(alpha: 0.1), width: 1),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -111,7 +102,7 @@ class _StatusBadgeState extends State<StatusBadge> with SingleTickerProviderStat
           Text(
             label,
             style: TextStyle(
-              color: isDark && isActive ? AppColors.secondaryContainer : fgColor,
+              color: fgColor,
               fontSize: 11,
               fontWeight: FontWeight.w800,
               letterSpacing: 0.2,

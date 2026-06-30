@@ -246,9 +246,6 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('إدارة الكادر الإداري والموظفين', style: TextStyle(fontWeight: FontWeight.bold)),
-      ),
       floatingActionButton: FloatingActionButton(
         onPressed: _showAddStaffDialog,
         backgroundColor: AppColors.primary,
@@ -257,6 +254,20 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
       ),
       body: Column(
         children: [
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20.0, vertical: 16.0),
+            child: Row(
+              children: [
+                Text(
+                  'إدارة الكادر الإداري والموظفين',
+                  style: TextStyle(
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
           // Filter & Search bar
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
@@ -343,8 +354,11 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
     return ListView.builder(
       controller: _scrollController,
       padding: const EdgeInsets.all(16),
-      itemCount: state.items.length + (state.hasNext ? 1 : 0),
+      itemCount: state.items.length + (state.hasNext ? 1 : 0) + 1,
       itemBuilder: (context, index) {
+        if (index == state.items.length + (state.hasNext ? 1 : 0)) {
+          return const SizedBox(height: 100);
+        }
         if (index == state.items.length) {
           return const Padding(
             padding: EdgeInsets.all(16),

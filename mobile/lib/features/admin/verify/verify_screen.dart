@@ -81,30 +81,40 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('الفحص السريع والتحقق من الهوية', style: TextStyle(fontWeight: FontWeight.bold)),
-        actions: [
-          IconButton(
-            icon: Icon(_isScanning ? Icons.videocam_off : Icons.videocam),
-            onPressed: () {
-              setState(() {
-                _isScanning = !_isScanning;
-                if (_isScanning) {
-                  _scannerController.start();
-                } else {
-                  _scannerController.stop();
-                }
-              });
-            },
-          ),
-        ],
-      ),
       body: SingleChildScrollView(
         child: Padding(
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.only(left: 20.0, right: 20.0, top: 24.0, bottom: 124.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const Expanded(
+                    child: Text(
+                      'الفحص السريع والتحقق من الهوية',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                  IconButton(
+                    icon: Icon(_isScanning ? Icons.videocam_off : Icons.videocam),
+                    onPressed: () {
+                      setState(() {
+                        _isScanning = !_isScanning;
+                        if (_isScanning) {
+                          _scannerController.start();
+                        } else {
+                          _scannerController.stop();
+                        }
+                      });
+                    },
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
               // Scanner container
               if (_isScanning) ...[
                 Container(

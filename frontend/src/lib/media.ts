@@ -1,4 +1,4 @@
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000/api"
+import { API_BASE } from "./api"
 
 export function toAbsoluteMediaUrl(url?: string | null): string | null {
   if (!url) return null

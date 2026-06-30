@@ -18,6 +18,7 @@ import Reports from "@/pages/Reports"
 import Settings from "@/pages/Settings"
 import UserDashboardLayout from "@/pages/UserDashboardLayout"
 import SubscriptionPage from "@/pages/SubscriptionPage"
+import UserSubscriptions from "@/pages/UserSubscriptions"
 import AthletePage from "@/pages/AthletePage"
 import NewAthletes from "@/pages/admin/NewAthletes"
 import AcademyManagement from "@/pages/admin/AcademyManagement"
@@ -64,7 +65,8 @@ export default function App() {
               </Route>
 
               <Route path="/user" element={<UserDashboardLayout />}>
-                <Route index element={<SubscriptionPage />} />
+                <Route index element={<UserSubscriptions />} />
+                <Route path="subscribe" element={<SubscriptionPage />} />
                 <Route path="athlete" element={<AthletePage />} />
               </Route>
 

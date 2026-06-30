@@ -1,4 +1,7 @@
-const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000/api"
+if (!import.meta.env.VITE_API_URL) {
+  console.warn("VITE_API_URL not set — using localhost fallback. Set it in .env or build arg for production.")
+}
+export const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000/api"
 
 interface TokenStore {
   access: string

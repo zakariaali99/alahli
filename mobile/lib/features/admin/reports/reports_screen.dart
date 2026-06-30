@@ -42,9 +42,6 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
     final distributionAsync = ref.watch(departmentDistributionProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('التقارير المالية والنمو', style: TextStyle(fontWeight: FontWeight.bold)),
-      ),
       body: RefreshIndicator(
         onRefresh: () async {
           ref.invalidate(dashboardStatsProvider(academyIdFilter));
@@ -53,10 +50,18 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.only(left: 20.0, right: 20.0, top: 24.0, bottom: 124.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              const Text(
+                'التقارير المالية والنمو',
+                style: TextStyle(
+                  fontSize: 20,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 20),
               // Filters dropdown (super admin)
               if (canFilter) ...[
                 deptsAsync.when(

@@ -25,6 +25,8 @@ import '../models/dashboard_stats.dart';
 import '../helpers/secure_storage.dart';
 import '../services/push_service.dart';
 import '../providers/paginated_providers.dart';
+import '../repositories/preferences_repository.dart';
+import '../models/user_preference_model.dart';
 
 final apiClientProvider = Provider<ApiClient>((ref) {
   final client = ApiClient(baseUrl: ApiEndpoints.baseUrl);
@@ -80,6 +82,49 @@ final pushServiceProvider = Provider<PushService>((ref) {
   return PushService();
 });
 
+final preferencesRepositoryProvider = Provider<PreferencesRepository>((ref) {
+  return PreferencesRepository(apiClient: ref.watch(apiClientProvider));
+});
+
+final preferencesProvider = StateNotifierProvider<PreferencesNotifier, UserPreferenceModel?>((ref) {
+  return PreferencesNotifier(
+    repository: ref.watch(preferencesRepositoryProvider),
+  );
+});
+
+class PreferencesNotifier extends StateNotifier<UserPreferenceModel?> {
+  final PreferencesRepository repository;
+
+  PreferencesNotifier({required this.repository}) : super(null) {
+    fetchPreferences();
+  }
+
+  Future<void> fetchPreferences() async {
+    try {
+      final prefs = await repository.fetchPreferences();
+      state = prefs;
+    } catch (_) {}
+  }
+
+  Future<void> updatePreference({
+    bool? notificationsEnabled,
+    bool? smsEnabled,
+    bool? emailEnabled,
+  }) async {
+    final updatedData = <String, dynamic>{};
+    if (notificationsEnabled != null) updatedData['notifications_enabled'] = notificationsEnabled;
+    if (smsEnabled != null) updatedData['sms_enabled'] = smsEnabled;
+    if (emailEnabled != null) updatedData['email_enabled'] = emailEnabled;
+
+    try {
+      final updated = await repository.updatePreferences(updatedData);
+      state = updated;
+    } catch (_) {
+      rethrow;
+    }
+  }
+}
+
 final authInitializedProvider = StateProvider<bool>((ref) => false);
 
 const adminRoles = {'super_admin', 'reception', 'academy_manager'};
@@ -107,10 +152,6 @@ class AuthNotifier extends StateNotifier<UserModel?> {
       authRepository.apiClient.setTokens(access: token, refresh: refresh);
       try {
         final user = await authRepository.getMe();
-        if (!adminRoles.contains(user.role)) {
-          clearSession();
-          return;
-        }
         state = user;
         await _registerPushToken();
       } catch (_) {
@@ -122,11 +163,6 @@ class AuthNotifier extends StateNotifier<UserModel?> {
 
   Future<void> login(String phone, String password, bool rememberMe) async {
     final user = await authRepository.login(phone: phone, password: password, rememberMe: rememberMe);
-
-    if (!adminRoles.contains(user.role)) {
-      await authRepository.logout();
-      throw Exception('عذراً، هذا التطبيق مخصص للإدارة فقط');
-    }
 
     state = user;
     ref.read(authInitializedProvider.notifier).state = true;

@@ -21,6 +21,11 @@ class SubscriptionPackage(models.Model):
     features = models.JSONField(default=list, blank=True)
     icon_name = models.CharField(max_length=100, blank=True, help_text="Icon identifier for frontend")
     color_class = models.CharField(max_length=100, blank=True, help_text="Tailwind or CSS class for styling")
+    department = models.ForeignKey(
+        "departments.Department", on_delete=models.CASCADE,
+        null=True, blank=True, related_name="packages",
+        help_text="Academy this package belongs to. Null = available to all academies.",
+    )
     is_active = models.BooleanField(default=True)
     order = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)

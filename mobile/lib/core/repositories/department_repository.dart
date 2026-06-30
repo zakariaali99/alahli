@@ -75,6 +75,49 @@ class DepartmentRepository {
     }
   }
 
+  Future<List<SportModel>> fetchSportsByDepartment(int departmentId) async {
+    try {
+      final res = await apiClient.dio.get(ApiEndpoints.sports, queryParameters: {'department': departmentId});
+      dynamic resultsList = res.data;
+      if (res.data is Map && res.data['results'] != null) {
+        resultsList = res.data['results'];
+      }
+      return asList(resultsList, (e) => SportModel.fromJson(asMap(e) ?? {})) ?? [];
+    } on DioException catch (e) {
+      throw Exception(e.response?.data?['detail'] ?? 'فشل تحميل رياضات الأكاديمية');
+    }
+  }
+
+  Future<SportModel> createSport(Map<String, dynamic> data) async {
+    try {
+      final res = await apiClient.dio.post(ApiEndpoints.sports, data: data);
+      final resData = asMap(res.data);
+      if (resData == null) throw Exception('فشل إنشاء الرياضة');
+      return SportModel.fromJson(resData);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data?['detail'] ?? 'فشل إضافة رياضة جديدة');
+    }
+  }
+
+  Future<SportModel> updateSport(int id, Map<String, dynamic> data) async {
+    try {
+      final res = await apiClient.dio.patch('${ApiEndpoints.sports}$id/', data: data);
+      final resData = asMap(res.data);
+      if (resData == null) throw Exception('فشل تعديل الرياضة');
+      return SportModel.fromJson(resData);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data?['detail'] ?? 'فشل تعديل الرياضة');
+    }
+  }
+
+  Future<void> deleteSport(int id) async {
+    try {
+      await apiClient.dio.delete('${ApiEndpoints.sports}$id/');
+    } on DioException catch (e) {
+      throw Exception(e.response?.data?['detail'] ?? 'فشل حذف الرياضة');
+    }
+  }
+
   Future<List<GroupModel>> fetchGroups() async {
     try {
       final res = await apiClient.dio.get(ApiEndpoints.groups);
@@ -85,6 +128,49 @@ class DepartmentRepository {
       return asList(resultsList, (e) => GroupModel.fromJson(asMap(e) ?? {})) ?? [];
     } on DioException catch (e) {
       throw Exception(e.response?.data?['detail'] ?? 'فشل تحميل المجموعات');
+    }
+  }
+
+  Future<List<GroupModel>> fetchGroupsBySport(int sportId) async {
+    try {
+      final res = await apiClient.dio.get(ApiEndpoints.groups, queryParameters: {'sport': sportId});
+      dynamic resultsList = res.data;
+      if (res.data is Map && res.data['results'] != null) {
+        resultsList = res.data['results'];
+      }
+      return asList(resultsList, (e) => GroupModel.fromJson(asMap(e) ?? {})) ?? [];
+    } on DioException catch (e) {
+      throw Exception(e.response?.data?['detail'] ?? 'فشل تحميل مجموعات الرياضة');
+    }
+  }
+
+  Future<GroupModel> createGroup(Map<String, dynamic> data) async {
+    try {
+      final res = await apiClient.dio.post(ApiEndpoints.groups, data: data);
+      final resData = asMap(res.data);
+      if (resData == null) throw Exception('فشل إنشاء المجموعة');
+      return GroupModel.fromJson(resData);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data?['detail'] ?? 'فشل إضافة مجموعة جديدة');
+    }
+  }
+
+  Future<GroupModel> updateGroup(int id, Map<String, dynamic> data) async {
+    try {
+      final res = await apiClient.dio.patch('${ApiEndpoints.groups}$id/', data: data);
+      final resData = asMap(res.data);
+      if (resData == null) throw Exception('فشل تعديل المجموعة');
+      return GroupModel.fromJson(resData);
+    } on DioException catch (e) {
+      throw Exception(e.response?.data?['detail'] ?? 'فشل تعديل المجموعة');
+    }
+  }
+
+  Future<void> deleteGroup(int id) async {
+    try {
+      await apiClient.dio.delete('${ApiEndpoints.groups}$id/');
+    } on DioException catch (e) {
+      throw Exception(e.response?.data?['detail'] ?? 'فشل حذف المجموعة');
     }
   }
 }

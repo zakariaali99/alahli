@@ -1,19 +1,38 @@
 import { useState, useEffect } from "react"
+import { useNavigate } from "react-router-dom"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { api } from "@/lib/api"
 import { extractResults } from "@/lib/response"
 import { useAuth } from "@/lib/auth"
+import { useRenewSubscription } from "@/lib/hooks/useSubscriptions"
+import { useQueryClient } from "@tanstack/react-query"
 import CameraCapture from "@/components/ui/camera-capture"
 import type { ParentAthlete, Subscription } from "@/lib/types"
-import { Users, Plus, User, Package } from "lucide-react"
+import { Users, Plus, User, Package, RefreshCw, Clock } from "lucide-react"
+
+const statusMap: Record<string, { label: string; cls: string }> = {
+  active: { label: "نشط", cls: "bg-green-100 text-green-700 border border-green-200" },
+  expired: { label: "منتهي", cls: "bg-red-100 text-red-700 border border-red-200" },
+  pending: { label: "قيد الانتظار", cls: "bg-amber-100 text-amber-700 border border-amber-200" },
+  rejected: { label: "مرفوض", cls: "bg-red-100 text-red-700 border border-red-200" },
+}
+
+const formatDate = (d: string) =>
+  new Date(d).toLocaleDateString("ar-SA-u-nu-latn", { year: "numeric", month: "numeric", day: "numeric" })
 
 export default function AthletePage() {
   const { user } = useAuth()
+  const navigate = useNavigate()
+  const queryClient = useQueryClient()
+  const renewMut = useRenewSubscription()
   const [athletes, setAthletes] = useState<ParentAthlete[]>([])
-  const [mySubscription, setMySubscription] = useState<Subscription | null>(null)
+  const [subscriptions, setSubscriptions] = useState<Subscription[]>([])
+  const [parentAthleteSubs, setParentAthleteSubs] = useState<Record<number, Subscription[]>>({})
   const [loading, setLoading] = useState(true)
+  const [renewingId, setRenewingId] = useState<number | null>(null)
+
   const [showAddForm, setShowAddForm] = useState(false)
   const [addForm, setAddForm] = useState({ full_name: "", phone: "", password: "Athlete@123", birth_day: "", birth_month: "", birth_year: "", weight: "", height: "" })
   const [photo, setPhoto] = useState<string | null>(null)
@@ -23,27 +42,59 @@ export default function AthletePage() {
   const isParent = user?.role === "parent"
 
   useEffect(() => {
-    void (isParent ? fetchAthletes() : fetchMySubscription())
+    void (isParent ? fetchParentData() : fetchMyData())
   }, [isParent])
 
-  const fetchAthletes = async () => {
+  const fetchMyData = async () => {
     setPageError("")
     try {
-      const res = await api.get<{ results: ParentAthlete[] } | ParentAthlete[]>("/athletes/parent/athletes/")
-      setAthletes(extractResults(res))
+      const res = await api.get<{ results: Subscription[] } | Subscription[]>("/subscriptions/", { page_size: "50" })
+      setSubscriptions(extractResults(res))
+    } catch {
+      setPageError("تعذر تحميل بيانات الاشتراك")
+    } finally { setLoading(false) }
+  }
+
+  const fetchParentData = async () => {
+    setPageError("")
+    try {
+      const athletesRes = await api.get<{ results: ParentAthlete[] } | ParentAthlete[]>("/athletes/parent/athletes/")
+      const items = extractResults(athletesRes)
+      setAthletes(items)
+
+      const map: Record<number, Subscription[]> = {}
+      for (const a of items) {
+        try {
+          const subRes = await api.get<{ results: Subscription[] } | Subscription[]>("/subscriptions/", {
+            athlete: String(a.athlete),
+            page_size: "20",
+          })
+          map[a.athlete] = extractResults(subRes)
+        } catch {
+          map[a.athlete] = []
+        }
+      }
+      setParentAthleteSubs(map)
     } catch {
       setPageError("تعذر تحميل الرياضيين")
     } finally { setLoading(false) }
   }
 
-  const fetchMySubscription = async () => {
-    setPageError("")
+  const handleRenew = async (sub: Subscription) => {
+    setRenewingId(sub.id)
     try {
-      const res = await api.get<{ results: Subscription[] } | Subscription[]>("/subscriptions/")
-      setMySubscription(extractResults(res)[0] || null)
+      await renewMut.mutateAsync({ id: sub.id, months: 1, amount: sub.amount })
+      await queryClient.invalidateQueries({ queryKey: ["subscriptions"] })
+      if (isParent) {
+        await fetchParentData()
+      } else {
+        await fetchMyData()
+      }
     } catch {
-      setPageError("تعذر تحميل بيانات الاشتراك")
-    } finally { setLoading(false) }
+      setPageError("فشل التجديد")
+    } finally {
+      setRenewingId(null)
+    }
   }
 
   const handleAddAthlete = async (e: React.FormEvent) => {
@@ -67,7 +118,7 @@ export default function AthletePage() {
       setShowAddForm(false)
       setAddForm({ full_name: "", phone: "", password: "Athlete@123", birth_day: "", birth_month: "", birth_year: "", weight: "", height: "" })
       setPhoto(null)
-      fetchAthletes()
+      fetchParentData()
     } catch (err: any) {
       setAddError(err.message || "فشل إضافة رياضي")
     }
@@ -79,12 +130,7 @@ export default function AthletePage() {
     return (
       <div className="rounded-2xl border border-destructive/20 bg-destructive/5 p-4 text-center">
         <p className="text-sm text-destructive">{pageError}</p>
-        <Button
-          className="mt-3"
-          onClick={() => void (isParent ? fetchAthletes() : fetchMySubscription())}
-          size="sm"
-          variant="outline"
-        >
+        <Button className="mt-3" onClick={() => void (isParent ? fetchParentData() : fetchMyData())} size="sm" variant="outline">
           إعادة المحاولة
         </Button>
       </div>
@@ -137,25 +183,79 @@ export default function AthletePage() {
           </motion.form>
         )}
 
-        <div className="space-y-3">
+        <div className="space-y-4">
           {athletes.length === 0 && !showAddForm && (
             <div className="text-center py-12 text-muted-foreground">
               <Users className="w-12 h-12 mx-auto mb-2 opacity-50" />
               <p>لم تقم بإضافة أي رياضي بعد</p>
             </div>
           )}
-          {athletes.map((a) => (
-            <div key={a.id} className="bg-card border border-border rounded-2xl p-4 flex items-center gap-3">
-              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
-                <User className="w-5 h-5 text-primary" />
+          {athletes.map((a) => {
+            const subs = parentAthleteSubs[a.athlete] || []
+            const activeSub = subs.find((s) => s.status === "active")
+            return (
+              <div key={a.id} className="bg-card border border-border rounded-2xl p-4 space-y-3">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
+                      <User className="w-5 h-5 text-primary" />
+                    </div>
+                    <div>
+                      <p className="font-semibold">{a.athlete_name}</p>
+                      <p className="text-xs text-muted-foreground">{a.athlete_membership}</p>
+                    </div>
+                  </div>
+                  {activeSub ? (
+                    <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${statusMap[activeSub.status]?.cls}`}>
+                      {statusMap[activeSub.status]?.label}
+                    </span>
+                  ) : (
+                    <span className="text-xs text-muted-foreground">لا يوجد اشتراك</span>
+                  )}
+                </div>
+
+                {subs.length > 0 ? (
+                  <div className="space-y-2">
+                    {subs.map((sub) => (
+                      <div key={sub.id} className="bg-surface-container-low rounded-xl p-3 flex items-center justify-between">
+                        <div className="flex-1">
+                          <p className="text-sm font-medium">{sub.package_name}</p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatDate(sub.start_date)} - {formatDate(sub.end_date)}
+                          </p>
+                          {sub.status === "active" && (
+                            <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                              <Clock className="w-3 h-3" />
+                              متبقي {Math.max(0, Math.ceil((new Date(sub.end_date).getTime() - Date.now()) / (1000 * 60 * 60 * 24)))} يوم
+                            </p>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold">{Number(sub.amount).toLocaleString("ar-SA-u-nu-latn")} د.ل</span>
+                          {(sub.status === "active" || sub.status === "expired") && (
+                            <Button
+                              size="sm"
+                              variant="ghost"
+                              disabled={renewingId === sub.id}
+                              onClick={() => void handleRenew(sub)}
+                              className="text-xs shrink-0"
+                            >
+                              <RefreshCw className={`w-3 h-3 ml-1 ${renewingId === sub.id ? "animate-spin" : ""}`} />
+                              تجديد
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <Button size="sm" variant="outline" className="w-full text-xs" onClick={() => navigate("/user/subscribe")}>
+                    <Plus className="w-3.5 h-3.5 ml-1" /> تسجيل اشتراك
+                  </Button>
+                )}
               </div>
-              <div className="flex-1">
-                <p className="font-semibold">{a.athlete_name}</p>
-                <p className="text-xs text-muted-foreground">{a.athlete_membership}</p>
-              </div>
-              <Package className="w-4 h-4 text-muted-foreground" />
-            </div>
-          ))}
+            )
+          })}
         </div>
       </div>
     )
@@ -180,15 +280,51 @@ export default function AthletePage() {
         {user?.athlete_detail?.department_name && (
           <p className="text-xs text-muted-foreground mt-1">{user.athlete_detail.department_name}</p>
         )}
-        {mySubscription && (
-          <div className="mt-4 p-3 bg-surface-container-low rounded-xl">
-            <p className="text-sm font-medium">{mySubscription.package_name}</p>
-            <p className={`text-xs mt-1 ${mySubscription.status === "active" ? "text-green-600" : "text-amber-600"}`}>
-              {mySubscription.status === "active" ? "نشط" : mySubscription.status === "pending" ? "قيد الانتظار" : "منتهي"}
-            </p>
-          </div>
-        )}
       </div>
+
+      {subscriptions.length > 0 && (
+        <div className="mt-5">
+          <h3 className="text-md font-bold mb-3">سجل الاشتراكات</h3>
+          <div className="space-y-3">
+            {subscriptions.map((sub) => {
+              const status = statusMap[sub.status] || { label: sub.status, cls: "" }
+              return (
+                <div key={sub.id} className="bg-card border border-border rounded-2xl p-4 space-y-2">
+                  <div className="flex items-center justify-between">
+                    <p className="font-bold">{sub.package_name}</p>
+                    <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${status.cls}`}>
+                      {status.label}
+                    </span>
+                  </div>
+                  <div className="grid grid-cols-2 gap-2 text-xs text-muted-foreground">
+                    <div>
+                      <span className="block">من {formatDate(sub.start_date)}</span>
+                    </div>
+                    <div>
+                      <span className="block">إلى {formatDate(sub.end_date)}</span>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between pt-1">
+                    <span className="text-sm font-bold">{Number(sub.amount).toLocaleString("ar-SA-u-nu-latn")} د.ل</span>
+                    {(sub.status === "active" || sub.status === "expired") && (
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        disabled={renewingId === sub.id}
+                        onClick={() => void handleRenew(sub)}
+                        className="text-xs gap-1"
+                      >
+                        <RefreshCw className={`w-3.5 h-3.5 ${renewingId === sub.id ? "animate-spin" : ""}`} />
+                        {renewingId === sub.id ? "جاري..." : "تجديد"}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )
+            })}
+          </div>
+        </div>
+      )}
     </div>
   )
 }

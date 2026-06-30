@@ -14,6 +14,10 @@ class RegistrationModel {
   final String? athleteName;
   final String? athletePhoto;
   final String? athleteMembershipNumber;
+  final String? athleteDepartmentName;
+  final bool hasParent;
+  final String? parentName;
+  final String? parentPhone;
 
   RegistrationModel({
     required this.id,
@@ -29,6 +33,10 @@ class RegistrationModel {
     this.athleteName,
     this.athletePhoto,
     this.athleteMembershipNumber,
+    this.athleteDepartmentName,
+    this.hasParent = false,
+    this.parentName,
+    this.parentPhone,
   });
 
   factory RegistrationModel.fromJson(Map<String, dynamic> json) {
@@ -46,6 +54,10 @@ class RegistrationModel {
       athleteName: asString(json['athlete_name']),
       athletePhoto: asString(json['athlete_photo']),
       athleteMembershipNumber: asString(json['athlete_membership_number']),
+      athleteDepartmentName: asString(json['athlete_department_name']),
+      hasParent: asBool(json['has_parent']) ?? false,
+      parentName: asString(json['parent_name']),
+      parentPhone: asString(json['parent_phone']),
     );
   }
 

@@ -19,6 +19,7 @@ interface User {
     phone: string
     birth_date: string
     gender: "male" | "female"
+    department: number | null
     department_name: string | null
     photo: string | null
   } | null

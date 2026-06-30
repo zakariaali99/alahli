@@ -394,14 +394,14 @@ export default function AthleteProfilePage() {
           )}
         </div>
 
-        <motion.div className="lg:col-span-12 glass-card-premium rounded-[1.5rem] p-6 overflow-hidden" variants={itemVariants}>
+        <motion.div className="lg:col-span-12 glass-card-premium rounded-[1.5rem] p-6 overflow-x-auto" variants={itemVariants}>
           <h3 className="section-header flex items-center gap-2 mb-6">
             <div className="w-8 h-8 rounded-lg bg-primary-container/20 text-primary flex items-center justify-center shrink-0">
               <Receipt className="w-4 h-4" />
             </div>
             سجل الاشتراكات والتجديد
           </h3>
-          <div className="overflow-x-auto w-full">
+          <div className="w-full">
             <table className="w-full text-right border-collapse min-w-[600px]">
               <thead>
                 <tr className="border-b border-border/40 text-muted-foreground text-xs font-semibold bg-surface-container-lowest/50 sticky top-0">

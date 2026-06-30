@@ -90,6 +90,7 @@ export default function StaffManagement() {
   }
 
   const filtered = (Array.isArray(users) ? users : []).filter((u) => {
+    if (u.role === "athlete" || u.role === "parent") return false
     if (roleFilter && u.role !== roleFilter) return false
     if (search) {
       const q = search.toLowerCase()

@@ -84,7 +84,7 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
         },
         child: SingleChildScrollView(
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.all(16.0),
+          padding: const EdgeInsets.only(left: 16.0, right: 16.0, top: 16.0, bottom: 116.0),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [

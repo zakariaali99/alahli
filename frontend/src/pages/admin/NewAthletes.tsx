@@ -167,14 +167,22 @@ export default function NewAthletes() {
                         <p className="font-semibold">{paymentMethod}</p>
                       </div>
                       <div className="rounded-xl border border-border bg-surface-container-low px-3 py-2">
-                        <p className="text-muted-foreground">حالة الرياضي</p>
-                        <p className="font-semibold">{registration.athlete_id ? "ملف مكتمل" : "بحاجة إنشاء ملف"}</p>
+                        <p className="text-muted-foreground">القسم</p>
+                        <p className="font-semibold">{registration.athlete_department_name || (registration.athlete_id ? "ملف مكتمل" : "بحاجة إنشاء ملف")}</p>
                       </div>
                     </div>
 
                     {needsAthleteProfile && (
                       <div className="rounded-xl border border-amber-500/30 bg-amber-500/10 px-3 py-2 text-xs text-amber-700">
                         هذا الطلب يحتاج إنشاء ملف رياضي يدوياً قبل الاعتماد.
+                      </div>
+                    )}
+
+                    {registration.has_parent && (
+                      <div className="rounded-xl border border-info/30 bg-info/10 px-3 py-2 text-xs">
+                        <p className="text-muted-foreground">تمت الإضافة بواسطة</p>
+                        <p className="font-semibold">{registration.parent_name}</p>
+                        <p className="text-muted-foreground" dir="ltr">{registration.parent_phone}</p>
                       </div>
                     )}
 

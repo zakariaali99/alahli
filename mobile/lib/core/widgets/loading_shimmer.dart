@@ -150,16 +150,33 @@ class ShimmerGrid extends StatelessWidget {
       childAspectRatio: 1.75,
       children: List.generate(itemCount, (index) {
         return AppCard(
-          padding: const EdgeInsets.all(12),
+          padding: const EdgeInsets.all(16),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
-            mainAxisAlignment: MainAxisAlignment.center,
             children: const [
-              LoadingShimmer(width: 32, height: 32, borderRadius: 8),
-              SizedBox(height: 12),
-              LoadingShimmer(width: 80, height: 10, borderRadius: 4),
-              SizedBox(height: 6),
-              LoadingShimmer(width: 120, height: 16, borderRadius: 4),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  LoadingShimmer(width: 80, height: 12, borderRadius: 4),
+                  LoadingShimmer(width: 24, height: 24, borderRadius: 8),
+                ],
+              ),
+              SizedBox(height: 16),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      LoadingShimmer(width: 60, height: 24, borderRadius: 4),
+                      SizedBox(height: 4),
+                      LoadingShimmer(width: 40, height: 10, borderRadius: 4),
+                    ],
+                  ),
+                  LoadingShimmer(width: 40, height: 16, borderRadius: 4),
+                ],
+              ),
             ],
           ),
         );

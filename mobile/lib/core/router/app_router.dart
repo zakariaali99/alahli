@@ -2,8 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/providers.dart';
-import '../../features/auth/login_screen.dart';
 import '../../features/auth/splash_screen.dart';
+import '../../features/auth/login_screen.dart';
+import '../../features/auth/landing_screen.dart';
+import '../../features/auth/register_athlete_screen.dart';
+import '../../features/auth/register_parent_screen.dart';
 import '../../features/admin/shell/admin_shell.dart';
 import '../../features/admin/dashboard/dashboard_screen.dart';
 import '../../features/admin/athletes/athletes_list_screen.dart';
@@ -20,9 +23,13 @@ import '../../features/admin/verify/verify_screen.dart';
 import '../../features/admin/notifications/notifications_screen.dart';
 import '../../features/admin/settings/settings_screen.dart';
 import '../../features/admin/packages/packages_screen.dart';
+import '../../features/user/shell/user_shell.dart';
+import '../../features/user/subscriptions/user_subscription_screen.dart';
+import '../../features/user/athletes/user_athlete_screen.dart';
 
 final _rootNavigatorKey = GlobalKey<NavigatorState>();
 final _shellNavigatorKey = GlobalKey<NavigatorState>();
+final _userShellNavigatorKey = GlobalKey<NavigatorState>();
 
 CustomTransitionPage _slideTransitionPage({
   required Widget child,
@@ -56,22 +63,40 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       final isLoggedIn = authState != null;
       final isLoggingIn = state.matchedLocation == '/login';
       final isOnSplash = state.matchedLocation == '/splash';
+      final isRegistering = state.matchedLocation.startsWith('/register');
+      final isLanding = state.matchedLocation == '/';
 
       if (!isInitialized) {
         return isOnSplash ? null : '/splash';
       }
 
       if (!isLoggedIn) {
-        return isLoggingIn ? null : '/login';
-      }
-
-      if (isLoggingIn) {
+        if (isLoggingIn || isRegistering || isLanding) {
+          return null;
+        }
         return '/';
       }
 
+      // If logged in
+      if (isOnSplash || isLoggingIn || isRegistering || isLanding) {
+        final role = authState.role;
+        if (role == 'athlete' || role == 'parent') {
+          return '/user';
+        } else {
+          return '/dashboard';
+        }
+      }
+
+      // Role check for routes
       final role = authState.role;
-      if (!adminRoles.contains(role)) {
-        return '/login';
+      final isDashboardRoute = state.matchedLocation.startsWith('/dashboard');
+      final isUserRoute = state.matchedLocation.startsWith('/user');
+
+      if (isDashboardRoute && (role == 'athlete' || role == 'parent')) {
+        return '/user';
+      }
+      if (isUserRoute && !(role == 'athlete' || role == 'parent')) {
+        return '/dashboard';
       }
 
       return null;
@@ -87,6 +112,23 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const LoginScreen(),
       ),
+      GoRoute(
+        path: '/',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const LandingScreen(),
+      ),
+      GoRoute(
+        path: '/register/athlete',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const RegisterAthleteScreen(),
+      ),
+      GoRoute(
+        path: '/register/parent',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const RegisterParentScreen(),
+      ),
+      
+      // Admin Shell Route
       ShellRoute(
         navigatorKey: _shellNavigatorKey,
         builder: (context, state, child) {
@@ -94,11 +136,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         },
         routes: [
           GoRoute(
-            path: '/',
+            path: '/dashboard',
             builder: (context, state) => const DashboardScreen(),
           ),
           GoRoute(
-            path: '/athletes',
+            path: '/dashboard/athletes',
             builder: (context, state) => const AthletesListScreen(),
             routes: [
               GoRoute(
@@ -122,11 +164,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             ],
           ),
           GoRoute(
-            path: '/approvals',
+            path: '/dashboard/approvals',
             builder: (context, state) => const ApprovalsScreen(),
           ),
           GoRoute(
-            path: '/subscriptions',
+            path: '/dashboard/subscriptions',
             builder: (context, state) => const SubscriptionsScreen(),
             routes: [
               GoRoute(
@@ -138,36 +180,54 @@ final goRouterProvider = Provider<GoRouter>((ref) {
             ],
           ),
           GoRoute(
-            path: '/academies',
+            path: '/dashboard/academies',
             builder: (context, state) => const AcademiesScreen(),
           ),
           GoRoute(
-            path: '/packages',
+            path: '/dashboard/packages',
             builder: (context, state) => const PackagesScreen(),
           ),
           GoRoute(
-            path: '/coaches',
+            path: '/dashboard/coaches',
             builder: (context, state) => const CoachesScreen(),
           ),
           GoRoute(
-            path: '/staff',
+            path: '/dashboard/staff',
             builder: (context, state) => const StaffScreen(),
           ),
           GoRoute(
-            path: '/reports',
+            path: '/dashboard/reports',
             builder: (context, state) => const ReportsScreen(),
           ),
           GoRoute(
-            path: '/verify',
+            path: '/dashboard/verify',
             builder: (context, state) => const VerifyScreen(),
           ),
           GoRoute(
-            path: '/notifications',
+            path: '/dashboard/notifications',
             builder: (context, state) => const NotificationsScreen(),
           ),
           GoRoute(
-            path: '/settings',
+            path: '/dashboard/settings',
             builder: (context, state) => const SettingsScreen(),
+          ),
+        ],
+      ),
+
+      // User Shell Route
+      ShellRoute(
+        navigatorKey: _userShellNavigatorKey,
+        builder: (context, state, child) {
+          return UserShell(child: child);
+        },
+        routes: [
+          GoRoute(
+            path: '/user',
+            builder: (context, state) => const UserSubscriptionScreen(),
+          ),
+          GoRoute(
+            path: '/user/athlete',
+            builder: (context, state) => const UserAthleteScreen(),
           ),
         ],
       ),

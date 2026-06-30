@@ -1,10 +1,16 @@
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useNavigate, Link } from "react-router-dom"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { api } from "@/lib/api"
 import CameraCapture from "@/components/ui/camera-capture"
+import { extractResults } from "@/lib/response"
 import { Dumbbell, ArrowRight, CheckCircle } from "lucide-react"
+
+interface Department {
+  id: number
+  name_ar: string
+}
 
 export default function RegisterAthlete() {
   const navigate = useNavigate()
@@ -12,6 +18,7 @@ export default function RegisterAthlete() {
     full_name: "",
     phone: "",
     password: "",
+    department: "",
     weight: "",
     height: "",
     birth_day: "",
@@ -19,9 +26,16 @@ export default function RegisterAthlete() {
     birth_year: "",
   })
   const [photo, setPhoto] = useState<string | null>(null)
+  const [departments, setDepartments] = useState<Department[]>([])
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
+
+  useEffect(() => {
+    api.get<{ results: Department[] } | Department[]>("/departments/")
+      .then((res) => setDepartments(extractResults(res)))
+      .catch(() => {})
+  }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -34,6 +48,7 @@ export default function RegisterAthlete() {
         phone: form.phone,
         password: form.password,
         photo,
+        department: form.department ? parseInt(form.department) : null,
         weight: parseFloat(form.weight),
         height: parseFloat(form.height),
         birth_day: parseInt(form.birth_day),
@@ -94,6 +109,20 @@ export default function RegisterAthlete() {
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
               required
             />
+          </div>
+
+          <div>
+            <label className="block text-sm font-medium mb-1">الأكاديمية / القسم</label>
+            <select
+              className="w-full bg-surface-container-low border border-border rounded-xl px-4 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
+              value={form.department}
+              onChange={(e) => setForm({ ...form, department: e.target.value })}
+            >
+              <option value="">اختر الأكاديمية (اختياري)</option>
+              {departments.map((dept) => (
+                <option key={dept.id} value={String(dept.id)}>{dept.name_ar}</option>
+              ))}
+            </select>
           </div>
 
           <div>

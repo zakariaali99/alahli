@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState, type FormEvent } from "react"
 import { AnimatePresence, motion } from "framer-motion"
-import { Building2, ChevronLeft, Layers3, Pencil, Plus, Users, X } from "lucide-react"
+import { Building2, ChevronLeft, Layers3, Pencil, Plus, Trash2, Users, X } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { api } from "@/lib/api"
@@ -43,9 +43,12 @@ export default function AcademyManagement() {
 
   const [academyForm, setAcademyForm] = useState<AcademyForm>({ nameAr: "", name: "", color: "#1570EF", bankAccountNumber: "", iban: "" })
   const [editingAcademy, setEditingAcademy] = useState<Department | null>(null)
+  const [editingSport, setEditingSport] = useState<Sport | null>(null)
   const [sportForm, setSportForm] = useState<SportForm>({ nameAr: "", name: "" })
   const [groupForm, setGroupForm] = useState<GroupForm>({ nameAr: "", name: "", coach: "", startTime: "16:00", endTime: "17:00", days: [] })
-const [editingGroup, setEditingGroup] = useState<Group | null>(null)
+  const [editingGroup, setEditingGroup] = useState<Group | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<{ type: "academy" | "sport" | "group"; id: number; name: string } | null>(null)
+  const [deleting, setDeleting] = useState(false)
 
   useEffect(() => { void fetchAcademies() }, [])
   useEffect(() => { if (flash) { const t = setTimeout(() => setFlash(null), 2800); return () => clearTimeout(t) } }, [flash])
@@ -117,6 +120,13 @@ const [editingGroup, setEditingGroup] = useState<Group | null>(null)
     await loadCoaches()
   }
 
+  const openEditSportModal = async (sport: Sport) => {
+    setEditingSport(sport)
+    setSportForm({ nameAr: sport.name_ar, name: sport.name })
+    setModalError(null)
+    setModalType("sport")
+  }
+
   const openEditAcademyModal = (academy: Department) => {
     setEditingAcademy(academy)
     setAcademyForm({ nameAr: academy.name_ar, name: academy.name, color: academy.color, bankAccountNumber: academy.bank_account_number || "", iban: academy.iban || "" })
@@ -126,6 +136,7 @@ const [editingGroup, setEditingGroup] = useState<Group | null>(null)
 
   const openModal = async (type: "academy" | "sport" | "group") => {
     setEditingAcademy(null)
+    setEditingSport(null)
     setEditingGroup(null)
     setModalError(null)
     setModalType(type)
@@ -137,7 +148,7 @@ const [editingGroup, setEditingGroup] = useState<Group | null>(null)
     }
   }
 
-  const closeModal = () => { if (!submitting) { setModalType(null); setModalError(null); setEditingAcademy(null); setEditingGroup(null) } }
+  const closeModal = () => { if (!submitting) { setModalType(null); setModalError(null); setEditingAcademy(null); setEditingSport(null); setEditingGroup(null) } }
 
   const submitAcademy = async (e: FormEvent) => {
     e.preventDefault()
@@ -168,8 +179,15 @@ const [editingGroup, setEditingGroup] = useState<Group | null>(null)
     if (!sportForm.nameAr.trim() || !sportForm.name.trim()) { setModalError("يرجى تعبئة الاسم بالعربية والإنجليزية"); return }
     try {
       setSubmitting(true); setModalError(null)
-      await api.post("/sports/", { department: selectedAcademyId, name_ar: sportForm.nameAr.trim(), name: sportForm.name.trim(), is_active: true })
-      setFlash("تمت إضافة الرياضة بنجاح"); closeModal(); await fetchSports(selectedAcademyId)
+      const payload = { department: selectedAcademyId, name_ar: sportForm.nameAr.trim(), name: sportForm.name.trim(), is_active: true }
+      if (editingSport) {
+        await api.put(`/sports/${editingSport.id}/`, payload)
+        setFlash("تم تحديث الرياضة بنجاح")
+      } else {
+        await api.post("/sports/", payload)
+        setFlash("تمت إضافة الرياضة بنجاح")
+      }
+      closeModal(); await fetchSports(selectedAcademyId)
     } catch (err: any) { setModalError(err?.message || "فشل الحفظ") }
     finally { setSubmitting(false) }
   }
@@ -197,6 +215,28 @@ const [editingGroup, setEditingGroup] = useState<Group | null>(null)
       closeModal(); await fetchGroups(selectedSportId)
     } catch (err: any) { setModalError(err?.message || "فشل الحفظ") }
     finally { setSubmitting(false) }
+  }
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return
+    setDeleting(true)
+    try {
+      const endpoints: Record<string, string> = {
+        academy: `/departments/${deleteTarget.id}/`,
+        sport: `/sports/${deleteTarget.id}/`,
+        group: `/groups/${deleteTarget.id}/`,
+      }
+      await api.delete(endpoints[deleteTarget.type])
+      setFlash(`تم حذف ${deleteTarget.name} بنجاح`)
+      setDeleteTarget(null)
+      if (deleteTarget.type === "academy") await fetchAcademies()
+      if (deleteTarget.type === "sport" && selectedAcademyId) await fetchSports(selectedAcademyId)
+      if (deleteTarget.type === "group" && selectedSportId) await fetchGroups(selectedSportId)
+    } catch (err: any) {
+      setPageError(err?.message || "فشل الحذف")
+    } finally {
+      setDeleting(false)
+    }
   }
 
   if (loading) return <LoadingSpinner />
@@ -240,7 +280,10 @@ const [editingGroup, setEditingGroup] = useState<Group | null>(null)
             {academies.length === 0 && <EmptyState message="لا توجد أكاديميات. ابدأ بإضافة واحدة جديدة." />}
             {academies.map((academy) => (
               <motion.div key={academy.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} whileHover={{ y: -4 }} className="group relative cursor-pointer rounded-2xl border-2 border-border bg-card p-5 transition hover:border-primary" onClick={() => void openAcademyCard(academy)}>
-                <button className="absolute left-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary opacity-0 transition hover:bg-primary/20 group-hover:opacity-100" onClick={(e) => { e.stopPropagation(); openEditAcademyModal(academy) }}><Pencil className="h-3.5 w-3.5" /></button>
+                <div className="absolute left-2 top-2 z-10 flex gap-1 opacity-0 transition group-hover:opacity-100">
+                  <button className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary hover:bg-primary/20" onClick={(e) => { e.stopPropagation(); openEditAcademyModal(academy) }}><Pencil className="h-3.5 w-3.5" /></button>
+                  <button className="flex h-7 w-7 items-center justify-center rounded-lg bg-error/10 text-error hover:bg-error/20" onClick={(e) => { e.stopPropagation(); setDeleteTarget({ type: "academy", id: academy.id, name: academy.name_ar }) }}><Trash2 className="h-3.5 w-3.5" /></button>
+                </div>
                 <div className="flex items-start gap-3">
                   <div className="flex h-12 w-12 items-center justify-center rounded-xl text-lg font-bold text-white shadow" style={{ backgroundColor: academy.color }}>
                     {(academy.name_ar || "?").charAt(0)}
@@ -270,7 +313,11 @@ const [editingGroup, setEditingGroup] = useState<Group | null>(null)
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {academySports.length === 0 && <EmptyState message="لا توجد رياضات في هذه الأكاديمية." />}
             {academySports.map((sport) => (
-              <motion.div key={sport.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} whileHover={{ y: -4 }} className="cursor-pointer rounded-2xl border-2 border-border bg-card p-5 transition hover:border-primary" onClick={() => void openSportCard(sport)}>
+              <motion.div key={sport.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} whileHover={{ y: -4 }} className="group relative cursor-pointer rounded-2xl border-2 border-border bg-card p-5 transition hover:border-primary" onClick={() => void openSportCard(sport)}>
+                <div className="absolute left-2 top-2 z-10 flex gap-1 opacity-0 transition group-hover:opacity-100">
+                  <button className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary hover:bg-primary/20" onClick={(e) => { e.stopPropagation(); openEditSportModal(sport) }}><Pencil className="h-3.5 w-3.5" /></button>
+                  <button className="flex h-7 w-7 items-center justify-center rounded-lg bg-error/10 text-error hover:bg-error/20" onClick={(e) => { e.stopPropagation(); setDeleteTarget({ type: "sport", id: sport.id, name: sport.name_ar }) }}><Trash2 className="h-3.5 w-3.5" /></button>
+                </div>
                 <div className="flex items-start gap-3">
                   <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-lg font-bold text-primary">
                     {(sport.name_ar || "?").charAt(0)}
@@ -303,7 +350,10 @@ const [editingGroup, setEditingGroup] = useState<Group | null>(null)
               const coach = coaches.find((c) => c.id === group.coach)
               return (
                 <motion.div key={group.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} whileHover={{ y: -4 }} className="group relative cursor-pointer rounded-2xl border-2 border-border bg-card p-5 transition hover:border-primary" onClick={() => void openEditGroupModal(group)}>
-                  <button className="absolute left-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary opacity-0 transition hover:bg-primary/20 group-hover:opacity-100" onClick={(e) => { e.stopPropagation(); void openEditGroupModal(group) }}><Pencil className="h-3.5 w-3.5" /></button>
+                  <div className="absolute left-2 top-2 z-10 flex gap-1 opacity-0 transition group-hover:opacity-100">
+                    <button className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary hover:bg-primary/20" onClick={(e) => { e.stopPropagation(); void openEditGroupModal(group) }}><Pencil className="h-3.5 w-3.5" /></button>
+                    <button className="flex h-7 w-7 items-center justify-center rounded-lg bg-error/10 text-error hover:bg-error/20" onClick={(e) => { e.stopPropagation(); setDeleteTarget({ type: "group", id: group.id, name: group.name_ar }) }}><Trash2 className="h-3.5 w-3.5" /></button>
+                  </div>
                   <p className="font-bold">{group.name_ar}</p>
                   <p className="text-xs text-muted-foreground" dir="ltr">{group.name}</p>
 
@@ -330,7 +380,7 @@ const [editingGroup, setEditingGroup] = useState<Group | null>(null)
       {/* Modals */}
       <AnimatePresence>
         {modalType && (
-          <Modal title={modalType === "academy" ? (editingAcademy ? "تعديل الأكاديمية" : "إضافة أكاديمية") : modalType === "sport" ? "إضافة رياضة" : editingGroup ? "تعديل المجموعة" : "إضافة مجموعة"} onClose={closeModal}>
+          <Modal title={modalType === "academy" ? (editingAcademy ? "تعديل الأكاديمية" : "إضافة أكاديمية") : modalType === "sport" ? (editingSport ? "تعديل الرياضة" : "إضافة رياضة") : editingGroup ? "تعديل المجموعة" : "إضافة مجموعة"} onClose={closeModal}>
             {modalType === "academy" && (
               <form className="space-y-3" onSubmit={submitAcademy}>
                 <ModalField label="الاسم (عربي)"><input className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors" value={academyForm.nameAr} onChange={(e) => setAcademyForm((p) => ({ ...p, nameAr: e.target.value }))} /></ModalField>
@@ -392,6 +442,23 @@ const [editingGroup, setEditingGroup] = useState<Group | null>(null)
           </Modal>
         )}
       </AnimatePresence>
+
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 bg-black/50 p-4 flex items-center justify-center" onClick={() => { if (!deleting) setDeleteTarget(null) }}>
+          <div className="w-full max-w-md rounded-2xl border border-border bg-card p-5 space-y-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-bold">تأكيد الحذف</h3>
+            <p className="text-sm text-muted-foreground">
+              هل أنت متأكد من حذف <span className="font-semibold text-foreground">{deleteTarget.name}</span>؟ لا يمكن التراجع عن هذا الإجراء.
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="ghost" disabled={deleting} onClick={() => setDeleteTarget(null)}>إلغاء</Button>
+              <Button type="button" variant="destructive" disabled={deleting} onClick={confirmDelete}>
+                {deleting ? "جاري الحذف..." : "حذف"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }

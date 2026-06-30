@@ -7,7 +7,6 @@ import '../../../core/widgets/app_error_widget.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/loading_shimmer.dart';
 import '../../../core/widgets/staggered_list_item.dart';
-import '../../../core/helpers/numeral_converter.dart';
 import '../../../core/models/trainer_model.dart';
 import '../../../core/helpers/ui_helpers.dart';
 
@@ -199,9 +198,6 @@ class _CoachesScreenState extends ConsumerState<CoachesScreen> {
     final user = ref.watch(authProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('إدارة المدربين', style: TextStyle(fontWeight: FontWeight.bold)),
-      ),
       floatingActionButton: user?.role == 'super_admin'
           ? FloatingActionButton(
               onPressed: _showAddTrainerDialog,
@@ -210,68 +206,88 @@ class _CoachesScreenState extends ConsumerState<CoachesScreen> {
               child: const Icon(Icons.add),
             )
           : null,
-      body: RefreshIndicator(
-        onRefresh: () async => ref.invalidate(trainersProvider),
-        child: trainersAsync.when(
-          data: (list) {
-            if (list.isEmpty) {
-              return const EmptyState(message: 'لا يوجد مدربون مسجلون حالياً');
-            }
-            return ListView.builder(
-              padding: const EdgeInsets.all(16),
-              itemCount: list.length,
-              itemBuilder: (context, index) {
-                final coach = list[index];
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
+            child: Text(
+              'إدارة المدربين',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () async => ref.invalidate(trainersProvider),
+              child: trainersAsync.when(
+                data: (list) {
+                  if (list.isEmpty) {
+                    return const EmptyState(message: 'لا يوجد مدربون مسجلون حالياً');
+                  }
+                  return ListView.builder(
+                    padding: const EdgeInsets.all(16),
+                    itemCount: list.length + 1,
+                    itemBuilder: (context, index) {
+                      if (index == list.length) {
+                        return const SizedBox(height: 100);
+                      }
+                      final coach = list[index];
 
-                return StaggeredListItem(
-                  index: index,
-                  child: AppCard(
-                    onTap: () => _showTrainerDetails(coach),
-                    border: Border.all(color: AppColors.primary.withValues(alpha: 0.4), width: 1.5),
-                    child: Row(
-                      children: [
-                        CircleAvatar(
-                          backgroundColor: AppColors.primary,
-                          radius: 24,
-                          backgroundImage: coach.profileImage != null && coach.profileImage!.isNotEmpty
-                              ? NetworkImage(coach.profileImage!)
-                              : null,
-                          child: coach.profileImage == null || coach.profileImage!.isEmpty
-                              ? Text(safeInitials(coach.fullNameAr), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))
-                              : null,
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
+                      return StaggeredListItem(
+                        index: index,
+                        child: AppCard(
+                          onTap: () => _showTrainerDetails(coach),
+                          border: Border.all(color: AppColors.primary.withValues(alpha: 0.4), width: 1.5),
+                          child: Row(
                             children: [
-                              Text(
-                                coach.fullNameAr,
-                                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                              CircleAvatar(
+                                backgroundColor: AppColors.primary,
+                                radius: 24,
+                                backgroundImage: coach.profileImage != null && coach.profileImage!.isNotEmpty
+                                    ? NetworkImage(coach.profileImage!)
+                                    : null,
+                                child: coach.profileImage == null || coach.profileImage!.isEmpty
+                                    ? Text(safeInitials(coach.fullNameAr), style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold))
+                                    : null,
                               ),
-                              const SizedBox(height: 4),
-                              Text(
-                                coach.role,
-                                style: const TextStyle(fontSize: 12, color: Colors.grey),
+                              const SizedBox(width: 16),
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    Text(
+                                      coach.fullNameAr,
+                                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    Text(
+                                      coach.role,
+                                      style: const TextStyle(fontSize: 12, color: Colors.grey),
+                                    ),
+                                  ],
+                                ),
                               ),
+                              const SizedBox(width: 8),
+                              const Icon(Icons.chevron_right, color: Colors.grey),
                             ],
                           ),
                         ),
-                        const SizedBox(width: 8),
-                        const Icon(Icons.chevron_right, color: Colors.grey),
-                      ],
-                    ),
-                  ),
-                );
-              },
-            );
-          },
-          loading: () => const ShimmerList(),
-          error: (err, stack) => AppErrorWidget(
-            errorMessage: err.toString(),
-            onRetry: () => ref.refresh(trainersProvider),
+                      );
+                    },
+                  );
+                },
+                loading: () => const ShimmerList(),
+                error: (err, stack) => AppErrorWidget(
+                  errorMessage: err.toString(),
+                  onRetry: () => ref.refresh(trainersProvider),
+                ),
+              ),
+            ),
           ),
-        ),
+        ],
       ),
     );
   }

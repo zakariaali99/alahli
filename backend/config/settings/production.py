@@ -2,7 +2,9 @@ from .base import *
 
 DEBUG = os.environ.get("DJANGO_DEBUG", "False") == "True"
 
-ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "alahlicenter.ly,www.alahlicenter.ly,localhost,127.0.0.1").split(",")
+ALLOWED_HOSTS = os.environ.get("ALLOWED_HOSTS", "alahlicenter.ly,www.alahlicenter.ly").split(",")
+
+CSRF_TRUSTED_ORIGINS = os.environ.get("CSRF_TRUSTED_ORIGINS", "https://alahlicenter.ly,https://www.alahlicenter.ly").split(",")
 
 DATABASES = {
     "default": {
@@ -25,13 +27,21 @@ SECURE_BROWSER_XSS_FILTER = True
 SECURE_CONTENT_TYPE_NOSNIFF = True
 X_FRAME_OPTIONS = "DENY"
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+SECURE_REFERRER_POLICY = "same-origin"
 
 CORS_ALLOW_ALL_ORIGINS = False
 _cors_origins = os.environ.get("CORS_ALLOWED_ORIGINS", "https://alahlicenter.ly,https://www.alahlicenter.ly")
 CORS_ALLOWED_ORIGINS = _cors_origins.split(",") if _cors_origins else []
 
 STATIC_ROOT = BASE_DIR / "staticfiles"
-STATICFILES_STORAGE = "whitenoise.storage.CompressedManifestStaticFilesStorage"
+STORAGES = {
+    "default": {
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
+    },
+    "staticfiles": {
+        "BACKEND": "whitenoise.storage.CompressedManifestStaticFilesStorage",
+    },
+}
 
 LOGGING = {
     "version": 1,

@@ -238,9 +238,9 @@ export default function AthletesPage() {
         /* ── Table View ── */
         <motion.div
           variants={itemVariants}
-          className="glass-card rounded-3xl overflow-hidden shadow-sm border border-border/20"
+          className="glass-card rounded-3xl overflow-x-auto shadow-sm border border-border/20"
         >
-          <div className="overflow-x-auto w-full">
+          <div className="w-full">
             <table className="w-full text-right border-collapse min-w-[800px]">
               <thead>
                 <tr className="bg-surface-container-lowest/50 border-b border-outline-variant/30 text-muted-foreground text-xs font-semibold">

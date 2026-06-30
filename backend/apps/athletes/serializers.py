@@ -53,6 +53,12 @@ class RegistrationRequestSerializer(serializers.ModelSerializer):
     athlete_name = serializers.SerializerMethodField()
     athlete_photo = serializers.SerializerMethodField()
     athlete_membership_number = serializers.SerializerMethodField()
+    athlete_department_name = serializers.CharField(
+        source="athlete.department.name_ar", read_only=True, allow_null=True
+    )
+    has_parent = serializers.SerializerMethodField()
+    parent_name = serializers.SerializerMethodField()
+    parent_phone = serializers.SerializerMethodField()
 
     class Meta:
         model = RegistrationRequest
@@ -79,6 +85,30 @@ class RegistrationRequestSerializer(serializers.ModelSerializer):
     def get_athlete_membership_number(self, obj):
         athlete = getattr(obj, "athlete", None)
         return athlete.membership_number if athlete else None
+
+    def get_has_parent(self, obj):
+        athlete = getattr(obj, "athlete", None)
+        if athlete is None:
+            return False
+        return athlete.parents.exists()
+
+    def get_parent_name(self, obj):
+        athlete = getattr(obj, "athlete", None)
+        if athlete is None:
+            return None
+        parent_link = athlete.parents.first()
+        if parent_link is None:
+            return None
+        return parent_link.parent.full_name_ar
+
+    def get_parent_phone(self, obj):
+        athlete = getattr(obj, "athlete", None)
+        if athlete is None:
+            return None
+        parent_link = athlete.parents.first()
+        if parent_link is None:
+            return None
+        return parent_link.parent.phone
 
 
 class RegistrationApproveSerializer(serializers.Serializer):
@@ -110,6 +140,7 @@ class RegisterSerializer(serializers.Serializer):
     birth_day = serializers.IntegerField(min_value=1, max_value=31)
     birth_month = serializers.IntegerField(min_value=1, max_value=12)
     birth_year = serializers.IntegerField(min_value=1900)
+    department = serializers.IntegerField(required=False, allow_null=True, help_text="Department ID for the athlete")
 
     def validate_birth_date(self, attrs):
         import datetime
@@ -133,6 +164,12 @@ class RegisterSerializer(serializers.Serializer):
             attrs.pop("photo", None)
             attrs.pop("weight", None)
             attrs.pop("height", None)
+
+        department_id = attrs.get("department")
+        if department_id is not None:
+            from apps.departments.models import Department
+            if not Department.objects.filter(id=department_id).exists():
+                raise serializers.ValidationError({"department": "Invalid department ID"})
 
         attrs["birth_date"] = self.validate_birth_date(attrs)
         return attrs

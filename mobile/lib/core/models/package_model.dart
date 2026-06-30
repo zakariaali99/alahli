@@ -13,6 +13,8 @@ class PackageModel {
   final String iconName;
   final String colorClass;
   final bool isActive;
+  final int? department;
+  final int order;
 
   PackageModel({
     required this.id,
@@ -27,6 +29,8 @@ class PackageModel {
     required this.iconName,
     required this.colorClass,
     required this.isActive,
+    this.department,
+    required this.order,
   });
 
   factory PackageModel.fromJson(Map<String, dynamic> json) {
@@ -43,6 +47,8 @@ class PackageModel {
       iconName: asString(json['icon_name']) ?? '',
       colorClass: asString(json['color_class']) ?? '',
       isActive: asBool(json['is_active']) ?? false,
+      department: asInt(json['department']),
+      order: asInt(json['order']) ?? 0,
     );
   }
 }

@@ -110,11 +110,11 @@ export default function DashboardLayout() {
   }
 
   return (
-    <div className="min-h-screen bg-background text-foreground flex overflow-x-hidden">
+    <div className="min-h-screen bg-background text-foreground flex overflow-x-hidden max-w-[100vw]">
       {/* ── Sidebar ── */}
       <aside
         className={`fixed top-0 right-0 h-screen z-50 flex w-72 md:w-64 flex-col transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]
-          ${sidebarOpen ? "translate-x-0 opacity-100" : "translate-x-full opacity-0 pointer-events-none"}
+          ${sidebarOpen ? "translate-x-0 opacity-100" : "max-md:translate-x-full opacity-0 pointer-events-none"}
           bg-sidebar-bg border-l border-sidebar-border
           shadow-[4px_0_24px_rgba(0,0,0,0.12)]`}
       >
@@ -224,7 +224,7 @@ export default function DashboardLayout() {
       </div>
 
       {/* ── Main Content ── */}
-      <div className={`flex-1 flex flex-col min-h-screen transition-all duration-300 ${sidebarOpen ? "md:mr-64" : "md:mr-0"}`}>
+      <div className={`flex-1 flex flex-col min-h-screen min-w-0 transition-all duration-300 ${sidebarOpen ? "md:mr-64" : "md:mr-0"}`}>
         {/* ── Floating Header ── */}
         <header
           className={`sticky top-0 z-30 transition-all duration-300 ${

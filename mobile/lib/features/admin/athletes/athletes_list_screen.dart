@@ -123,25 +123,8 @@ class _AthletesListScreenState extends ConsumerState<AthletesListScreen> {
     final departmentsAsync = ref.watch(departmentsProvider);
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('اللاعبين المشتركين', style: TextStyle(fontWeight: FontWeight.bold)),
-        actions: [
-          if (_selectedDepartmentId != null || _selectedActiveStatus != null || _searchQuery.isNotEmpty)
-            IconButton(
-              icon: const Icon(Icons.filter_alt_off),
-              onPressed: () {
-                setState(() {
-                  _searchController.clear();
-                  _searchQuery = '';
-                  _selectedDepartmentId = null;
-                  _selectedActiveStatus = null;
-                });
-              },
-            ),
-        ],
-      ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => context.push('/athletes/add'),
+        onPressed: () => context.push('/dashboard/athletes/add'),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         child: const Icon(Icons.add),
@@ -149,9 +132,35 @@ class _AthletesListScreenState extends ConsumerState<AthletesListScreen> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
+            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 16.0),
             child: Column(
               children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'اللاعبين المشتركين',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                      ),
+                    ),
+                    if (_selectedDepartmentId != null || _selectedActiveStatus != null || _searchQuery.isNotEmpty)
+                      TextButton.icon(
+                        icon: const Icon(Icons.filter_alt_off, size: 16),
+                        label: const Text('مسح الفلاتر', style: TextStyle(fontSize: 12)),
+                        onPressed: () {
+                          setState(() {
+                            _searchController.clear();
+                            _searchQuery = '';
+                            _selectedDepartmentId = null;
+                            _selectedActiveStatus = null;
+                          });
+                        },
+                      ),
+                  ],
+                ),
+                const SizedBox(height: 12),
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
                   decoration: BoxDecoration(
@@ -333,8 +342,11 @@ class _AthletesListScreenState extends ConsumerState<AthletesListScreen> {
     return ListView.builder(
       controller: _scrollController,
       padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 8.0),
-      itemCount: state.items.length + (state.hasNext ? 1 : 0),
+      itemCount: state.items.length + (state.hasNext ? 1 : 0) + 1,
       itemBuilder: (context, index) {
+        if (index == state.items.length + (state.hasNext ? 1 : 0)) {
+          return const SizedBox(height: 100);
+        }
         if (index == state.items.length) {
           return const Padding(
             padding: EdgeInsets.all(16),
@@ -350,7 +362,7 @@ class _AthletesListScreenState extends ConsumerState<AthletesListScreen> {
 
         final athlete = state.items[index];
         return AppCard(
-          onTap: () => context.push('/athletes/${athlete.id}'),
+          onTap: () => context.push('/dashboard/athletes/${athlete.id}'),
           child: Row(
             children: [
               Container(
@@ -425,7 +437,7 @@ class _AthletesListScreenState extends ConsumerState<AthletesListScreen> {
                 color: isDark ? AppColors.darkCard : Colors.white,
                 onSelected: (val) {
                   if (val == 'view') {
-                    context.push('/athletes/${athlete.id}');
+                    context.push('/dashboard/athletes/${athlete.id}');
                   } else if (val == 'toggle') {
                     _toggleAthleteStatus(athlete);
                   } else if (val == 'delete') {

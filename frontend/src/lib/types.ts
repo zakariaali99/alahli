@@ -67,6 +67,10 @@ export interface RegistrationRequest {
   athlete_name: string | null
   athlete_photo: string | null
   athlete_membership_number: string | null
+  athlete_department_name: string | null
+  has_parent: boolean
+  parent_name: string | null
+  parent_phone: string | null
   role_choice: "athlete" | "parent"
   status: "pending" | "approved" | "rejected"
   reviewed_by: number | null
@@ -90,6 +94,7 @@ export interface Subscription {
   athlete_name: string
   membership_number: string
   package_name: string
+  department_name: string | null
   start_date: string
   end_date: string
   amount: string
@@ -98,8 +103,20 @@ export interface Subscription {
   invoice_pdf_url: string | null
   group: number | null
   group_name: string
-  status: "active" | "expired" | "pending"
+  status: "active" | "expired" | "pending" | "rejected"
   approved_by: number | null
   approved_at: string | null
+  created_at: string
+  updated_at: string
+  renewals?: Renewal[]
+}
+
+export interface Renewal {
+  id: number
+  subscription: number
+  amount: string
+  months: number
+  renewal_date: string
+  created_by: number | null
   created_at: string
 }

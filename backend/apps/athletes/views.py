@@ -88,6 +88,7 @@ def register_view(request):
                 notes=" | ".join(notes_parts) if notes_parts else "",
                 is_active=False,
                 registration=registration,
+                department_id=serializer.validated_data.get("department"),
             )
             user.athlete = athlete
             user.save(update_fields=["athlete"])
@@ -202,7 +203,9 @@ class RegistrationRequestViewSet(viewsets.ReadOnlyModelViewSet):
     filterset_fields = ["status", "role_choice"]
 
     def get_queryset(self):
-        return RegistrationRequest.objects.all().select_related("user", "reviewed_by", "athlete", "athlete__department")
+        return RegistrationRequest.objects.all().select_related(
+            "user", "reviewed_by", "athlete", "athlete__department"
+        ).prefetch_related("athlete__parents__parent")
 
     @transaction.atomic
     @action(detail=True, methods=["post"], url_path="create-athlete")

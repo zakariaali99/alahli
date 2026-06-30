@@ -24,8 +24,8 @@ class AppTheme {
         surfaceTint: Colors.transparent,
       ),
       scaffoldBackgroundColor: AppColors.background,
-      fontFamily: GoogleFonts.cairo().fontFamily,
-      textTheme: GoogleFonts.cairoTextTheme(ThemeData.light().textTheme),
+      fontFamily: GoogleFonts.ibmPlexSansArabic().fontFamily,
+      textTheme: GoogleFonts.ibmPlexSansArabicTextTheme(ThemeData.light().textTheme),
       
       // Page Transitions
       pageTransitionsTheme: const PageTransitionsTheme(
@@ -34,54 +34,54 @@ class AppTheme {
           TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
         },
       ),
-
+ 
       // Cards
       cardTheme: CardTheme(
         color: AppColors.card,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(24),
           side: const BorderSide(color: AppColors.border, width: 1),
         ),
       ),
-
+ 
       // Inputs
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.surfaceContainer,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.primary, width: 2),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.destructive, width: 1),
         ),
         labelStyle: const TextStyle(color: AppColors.mutedForeground),
         floatingLabelStyle: const TextStyle(color: AppColors.primary, fontWeight: FontWeight.bold),
       ),
-
+ 
       // Buttons
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           minimumSize: const Size.fromHeight(48),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           minimumSize: const Size.fromHeight(48),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           elevation: 0,
           textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
@@ -89,12 +89,12 @@ class AppTheme {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           minimumSize: const Size.fromHeight(48),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           side: const BorderSide(color: AppColors.border),
           textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
       ),
-
+ 
       // Chips
       chipTheme: ChipThemeData(
         backgroundColor: AppColors.surfaceContainer,
@@ -105,7 +105,7 @@ class AppTheme {
         ),
         labelStyle: const TextStyle(fontWeight: FontWeight.w600),
       ),
-
+ 
       // Bottom Sheet
       bottomSheetTheme: const BottomSheetThemeData(
         backgroundColor: AppColors.card,
@@ -165,8 +165,8 @@ class AppTheme {
         surfaceTint: Colors.transparent,
       ),
       scaffoldBackgroundColor: AppColors.darkBg,
-      fontFamily: GoogleFonts.cairo().fontFamily,
-      textTheme: GoogleFonts.cairoTextTheme(ThemeData.dark().textTheme),
+      fontFamily: GoogleFonts.ibmPlexSansArabic().fontFamily,
+      textTheme: GoogleFonts.ibmPlexSansArabicTextTheme(ThemeData.dark().textTheme),
       
       pageTransitionsTheme: const PageTransitionsTheme(
         builders: {
@@ -174,51 +174,51 @@ class AppTheme {
           TargetPlatform.iOS: CupertinoPageTransitionsBuilder(),
         },
       ),
-
+ 
       cardTheme: CardTheme(
         color: AppColors.darkCard,
         elevation: 0,
         shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(24),
           side: const BorderSide(color: AppColors.darkMuted, width: 1),
         ),
       ),
-
+ 
       inputDecorationTheme: InputDecorationTheme(
         filled: true,
         fillColor: AppColors.darkSurfaceElevated,
         contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
         enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           borderSide: BorderSide.none,
         ),
         focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.darkPrimary, width: 2),
         ),
         errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(16),
+          borderRadius: BorderRadius.circular(12),
           borderSide: const BorderSide(color: AppColors.destructive, width: 1),
         ),
         labelStyle: const TextStyle(color: AppColors.darkMutedForeground),
         floatingLabelStyle: const TextStyle(color: AppColors.darkPrimary, fontWeight: FontWeight.bold),
       ),
-
+ 
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           minimumSize: const Size.fromHeight(48),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
       ),
       elevatedButtonTheme: ElevatedButtonThemeData(
         style: ElevatedButton.styleFrom(
           minimumSize: const Size.fromHeight(48),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           elevation: 0,
           textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
@@ -226,12 +226,12 @@ class AppTheme {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           minimumSize: const Size.fromHeight(48),
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
           side: const BorderSide(color: AppColors.darkBorder),
           textStyle: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
         ),
       ),
-
+ 
       chipTheme: ChipThemeData(
         backgroundColor: AppColors.darkSurfaceElevated,
         selectedColor: AppColors.darkPrimaryContainer,
@@ -241,7 +241,7 @@ class AppTheme {
         ),
         labelStyle: const TextStyle(fontWeight: FontWeight.w600),
       ),
-
+ 
       bottomSheetTheme: const BottomSheetThemeData(
         backgroundColor: AppColors.darkCard,
         shape: RoundedRectangleBorder(

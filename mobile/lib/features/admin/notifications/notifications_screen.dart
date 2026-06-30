@@ -48,12 +48,26 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     final notifState = ref.watch(notificationsPaginatedProvider(NotificationFilter.defaultFilter));
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('سجل التنبيهات والطلبات', style: TextStyle(fontWeight: FontWeight.bold)),
-      ),
-      body: RefreshIndicator(
-        onRefresh: () => ref.read(notificationsPaginatedProvider(NotificationFilter.defaultFilter).notifier).refresh(),
-        child: _buildBody(notifState, isDark),
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Padding(
+            padding: EdgeInsets.symmetric(horizontal: 20.0, vertical: 24.0),
+            child: Text(
+              'سجل التنبيهات والطلبات',
+              style: TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ),
+          Expanded(
+            child: RefreshIndicator(
+              onRefresh: () => ref.read(notificationsPaginatedProvider(NotificationFilter.defaultFilter).notifier).refresh(),
+              child: _buildBody(notifState, isDark),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -83,8 +97,11 @@ class _NotificationsScreenState extends ConsumerState<NotificationsScreen> {
     return ListView.builder(
       controller: _scrollController,
       padding: const EdgeInsets.all(16),
-      itemCount: state.items.length + (state.hasNext ? 1 : 0),
+      itemCount: state.items.length + (state.hasNext ? 1 : 0) + 1,
       itemBuilder: (context, index) {
+        if (index == state.items.length + (state.hasNext ? 1 : 0)) {
+          return const SizedBox(height: 100);
+        }
         if (index == state.items.length) {
           return const Padding(
             padding: EdgeInsets.all(16),

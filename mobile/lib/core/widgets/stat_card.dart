@@ -8,6 +8,8 @@ class StatCard extends StatelessWidget {
   final IconData icon;
   final Color iconColor;
   final bool animate;
+  final String? badge;
+  final String? trend; // 'up', 'down', or null
 
   const StatCard({
     required this.title,
@@ -15,6 +17,8 @@ class StatCard extends StatelessWidget {
     required this.icon,
     this.iconColor = AppColors.primary,
     this.animate = true,
+    this.badge,
+    this.trend,
     super.key,
   });
 
@@ -27,52 +31,56 @@ class StatCard extends StatelessWidget {
     final isPercentage = value.contains('%');
     final isCurrency = value.contains('د.ل');
 
-    return Stack(
-      children: [
-        AppCard(
-          padding: const EdgeInsets.all(16),
-          child: Row(
+    return AppCard(
+      padding: const EdgeInsets.all(20),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Top Row: Title & Icon
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [
-                      iconColor.withValues(alpha: 0.2),
-                      iconColor.withValues(alpha: 0.05),
-                    ],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
+              Expanded(
+                child: Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w600,
+                    color: isDark ? AppColors.darkMutedForeground : AppColors.mutedForeground,
                   ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: iconColor.withValues(alpha: 0.1),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Icon(
                   icon,
                   color: iconColor,
-                  size: 24,
+                  size: 20,
                 ),
               ),
-              const SizedBox(width: 16),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Bottom Row: Value/Badge & Trend
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
-                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text(
-                      title,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: TextStyle(
-                        fontSize: 12,
-                        fontWeight: FontWeight.w600,
-                        color: isDark ? AppColors.darkMutedForeground : AppColors.mutedForeground,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
                     if (animate && numValue != null)
                       TweenAnimationBuilder<double>(
                         tween: Tween(begin: 0, end: numValue),
-                        duration: const Duration(seconds: 1),
+                        duration: const Duration(milliseconds: 1200),
                         curve: Curves.easeOutCubic,
                         builder: (context, val, child) {
                           String displayValue = isCurrency 
@@ -85,9 +93,10 @@ class StatCard extends StatelessWidget {
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                             style: TextStyle(
-                              fontSize: 18,
+                              fontSize: 28,
                               fontWeight: FontWeight.w900,
                               color: isDark ? Colors.white : AppColors.foreground,
+                              letterSpacing: -0.5,
                             ),
                           );
                         },
@@ -98,31 +107,69 @@ class StatCard extends StatelessWidget {
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(
-                          fontSize: 18,
+                          fontSize: 28,
                           fontWeight: FontWeight.w900,
                           color: isDark ? Colors.white : AppColors.foreground,
+                          letterSpacing: -0.5,
                         ),
                       ),
+                    if (badge != null) ...[
+                      const SizedBox(height: 4),
+                      Text(
+                        badge!,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.w500,
+                          color: isDark ? AppColors.darkMutedForeground : AppColors.mutedForeground,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
               ),
+              if (trend != null) ...[
+                const SizedBox(width: 8),
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: trend == 'up'
+                        ? AppColors.secondary.withValues(alpha: 0.1)
+                        : AppColors.destructive.withValues(alpha: 0.1),
+                    borderRadius: BorderRadius.circular(8),
+                    border: Border.all(
+                      color: trend == 'up'
+                          ? AppColors.secondary.withValues(alpha: 0.1)
+                          : AppColors.destructive.withValues(alpha: 0.1),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(
+                        trend == 'up' ? Icons.trending_up : Icons.trending_down,
+                        color: trend == 'up' ? AppColors.secondary : AppColors.destructive,
+                        size: 14,
+                      ),
+                      const SizedBox(width: 4),
+                      Text(
+                        trend == 'up' ? 'نمو' : 'تراجع',
+                        style: TextStyle(
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                          color: trend == 'up' ? AppColors.secondary : AppColors.destructive,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ],
           ),
-        ),
-        // Accent Bar
-        Positioned(
-          right: 6,
-          top: 18,
-          bottom: 18,
-          child: Container(
-            width: 4,
-            decoration: BoxDecoration(
-              color: iconColor,
-              borderRadius: BorderRadius.circular(4),
-            ),
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }

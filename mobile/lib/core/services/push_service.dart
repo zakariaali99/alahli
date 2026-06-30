@@ -115,19 +115,19 @@ class PushService {
 
       switch (type) {
         case 'new_registration':
-          _router?.go('/approvals');
+          _router?.go('/dashboard/approvals');
           break;
         case 'new_subscription':
-          _router?.go('/approvals');
+          _router?.go('/dashboard/approvals');
           break;
         case 'subscription_expired':
-          _router?.go('/subscriptions');
+          _router?.go('/dashboard/subscriptions');
           break;
         default:
-          _router?.go('/');
+          _router?.go('/dashboard');
       }
     } catch (_) {
-      _router?.go('/');
+      _router?.go('/dashboard');
     }
   }
 

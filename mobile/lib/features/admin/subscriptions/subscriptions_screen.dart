@@ -164,7 +164,7 @@ class _SubscriptionsScreenState extends ConsumerState<SubscriptionsScreen> {
               amount: amount,
             );
         ref.read(subscriptionsPaginatedProvider(_currentFilter()).notifier).refresh();
-        ref.invalidate(dashboardStatsProvider);
+        ref.invalidate(dashboardStatsProvider(null));
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
             const SnackBar(content: Text('تم تجديد الاشتراك بنجاح وتمديد الصلاحية')),
@@ -249,17 +249,15 @@ class _SubscriptionsScreenState extends ConsumerState<SubscriptionsScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isDark = Theme.of(context).brightness == Brightness.dark;
+    final theme = Theme.of(context);
+    final isDark = theme.brightness == Brightness.dark;
 
     final filter = _currentFilter();
     final subsState = ref.watch(subscriptionsPaginatedProvider(filter));
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('سجل الاشتراكات', style: TextStyle(fontWeight: FontWeight.bold)),
-      ),
       floatingActionButton: FloatingActionButton(
-        onPressed: () => context.push('/subscriptions/add'),
+        onPressed: () => context.push('/dashboard/subscriptions/add'),
         backgroundColor: AppColors.primary,
         foregroundColor: Colors.white,
         child: const Icon(Icons.add),
@@ -267,9 +265,22 @@ class _SubscriptionsScreenState extends ConsumerState<SubscriptionsScreen> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
             child: Column(
               children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      'سجل الاشتراكات',
+                      style: theme.textTheme.titleLarge?.copyWith(
+                        fontWeight: FontWeight.bold,
+                        fontSize: 20,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
                   decoration: BoxDecoration(
@@ -373,8 +384,11 @@ class _SubscriptionsScreenState extends ConsumerState<SubscriptionsScreen> {
     return ListView.builder(
       controller: _scrollController,
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
-      itemCount: state.items.length + (state.hasNext ? 1 : 0),
+      itemCount: state.items.length + (state.hasNext ? 1 : 0) + 1,
       itemBuilder: (context, index) {
+        if (index == state.items.length + (state.hasNext ? 1 : 0)) {
+          return const SizedBox(height: 100);
+        }
         if (index == state.items.length) {
           return const Padding(
             padding: EdgeInsets.all(16),

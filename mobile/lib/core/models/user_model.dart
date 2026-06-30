@@ -1,5 +1,45 @@
 import '../helpers/safe_json.dart';
 
+class AthleteDetail {
+  final int id;
+  final String phone;
+  final String fullName;
+  final String? membershipNumber;
+  final String? departmentName;
+  final String? photo;
+
+  AthleteDetail({
+    required this.id,
+    required this.phone,
+    required this.fullName,
+    this.membershipNumber,
+    this.departmentName,
+    this.photo,
+  });
+
+  factory AthleteDetail.fromJson(Map<String, dynamic> json) {
+    return AthleteDetail(
+      id: asInt(json['id']) ?? 0,
+      phone: asString(json['phone']) ?? '',
+      fullName: asString(json['full_name']) ?? '',
+      membershipNumber: asString(json['membership_number']),
+      departmentName: asString(json['department_name']),
+      photo: asString(json['photo']),
+    );
+  }
+
+  Map<String, dynamic> toJson() {
+    return {
+      'id': id,
+      'phone': phone,
+      'full_name': fullName,
+      'membership_number': membershipNumber,
+      'department_name': departmentName,
+      'photo': photo,
+    };
+  }
+}
+
 class UserModel {
   final int id;
   final String phone;
@@ -11,6 +51,7 @@ class UserModel {
   final String? photo;
   final int? academy;
   final String? academyName;
+  final AthleteDetail? athleteDetail;
 
   UserModel({
     required this.id,
@@ -23,6 +64,7 @@ class UserModel {
     this.photo,
     this.academy,
     this.academyName,
+    this.athleteDetail,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -37,6 +79,9 @@ class UserModel {
       photo: asString(json['photo']),
       academy: asInt(json['academy']),
       academyName: asString(json['academy_name']),
+      athleteDetail: json['athlete_detail'] != null
+          ? AthleteDetail.fromJson(json['athlete_detail'])
+          : null,
     );
   }
 
@@ -52,6 +97,7 @@ class UserModel {
       'photo': photo,
       'academy': academy,
       'academy_name': academyName,
+      'athlete_detail': athleteDetail?.toJson(),
     };
   }
 

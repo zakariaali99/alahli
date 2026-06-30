@@ -15,6 +15,8 @@ export interface SubscriptionPackage {
   color_class: string
   is_active: boolean
   order: number
+  department: number | null
+  department_name: string | null
 }
 
 export function usePackages() {

@@ -35,6 +35,8 @@ const formatDate = (value: string) =>
 export default function SubscriptionPage() {
   const { user } = useAuth()
   const isParent = user?.role === "parent"
+  const athleteDeptId = user?.athlete_detail?.department ?? null
+  const hasLockedAcademy = !isParent && athleteDeptId !== null
 
   const [step, setStep] = useState(0)
   const [data, setData] = useState<StepData>({
@@ -63,6 +65,24 @@ export default function SubscriptionPage() {
     setError("")
     if (isParent) {
       fetchAthletes()
+    } else if (hasLockedAcademy) {
+      const deptId = user?.athlete_detail?.department
+      setData((prev) => ({ ...prev, athleteId: user?.athlete_detail?.id ?? null }))
+      setLoading(true)
+      api.get<{ results: Department[] } | Department[]>("/departments/")
+        .then((res) => {
+          const allDepts = extractResults(res)
+          const myDept = allDepts.find((d) => d.id === deptId) ?? null
+          if (myDept) {
+            setData((prev) => ({ ...prev, academy: myDept }))
+            fetchSports(myDept.id)
+          } else {
+            fetchAcademies()
+          }
+        })
+        .catch(() => {
+          fetchAcademies()
+        })
     } else {
       setData((prev) => ({ ...prev, athleteId: user?.athlete_detail?.id ?? null }))
       fetchAcademies()
@@ -121,11 +141,13 @@ export default function SubscriptionPage() {
     }
   }
 
-  const fetchPackages = async () => {
+  const fetchPackages = async (departmentId?: number) => {
     setLoading(true)
     setError("")
     try {
-      const res = await api.get<{ results: Package[] } | Package[]>("/packages/")
+      const params: Record<string, string> = {}
+      if (departmentId) params.department = String(departmentId)
+      const res = await api.get<{ results: Package[] } | Package[]>("/packages/", params)
       const tagRank: Record<Package["tag"], number> = { discount: 0, special: 1, normal: 2 }
       const sorted = [...extractResults(res)].sort((a, b) => {
         const rankDiff = tagRank[a.tag] - tagRank[b.tag]
@@ -158,20 +180,20 @@ export default function SubscriptionPage() {
     setError("")
     setData((prev) => ({ ...prev, sport: s, group: null }))
     fetchGroups(s.id)
-    setStep(isParent ? 3 : 2)
+    setStep(isParent ? 3 : hasLockedAcademy ? 1 : 2)
   }
 
   const selectGroup = (g: Group) => {
     setError("")
     setData((prev) => ({ ...prev, group: g }))
-    fetchPackages()
-    setStep(isParent ? 4 : 3)
+    fetchPackages(data.academy?.id)
+    setStep(isParent ? 4 : hasLockedAcademy ? 2 : 3)
   }
 
   const selectPackage = (p: Package) => {
     setError("")
     setData((prev) => ({ ...prev, pkg: p }))
-    setStep(isParent ? 5 : 4)
+    setStep(isParent ? 5 : hasLockedAcademy ? 3 : 4)
   }
 
   const submitCheckout = async () => {
@@ -240,7 +262,7 @@ export default function SubscriptionPage() {
     setTimeout(() => setCopied(""), 2000)
   }
 
-  const totalSteps = isParent ? 6 : 5
+  const totalSteps = isParent ? 6 : hasLockedAcademy ? 4 : 5
   const safeAthletes = Array.isArray(athletes) ? athletes : []
   const safeAcademies = Array.isArray(academies) ? academies : []
   const safeSports = Array.isArray(sports) ? sports : []
@@ -256,6 +278,13 @@ export default function SubscriptionPage() {
       if (step === 2 && data.academy) return void fetchSports(data.academy.id)
       if (step === 3 && data.sport) return void fetchGroups(data.sport.id)
       if (step === 4) return void fetchPackages()
+      return
+    }
+
+    if (hasLockedAcademy) {
+      if (step === 0 && data.academy) return void fetchSports(data.academy.id)
+      if (step === 1 && data.sport) return void fetchGroups(data.sport.id)
+      if (step === 2) return void fetchPackages()
       return
     }
 
@@ -339,7 +368,7 @@ export default function SubscriptionPage() {
           )}
 
           {/* STEP: SELECT ACADEMY */}
-          {((isParent && step === 1) || (!isParent && step === 0)) && (
+          {((isParent && step === 1) || (!isParent && !hasLockedAcademy && step === 0)) && (
             <div>
               <h2 className="text-lg font-bold mb-4">اختر الأكاديمية</h2>
               {loading ? <LoadingSpinner /> : (
@@ -369,7 +398,7 @@ export default function SubscriptionPage() {
           )}
 
           {/* STEP: SELECT SPORT */}
-          {((isParent && step === 2) || (!isParent && step === 1)) && (
+          {((isParent && step === 2) || (!isParent && (hasLockedAcademy ? step === 0 : step === 1))) && (
             <div>
               <h2 className="text-lg font-bold mb-4">اختر الرياضة</h2>
               {loading ? <LoadingSpinner /> : (
@@ -389,14 +418,16 @@ export default function SubscriptionPage() {
                   ))}
                 </div>
               )}
-              <Button variant="ghost" className="mt-4" onClick={() => { setError(""); setStep(isParent ? 1 : 0) }}>
-                <ChevronRight className="w-4 h-4 ml-1" /> السابق
-              </Button>
+              {(!isParent && hasLockedAcademy) ? null : (
+                <Button variant="ghost" className="mt-4" onClick={() => { setError(""); setStep(isParent ? 1 : 0) }}>
+                  <ChevronRight className="w-4 h-4 ml-1" /> السابق
+                </Button>
+              )}
             </div>
           )}
 
           {/* STEP: SELECT GROUP */}
-          {((isParent && step === 3) || (!isParent && step === 2)) && (
+          {((isParent && step === 3) || (!isParent && (hasLockedAcademy ? step === 1 : step === 2))) && (
             <div>
               <h2 className="text-lg font-bold mb-4">اختر المجموعة</h2>
               {loading ? <LoadingSpinner /> : (
@@ -419,14 +450,14 @@ export default function SubscriptionPage() {
                   ))}
                 </div>
               )}
-              <Button variant="ghost" className="mt-4" onClick={() => { setError(""); setStep(isParent ? 2 : 1) }}>
+              <Button variant="ghost" className="mt-4" onClick={() => { setError(""); setStep(isParent ? 2 : hasLockedAcademy ? 0 : 1) }}>
                 <ChevronRight className="w-4 h-4 ml-1" /> السابق
               </Button>
             </div>
           )}
 
           {/* STEP: SELECT PACKAGE */}
-          {((isParent && step === 4) || (!isParent && step === 3)) && (
+          {((isParent && step === 4) || (!isParent && (hasLockedAcademy ? step === 2 : step === 3))) && (
             <div>
               <h2 className="text-lg font-bold mb-4">اختر الباقة</h2>
               {loading ? <LoadingSpinner /> : (
@@ -450,14 +481,14 @@ export default function SubscriptionPage() {
                   })}
                 </div>
               )}
-              <Button variant="ghost" className="mt-4" onClick={() => { setError(""); setStep(isParent ? 3 : 2) }}>
+              <Button variant="ghost" className="mt-4" onClick={() => { setError(""); setStep(isParent ? 3 : hasLockedAcademy ? 1 : 2) }}>
                 <ChevronRight className="w-4 h-4 ml-1" /> السابق
               </Button>
             </div>
           )}
 
           {/* STEP: PAYMENT METHOD */}
-          {((isParent && step === 5) || (!isParent && step === 4)) && (
+          {((isParent && step === 5) || (!isParent && (hasLockedAcademy ? step === 3 : step === 4))) && (
             <div>
               <h2 className="text-lg font-bold mb-4">طريقة الدفع</h2>
               <div className="space-y-3">
@@ -540,7 +571,7 @@ export default function SubscriptionPage() {
               {error && <p className="text-destructive text-sm mt-2">{error}</p>}
 
               <div className="mt-6 flex flex-col gap-3 sm:flex-row">
-                <Button variant="ghost" onClick={() => { setError(""); setStep(isParent ? 4 : 3) }}>
+                <Button variant="ghost" onClick={() => { setError(""); setStep(isParent ? 4 : hasLockedAcademy ? 2 : 3) }}>
                   <ChevronRight className="w-4 h-4 ml-1" /> السابق
                 </Button>
                 <Button className="flex-1" disabled={!data.paymentMethod || loading} onClick={submitCheckout}>
@@ -552,7 +583,7 @@ export default function SubscriptionPage() {
         </motion.div>
       </AnimatePresence>
 
-      {!!error && step !== (isParent ? 5 : 4) && (
+      {!!error && step !== (isParent ? 5 : hasLockedAcademy ? 3 : 4) && (
         <div className="mt-4 rounded-xl border border-destructive/25 bg-destructive/5 p-3">
           <p className="text-sm text-destructive">{error}</p>
           <Button className="mt-2" onClick={retryCurrentStep} size="sm" variant="outline">

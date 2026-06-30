@@ -69,6 +69,7 @@ type PackageFormState = {
   order: number
   is_active: boolean
   featuresText: string
+  department: number | null
 }
 
 type FlashMessage = {
@@ -109,6 +110,7 @@ const DEFAULT_PACKAGE_FORM: PackageFormState = {
   order: 0,
   is_active: true,
   featuresText: "",
+  department: null,
 }
 
 export default function MembershipsPage() {
@@ -146,6 +148,7 @@ export default function MembershipsPage() {
   const [quickRenewSubs, setQuickRenewSubs] = useState<any[]>([])
   const [quickRenewLoadingSubs, setQuickRenewLoadingSubs] = useState(false)
   const [quickRenewError, setQuickRenewError] = useState<string | null>(null)
+  const [departments, setDepartments] = useState<Array<{ id: number; name_ar: string }>>([])
 
   const canManagePackages = user?.role === "super_admin" || user?.role === "reception"
 
@@ -154,6 +157,15 @@ export default function MembershipsPage() {
     const timer = window.setTimeout(() => setFlash(null), 3200)
     return () => window.clearTimeout(timer)
   }, [flash])
+
+  useEffect(() => {
+    api.get<{ results: Array<{ id: number; name_ar: string }> } | Array<{ id: number; name_ar: string }>>("/departments/")
+      .then((res) => {
+        const items = (res as any).results || res
+        setDepartments(Array.isArray(items) ? items : [])
+      })
+      .catch(() => {})
+  }, [])
 
   const { data, isLoading } = useSubscriptions({
     page,
@@ -415,6 +427,7 @@ export default function MembershipsPage() {
       order: pkg.order,
       is_active: pkg.is_active,
       featuresText: (pkg.features || []).join("\n"),
+      department: pkg.department ?? null,
     })
     setPackageModalOpen(true)
   }
@@ -444,6 +457,7 @@ export default function MembershipsPage() {
       order: packageForm.order,
       is_active: packageForm.is_active,
       features,
+      department: packageForm.department || null,
     }
   }
 
@@ -683,8 +697,8 @@ export default function MembershipsPage() {
           </div>
         </motion.div>
 
-        <motion.div variants={itemVariants} className="glass-card rounded-2xl overflow-hidden">
-          <div className="overflow-x-auto">
+        <motion.div variants={itemVariants} className="glass-card rounded-2xl overflow-x-auto">
+          <div>
             <table className="w-full min-w-[680px] text-right text-sm">
               <thead>
                 <tr className="bg-surface-container-high/50 border-b border-outline-variant/30 text-muted-foreground text-xs font-bold">
@@ -917,6 +931,21 @@ export default function MembershipsPage() {
               placeholder="الوصف"
               className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
             />
+
+            <div>
+              <label htmlFor="package-department" className="mb-1 block text-xs text-muted-foreground">الأكاديمية (اختياري)</label>
+              <select
+                id="package-department"
+                value={packageForm.department ?? ""}
+                onChange={(e) => setPackageForm((prev) => ({ ...prev, department: e.target.value ? Number(e.target.value) : null }))}
+                className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
+              >
+                <option value="">جميع الأكاديميات (باقة عامة)</option>
+                {departments.map((d) => (
+                  <option key={d.id} value={d.id}>{d.name_ar}</option>
+                ))}
+              </select>
+            </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
               <div>

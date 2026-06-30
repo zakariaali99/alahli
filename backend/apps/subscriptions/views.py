@@ -52,7 +52,7 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
             updated_instance.save(update_fields=["approved_by", "approved_at"])
 
     def get_permissions(self):
-        if self.action in ["create", "update", "partial_update", "destroy", "renew"]:
+        if self.action in ["create", "update", "partial_update", "destroy"]:
             return [IsReceptionOrAbove()]
         return [IsAuthenticated()]
 
@@ -60,6 +60,30 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
     @action(detail=True, methods=["post"])
     def renew(self, request, pk=None):
         subscription = self.get_object()
+        user = request.user
+
+        # Staff can renew any subscription
+        # Athletes can only renew their own
+        # Parents can only renew their children's
+        if user.role not in ["super_admin", "reception"]:
+            if hasattr(user, "athlete") and user.athlete is not None:
+                if subscription.athlete != user.athlete:
+                    return Response(
+                        {"detail": "لا يمكنك تجديد اشتراك لاعب آخر"},
+                        status=status.HTTP_403_FORBIDDEN,
+                    )
+            elif user.role == "parent":
+                if not ParentAthlete.objects.filter(parent=user, athlete=subscription.athlete).exists():
+                    return Response(
+                        {"detail": "لا يمكنك تجديد اشتراك هذا اللاعب"},
+                        status=status.HTTP_403_FORBIDDEN,
+                    )
+            else:
+                return Response(
+                    {"detail": "ليس لديك صلاحية لتجديد الاشتراكات"},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+
         serializer = RenewSubscriptionSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
@@ -79,7 +103,7 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
             subscription=subscription,
             amount=amount,
             months=months,
-            created_by=request.user,
+            created_by=user,
         )
 
         return Response(SubscriptionSerializer(subscription).data)

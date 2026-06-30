@@ -1,6 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:dio/dio.dart';
+import 'package:intl/intl.dart';
+import 'package:url_launcher/url_launcher.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/providers/providers.dart';
 import '../../../core/providers/paginated_providers.dart';
 import '../../../core/providers/paginated_list_notifier.dart';
@@ -13,7 +16,6 @@ import '../../../core/widgets/loading_shimmer.dart';
 import '../../../core/widgets/staggered_list_item.dart';
 import '../../../core/helpers/numeral_converter.dart';
 import '../../../core/helpers/ui_helpers.dart';
-import 'package:intl/intl.dart';
 import '../../../core/models/registration_model.dart';
 import '../../../core/models/subscription_model.dart';
 
@@ -258,6 +260,261 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> with SingleTi
     );
   }
 
+  void _showRegistrationDetails(RegistrationModel reg) {
+    final hasProfile = reg.athleteId != null;
+    final isDark = Theme.of(context).brightness == Brightness.dark;
+
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (ctx) {
+        return Container(
+          decoration: BoxDecoration(
+            color: isDark ? AppColors.darkCard : Colors.white,
+            borderRadius: const BorderRadius.vertical(top: Radius.circular(24)),
+            border: Border.all(
+              color: isDark ? AppColors.darkBorder : AppColors.border,
+              width: 1.2,
+            ),
+          ),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 20),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  margin: const EdgeInsets.only(bottom: 16),
+                  decoration: BoxDecoration(
+                    color: isDark ? Colors.white24 : Colors.black12,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const Text(
+                'تفاصيل طلب التسجيل',
+                textAlign: TextAlign.right,
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              const SizedBox(height: 16),
+              Row(
+                children: [
+                  CircleAvatar(
+                    radius: 24,
+                    backgroundColor: reg.roleChoice == 'athlete'
+                        ? AppColors.primary.withValues(alpha: 0.1)
+                        : AppColors.secondary.withValues(alpha: 0.1),
+                    backgroundImage: reg.athletePhoto != null ? NetworkImage(reg.athletePhoto!) : null,
+                    child: reg.athletePhoto == null
+                        ? Icon(
+                            reg.roleChoice == 'athlete' ? Icons.person : Icons.supervisor_account,
+                            color: reg.roleChoice == 'athlete' ? AppColors.primary : AppColors.secondary,
+                            size: 24,
+                          )
+                        : null,
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          reg.userName,
+                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          'الهاتف: ${reg.userPhone.toWesternDigits()}',
+                          style: const TextStyle(fontSize: 12, color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: reg.roleChoice == 'athlete'
+                          ? AppColors.primary.withValues(alpha: 0.1)
+                          : AppColors.secondary.withValues(alpha: 0.1),
+                      borderRadius: BorderRadius.circular(4),
+                    ),
+                    child: Text(
+                      reg.roleChoice == 'athlete' ? 'لاعب' : 'ولي أمر',
+                      style: TextStyle(
+                        color: reg.roleChoice == 'athlete' ? AppColors.primary : AppColors.secondary,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const Divider(height: 24),
+              _buildDetailRow(
+                icon: Icons.calendar_today_outlined,
+                label: 'تاريخ تقديم الطلب',
+                value: safeDateTimeParse(reg.createdAt) != null
+                    ? NumberFormatter.formatDateTime(safeDateTimeParse(reg.createdAt)!)
+                    : reg.createdAt,
+              ),
+              const SizedBox(height: 12),
+              _buildDetailRow(
+                icon: Icons.business_outlined,
+                label: 'القسم / الأكاديمية',
+                value: reg.athleteDepartmentName ?? (reg.athleteId != null ? 'ملف مكتمل' : 'بحاجة لإنشاء ملف'),
+              ),
+              if (reg.athleteMembershipNumber != null) ...[
+                const SizedBox(height: 12),
+                _buildDetailRow(
+                  icon: Icons.badge_outlined,
+                  label: 'رقم العضوية',
+                  value: reg.athleteMembershipNumber!.toWesternDigits(),
+                ),
+              ],
+              if (reg.hasParent && reg.parentName != null) ...[
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkMuted : Colors.grey.shade50,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isDark ? AppColors.darkBorder : AppColors.border.withValues(alpha: 0.5),
+                    ),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Row(
+                        children: [
+                          Icon(Icons.supervisor_account, size: 16, color: Colors.grey),
+                          SizedBox(width: 8),
+                          Text(
+                            'تمت الإضافة بواسطة ولي الأمر',
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: Colors.grey),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+                      Text('الاسم: ${reg.parentName}', style: const TextStyle(fontSize: 13, fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 4),
+                      Text('الهاتف: ${reg.parentPhone ?? ""}', style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                    ],
+                  ),
+                ),
+              ],
+              const SizedBox(height: 20),
+              if (hasProfile && reg.athleteId != null) ...[
+                ElevatedButton.icon(
+                  onPressed: () {
+                    Navigator.pop(ctx);
+                    context.push('/dashboard/athletes/${reg.athleteId}');
+                  },
+                  icon: const Icon(Icons.badge, size: 16),
+                  label: const Text('عرض الملف الرياضي للاعب'),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primary.withValues(alpha: 0.1),
+                    foregroundColor: AppColors.primary,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+                const SizedBox(height: 12),
+              ],
+              Row(
+                children: [
+                  Expanded(
+                    child: OutlinedButton(
+                      onPressed: () {
+                        Navigator.pop(ctx);
+                        _rejectRegistration(reg);
+                      },
+                      style: OutlinedButton.styleFrom(
+                        foregroundColor: AppColors.destructive,
+                        side: const BorderSide(color: AppColors.destructive),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                        padding: const EdgeInsets.symmetric(vertical: 12),
+                      ),
+                      child: const Text('رفض الطلب'),
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  if (reg.roleChoice == 'athlete' && !hasProfile)
+                    Expanded(
+                      child: ElevatedButton.icon(
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          _showCreateProfileDialog(reg);
+                        },
+                        icon: const Icon(Icons.person_add, size: 16),
+                        label: const Text('إنشاء ملف لاعب'),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                      ),
+                    )
+                  else
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(ctx);
+                          _approveRegistration(reg);
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.secondary,
+                          foregroundColor: Colors.white,
+                          elevation: 0,
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                          padding: const EdgeInsets.symmetric(vertical: 12),
+                        ),
+                        child: const Text('اعتماد وقبول'),
+                      ),
+                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+  Widget _buildDetailRow({
+    required IconData icon,
+    required String label,
+    required String value,
+  }) {
+    return Row(
+      children: [
+        Icon(icon, size: 18, color: Colors.grey),
+        const SizedBox(width: 12),
+        Text(
+          '$label: ',
+          style: const TextStyle(fontSize: 13, color: Colors.grey),
+        ),
+        Expanded(
+          child: Text(
+            value,
+            textAlign: TextAlign.left,
+            style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600),
+          ),
+        ),
+      ],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final regFilter = RegistrationFilter(status: 'pending');
@@ -269,32 +526,70 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> with SingleTi
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('إدارة الموافقات والطلبات', style: TextStyle(fontWeight: FontWeight.bold)),
-        bottom: TabBar(
-          controller: _tabController,
-          labelColor: AppColors.primary,
-          unselectedLabelColor: isDark ? Colors.white60 : Colors.black54,
-          indicatorColor: AppColors.primary,
-          tabs: const [
-            Tab(text: AppStrings.registrations),
-            Tab(text: AppStrings.pendingSubscriptions),
-          ],
-        ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
+      body: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Registrations Tab
-          RefreshIndicator(
-            onRefresh: () => ref.read(registrationsPaginatedProvider(regFilter).notifier).refresh(),
-            child: _buildRegistrationsTab(regState),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text(
+                  'إدارة الموافقات والطلبات',
+                  style: TextStyle(
+                    fontSize: 20,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                const SizedBox(height: 12),
+                Container(
+                  height: 46,
+                  padding: const EdgeInsets.all(4),
+                  decoration: BoxDecoration(
+                    color: isDark ? AppColors.darkCard : Colors.grey.shade100,
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: TabBar(
+                    controller: _tabController,
+                    labelColor: isDark ? Colors.white : Colors.black,
+                    unselectedLabelColor: Colors.grey,
+                    indicatorSize: TabBarIndicatorSize.tab,
+                    indicator: BoxDecoration(
+                      color: isDark ? AppColors.darkPrimary.withValues(alpha: 0.2) : Colors.white,
+                      borderRadius: BorderRadius.circular(8),
+                      boxShadow: isDark
+                          ? []
+                          : [
+                              BoxShadow(
+                                color: Colors.black.withValues(alpha: 0.05),
+                                blurRadius: 4,
+                                offset: const Offset(0, 2),
+                              ),
+                            ],
+                    ),
+                    tabs: const [
+                      Tab(text: AppStrings.registrations),
+                      Tab(text: AppStrings.pendingSubscriptions),
+                    ],
+                  ),
+                ),
+              ],
+            ),
           ),
-
-          // Subscriptions Tab
-          RefreshIndicator(
-            onRefresh: () => ref.read(subscriptionsPaginatedProvider(subFilter).notifier).refresh(),
-            child: _buildSubscriptionsTab(subState),
+          Expanded(
+            child: TabBarView(
+              controller: _tabController,
+              children: [
+                RefreshIndicator(
+                  onRefresh: () => ref.read(registrationsPaginatedProvider(regFilter).notifier).refresh(),
+                  child: _buildRegistrationsTab(regState),
+                ),
+                RefreshIndicator(
+                  onRefresh: () => ref.read(subscriptionsPaginatedProvider(subFilter).notifier).refresh(),
+                  child: _buildSubscriptionsTab(subState),
+                ),
+              ],
+            ),
           ),
         ],
       ),
@@ -325,14 +620,18 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> with SingleTi
 
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: state.items.length,
+      itemCount: state.items.length + 1,
       itemBuilder: (context, index) {
+        if (index == state.items.length) {
+          return const SizedBox(height: 100);
+        }
         final reg = state.items[index];
         final hasProfile = reg.athleteId != null;
 
         return StaggeredListItem(
           index: index,
           child: AppCard(
+            onTap: () => _showRegistrationDetails(reg),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
@@ -372,6 +671,12 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> with SingleTi
                       onPressed: () => _rejectRegistration(reg),
                       child: const Text(AppStrings.reject, style: TextStyle(color: AppColors.destructive)),
                     ),
+                    if (hasProfile && reg.athleteId != null)
+                      TextButton.icon(
+                        onPressed: () => context.push('/dashboard/athletes/${reg.athleteId}'),
+                        icon: const Icon(Icons.badge, size: 16, color: AppColors.primary),
+                        label: const Text('عرض الملف', style: TextStyle(color: AppColors.primary)),
+                      ),
                     if (reg.roleChoice == 'athlete' && !hasProfile)
                       ElevatedButton.icon(
                         onPressed: () => _showCreateProfileDialog(reg),
@@ -427,8 +732,11 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> with SingleTi
 
     return ListView.builder(
       padding: const EdgeInsets.all(16),
-      itemCount: state.items.length,
+      itemCount: state.items.length + 1,
       itemBuilder: (context, index) {
+        if (index == state.items.length) {
+          return const SizedBox(height: 100);
+        }
         final sub = state.items[index];
 
         return StaggeredListItem(
@@ -452,6 +760,19 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> with SingleTi
                 Text('الباقة: ${sub.packageName}', style: const TextStyle(fontSize: 13)),
                 Text('الأكاديمية: ${sub.departmentName}', style: const TextStyle(fontSize: 13)),
                 Text('طريقة الدفع: ${sub.paymentMethod == 'cash' ? 'نقدي' : 'تحويل مصرفي'}', style: const TextStyle(fontSize: 13)),
+                if (sub.invoicePdfUrl != null && sub.invoicePdfUrl!.isNotEmpty) ...[
+                  const SizedBox(height: 8),
+                  TextButton.icon(
+                    onPressed: () async {
+                      final url = Uri.parse(sub.invoicePdfUrl!);
+                      if (await canLaunchUrl(url)) {
+                        await launchUrl(url, mode: LaunchMode.externalApplication);
+                      }
+                    },
+                    icon: const Icon(Icons.file_present_outlined, size: 16, color: AppColors.primary),
+                    label: const Text('عرض إيصال التحويل (PDF/صورة)', style: TextStyle(color: AppColors.primary, fontSize: 12)),
+                  ),
+                ],
                 const Divider(height: 24),
                 Wrap(
                   alignment: WrapAlignment.end,
