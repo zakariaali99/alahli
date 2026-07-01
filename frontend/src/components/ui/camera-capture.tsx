@@ -43,6 +43,12 @@ export default function CameraCapture({ onCapture, buttonText = "خذ صورة �
   }, [onCapture, stopCamera])
 
   const tryCamera = useCallback(async () => {
+    const isMobile = /Mobi|Android|iPhone|iPad|iPod/i.test(navigator.userAgent)
+    if (isMobile) {
+      fallbackInputRef.current?.click()
+      return
+    }
+
     if (!navigator.mediaDevices?.getUserMedia) {
       fallbackInputRef.current?.click()
       return
