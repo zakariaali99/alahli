@@ -15,6 +15,7 @@ import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/loading_shimmer.dart';
 import '../../../core/widgets/staggered_list_item.dart';
 import '../../../core/helpers/numeral_converter.dart';
+import '../../../core/helpers/phone_validator.dart';
 import '../../../core/helpers/ui_helpers.dart';
 import '../../../core/models/registration_model.dart';
 import '../../../core/models/subscription_model.dart';
@@ -159,7 +160,7 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> with SingleTi
                         keyboardType: TextInputType.phone,
                         textAlign: TextAlign.right,
                         decoration: const InputDecoration(labelText: 'رقم الهاتف'),
-                        validator: (v) => v == null || v.isEmpty ? 'يرجى إدخال رقم الهاتف' : null,
+                        validator: (v) => PhoneValidator.validateLibyanPhone(v) ?? (v == null || v.isEmpty ? 'يرجى إدخال رقم الهاتف' : null),
                       ),
                       const SizedBox(height: 8),
                       DropdownButtonFormField<String>(

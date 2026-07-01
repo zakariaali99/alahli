@@ -3,6 +3,7 @@ import 'package:go_router/go_router.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/providers.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/helpers/phone_validator.dart';
 
 class RegisterParentScreen extends ConsumerStatefulWidget {
   const RegisterParentScreen({super.key});
@@ -159,7 +160,7 @@ class _RegisterParentScreenState extends ConsumerState<RegisterParentScreen> {
                   labelText: 'رقم الهاتف',
                   hintText: '09xxxxxxxx',
                 ),
-                validator: (val) => val == null || val.isEmpty ? 'يرجى إدخال رقم الهاتف' : null,
+                validator: (val) => PhoneValidator.validateLibyanPhone(val) ?? (val == null || val.isEmpty ? 'يرجى إدخال رقم الهاتف' : null),
               ),
               const SizedBox(height: 16),
 

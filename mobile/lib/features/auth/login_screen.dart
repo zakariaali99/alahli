@@ -5,6 +5,7 @@ import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/providers/providers.dart';
 import '../../core/helpers/numeral_converter.dart';
+import '../../core/helpers/phone_validator.dart';
 import '../../core/widgets/app_card.dart';
 
 class LoginScreen extends ConsumerStatefulWidget {
@@ -199,7 +200,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 hintText: '09xxxxxxxx',
                                 prefixIcon: Icon(Icons.phone_android),
                               ),
-                              validator: (val) => val == null || val.isEmpty ? 'يرجى إدخال رقم الهاتف' : null,
+                              validator: (val) => PhoneValidator.validateLibyanPhone(val) ?? (val == null || val.isEmpty ? 'يرجى إدخال رقم الهاتف' : null),
                             ),
                             const SizedBox(height: 16),
 

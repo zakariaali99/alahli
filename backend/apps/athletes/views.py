@@ -13,6 +13,7 @@ from rest_framework.response import Response
 from apps.accounts.models import User
 from apps.accounts.permissions import IsReceptionOrAbove, IsSuperAdminOrReadOnly
 from apps.accounts.serializers import UserSerializer
+from apps.accounts.validators import validate_libyan_phone
 from apps.subscriptions.models import Subscription
 
 from .filters import AthleteFilter
@@ -304,6 +305,11 @@ class ParentAthleteViewSet(viewsets.ModelViewSet):
 
         if not full_name or not phone:
             return Response({"detail": "full_name and phone are required"}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            phone = validate_libyan_phone(phone)
+        except Exception as exc:
+            return Response({"phone": exc.detail if hasattr(exc, "detail") else str(exc)}, status=status.HTTP_400_BAD_REQUEST)
         if not photo_data:
             return Response({"detail": "photo is required"}, status=status.HTTP_400_BAD_REQUEST)
 

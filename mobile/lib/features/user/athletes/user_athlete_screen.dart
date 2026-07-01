@@ -1,9 +1,10 @@
-import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/helpers/phone_validator.dart';
+import '../../../core/helpers/photo_utils.dart';
 import '../../../core/providers/providers.dart';
 import '../../../core/widgets/app_card.dart';
 
@@ -99,28 +100,56 @@ class _UserAthleteScreenState extends ConsumerState<UserAthleteScreen> {
     }
   }
 
+  Future<ImageSource?> _chooseImageSource() {
+    return showModalBottomSheet<ImageSource>(
+      context: context,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt_outlined),
+              title: const Text('التقاط صورة بالكاميرا'),
+              onTap: () => Navigator.pop(ctx, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('اختيار صورة من الجهاز'),
+              onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+            ),
+            ListTile(
+              leading: const Icon(Icons.close),
+              title: const Text('إلغاء'),
+              onTap: () => Navigator.pop(ctx),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
   Future<void> _pickImage() async {
     try {
-      final XFile? image = await _picker.pickImage(
-        source: ImageSource.camera,
-        preferredCameraDevice: CameraDevice.front,
+      final image = await PhotoUtils.pickFromCameraOrGallery(
+        picker: _picker,
+        chooseSource: _chooseImageSource,
         maxWidth: 600,
         maxHeight: 600,
         imageQuality: 85,
       );
       if (image != null) {
-        final bytes = await image.readAsBytes();
-        final base64Str = base64Encode(bytes);
-        final ext = image.name.split('.').last.toLowerCase();
+        final base64Data = await PhotoUtils.toBase64DataUri(image);
         setState(() {
           _pickedFile = image;
-          _photoBase64 = 'data:image/$ext;base64,$base64Str';
+          _photoBase64 = base64Data;
           _submitError = null;
         });
       }
     } catch (e) {
       setState(() {
-        _submitError = 'حدث خطأ أثناء التقاط الصورة';
+        _submitError = 'تعذر الوصول للكاميرا. جرّب اختيار صورة من الجهاز.';
       });
     }
   }
@@ -271,9 +300,9 @@ class _UserAthleteScreenState extends ConsumerState<UserAthleteScreen> {
                                   : const Column(
                                       mainAxisAlignment: MainAxisAlignment.center,
                                       children: [
-                                        Icon(Icons.camera_alt_outlined, size: 24, color: Color(0xFF0F4C81)),
+                                        Icon(Icons.add_a_photo_outlined, size: 24, color: Color(0xFF0F4C81)),
                                         SizedBox(height: 4),
-                                        Text('صورة اللاعب', style: TextStyle(fontSize: 10, color: Color(0xFF0F4C81))),
+                                        Text('كاميرا / الجهاز', style: TextStyle(fontSize: 10, color: Color(0xFF0F4C81))),
                                       ],
                                     ),
                             ),
@@ -292,7 +321,7 @@ class _UserAthleteScreenState extends ConsumerState<UserAthleteScreen> {
                           controller: _phoneController,
                           keyboardType: TextInputType.phone,
                           decoration: const InputDecoration(labelText: 'رقم الهاتف'),
-                          validator: (val) => val == null || val.isEmpty ? 'مطلوب' : null,
+                          validator: (val) => PhoneValidator.validateLibyanPhone(val) ?? (val == null || val.isEmpty ? 'مطلوب' : null),
                         ),
                         const SizedBox(height: 12),
 

@@ -6,6 +6,7 @@ import { Input } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import { useAuth } from "@/lib/auth"
 import { AlertCircle, Eye, EyeOff, Lock, Phone, ShieldCheck } from "lucide-react"
+import { validateLibyanPhone } from "@/lib/utils"
 
 export default function LoginPage() {
   const navigate = useNavigate()
@@ -36,6 +37,9 @@ export default function LoginPage() {
       setErrorMessage("يرجى إدخال رقم الهاتف وكلمة المرور")
       return
     }
+
+    const phoneErr = validateLibyanPhone(phone)
+    if (phoneErr) { setErrorMessage(phoneErr); return }
 
     setIsLoading(true)
     setErrorMessage(null)

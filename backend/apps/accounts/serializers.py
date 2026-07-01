@@ -2,6 +2,8 @@ from rest_framework import serializers
 
 from apps.athletes.serializers import AthleteDetailSerializer
 
+from .validators import validate_libyan_phone
+
 from .models import User
 
 
@@ -32,6 +34,7 @@ class UserSerializer(serializers.ModelSerializer):
 
 
 class UserCreateSerializer(serializers.ModelSerializer):
+    phone = serializers.CharField(max_length=20, validators=[validate_libyan_phone])
     password = serializers.CharField(write_only=True, min_length=1)
 
     class Meta:
@@ -49,6 +52,7 @@ class UserCreateSerializer(serializers.ModelSerializer):
 
 
 class UserUpdateSerializer(serializers.ModelSerializer):
+    phone = serializers.CharField(max_length=20, validators=[validate_libyan_phone], required=False)
     password = serializers.CharField(write_only=True, min_length=1, required=False)
 
     class Meta:
@@ -70,7 +74,7 @@ class UserUpdateSerializer(serializers.ModelSerializer):
 
 
 class LoginSerializer(serializers.Serializer):
-    phone = serializers.CharField(max_length=20)
+    phone = serializers.CharField(max_length=20, validators=[validate_libyan_phone])
     password = serializers.CharField(max_length=128)
     remember_me = serializers.BooleanField(default=False)
 

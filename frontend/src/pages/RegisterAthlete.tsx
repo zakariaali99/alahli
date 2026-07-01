@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { api } from "@/lib/api"
 import CameraCapture from "@/components/ui/camera-capture"
 import { extractResults } from "@/lib/response"
+import { validateLibyanPhone } from "@/lib/utils"
 import { Dumbbell, ArrowRight, CheckCircle } from "lucide-react"
 
 interface Department {
@@ -40,12 +41,19 @@ export default function RegisterAthlete() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
+
+    const phoneErr = validateLibyanPhone(form.phone)
+    if (phoneErr) {
+      setError(phoneErr)
+      return
+    }
+
     setLoading(true)
     try {
       await api.post("/auth/register/", {
         role: "athlete",
         full_name: form.full_name,
-        phone: form.phone,
+        phone: form.phone.trim(),
         password: form.password,
         photo,
         department: form.department ? parseInt(form.department) : null,

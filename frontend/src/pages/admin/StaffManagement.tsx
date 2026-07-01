@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { api } from "@/lib/api"
 import { extractResults } from "@/lib/response"
+import { validateLibyanPhone } from "@/lib/utils"
 import { useToast } from "@/lib/toast"
 
 type StaffUser = {
@@ -133,6 +134,10 @@ export default function StaffManagement() {
       setModalError("الاسم ورقم الهاتف مطلوبان")
       return
     }
+
+    const phoneErr = validateLibyanPhone(form.phone)
+    if (phoneErr) { setModalError(phoneErr); return }
+
     if (!editingUser && !form.password.trim()) {
       setModalError("كلمة المرور مطلوبة للمستخدم الجديد")
       return

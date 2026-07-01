@@ -1,4 +1,3 @@
-import 'dart:convert';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -7,6 +6,8 @@ import 'package:image_picker/image_picker.dart';
 import 'package:dio/dio.dart';
 import '../../../core/providers/providers.dart';
 import '../../../core/constants/app_colors.dart';
+import '../../../core/helpers/phone_validator.dart';
+import '../../../core/helpers/photo_utils.dart';
 import '../../../core/widgets/app_error_widget.dart';
 import '../../../core/helpers/numeral_converter.dart';
 
@@ -33,7 +34,7 @@ class _AddAthleteScreenState extends ConsumerState<AddAthleteScreen> {
   String _selectedGender = 'male';
   int? _selectedDepartmentId;
   DateTime? _selectedBirthDate;
-  File? _selectedImage;
+  XFile? _selectedImage;
   bool _isLoading = false;
   String? _errorMessage;
 
@@ -47,37 +48,55 @@ class _AddAthleteScreenState extends ConsumerState<AddAthleteScreen> {
     super.dispose();
   }
 
-  Future<void> _pickImage() async {
-    final picker = ImagePicker();
-    final source = await showDialog<ImageSource>(
+  Future<ImageSource?> _chooseImageSource() {
+    return showModalBottomSheet<ImageSource>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('مصدر الصورة', textAlign: TextAlign.right),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, ImageSource.camera),
-            child: const Text('الكاميرا'),
-          ),
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, ImageSource.gallery),
-            child: const Text('المعرض'),
-          ),
-        ],
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(16)),
+      ),
+      builder: (ctx) => SafeArea(
+        child: Wrap(
+          children: [
+            ListTile(
+              leading: const Icon(Icons.camera_alt_outlined),
+              title: const Text('التقاط صورة بالكاميرا'),
+              onTap: () => Navigator.pop(ctx, ImageSource.camera),
+            ),
+            ListTile(
+              leading: const Icon(Icons.photo_library_outlined),
+              title: const Text('اختيار صورة من الجهاز'),
+              onTap: () => Navigator.pop(ctx, ImageSource.gallery),
+            ),
+            ListTile(
+              leading: const Icon(Icons.close),
+              title: const Text('إلغاء'),
+              onTap: () => Navigator.pop(ctx),
+            ),
+          ],
+        ),
       ),
     );
+  }
 
-    if (source != null) {
-      final pickedFile = await picker.pickImage(
-        source: source,
+  Future<void> _pickImage() async {
+    final picker = ImagePicker();
+    try {
+      final pickedFile = await PhotoUtils.pickFromCameraOrGallery(
+        picker: picker,
+        chooseSource: _chooseImageSource,
         maxWidth: 800,
         maxHeight: 800,
         imageQuality: 85,
       );
       if (pickedFile != null) {
         setState(() {
-          _selectedImage = File(pickedFile.path);
+          _selectedImage = pickedFile;
         });
       }
+    } catch (_) {
+      setState(() {
+        _errorMessage = 'تعذر الوصول للكاميرا. جرّب اختيار صورة من الجهاز.';
+      });
     }
   }
 
@@ -128,11 +147,7 @@ class _AddAthleteScreenState extends ConsumerState<AddAthleteScreen> {
     try {
       final apiClient = ref.read(apiClientProvider);
 
-      String? photoBase64;
-      if (_selectedImage != null) {
-        final bytes = await _selectedImage!.readAsBytes();
-        photoBase64 = 'data:image/jpeg;base64,${base64Encode(bytes)}';
-      }
+      final photoBase64 = await PhotoUtils.toBase64DataUri(_selectedImage);
 
       final Map<String, dynamic> payload = {
         'role': _scenario,
@@ -410,7 +425,7 @@ class _AddAthleteScreenState extends ConsumerState<AddAthleteScreen> {
                       child: CircleAvatar(
                         radius: 50,
                         backgroundColor: AppColors.primary.withValues(alpha: 0.1),
-                        backgroundImage: _selectedImage != null ? FileImage(_selectedImage!) : null,
+                        backgroundImage: _selectedImage != null ? FileImage(File(_selectedImage!.path)) : null,
                         child: _selectedImage == null
                             ? const Icon(Icons.add_a_photo, size: 40, color: AppColors.primary)
                             : null,
@@ -465,7 +480,7 @@ class _AddAthleteScreenState extends ConsumerState<AddAthleteScreen> {
               ),
               validator: (val) {
                 if (val == null || val.isEmpty) return 'يرجى إدخال رقم الهاتف';
-                return null;
+                return PhoneValidator.validateLibyanPhone(val);
               },
             ),
             const SizedBox(height: 16),

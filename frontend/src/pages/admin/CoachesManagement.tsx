@@ -6,6 +6,7 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { api } from "@/lib/api"
 import { extractResults } from "@/lib/response"
 import { useToast } from "@/lib/toast"
+import { validateLibyanPhone } from "@/lib/utils"
 import type { Group } from "@/lib/types"
 
 type Coach = {
@@ -87,6 +88,10 @@ export default function CoachesManagement() {
       setModalError("الاسم ورقم الهاتف مطلوبان")
       return
     }
+
+    const phoneErr = validateLibyanPhone(form.phone)
+    if (phoneErr) { setModalError(phoneErr); return }
+
     if (!editingCoach && !form.password.trim()) {
       setModalError("كلمة المرور مطلوبة للمدرب الجديد")
       return

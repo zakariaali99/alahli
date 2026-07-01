@@ -7,6 +7,7 @@ import { api } from "@/lib/api"
 import { useToast } from "@/lib/toast"
 import { extractResults } from "@/lib/response"
 import type { Department, RegistrationRequest } from "@/lib/types"
+import { validateLibyanPhone } from "@/lib/utils"
 import CameraCapture from "@/components/ui/camera-capture"
 
 type Scenario = "choose" | "athlete" | "parent"
@@ -103,6 +104,10 @@ export default function AddAthletePage() {
       setError("يرجى تعبئة الاسم ورقم الهاتف")
       return
     }
+
+    const phoneErr = validateLibyanPhone(athleteForm.phone)
+    if (phoneErr) { setError(phoneErr); return }
+
     if (!registrationId && !athleteForm.password.trim()) {
       setError("يرجى تعبئة كلمة المرور")
       return
@@ -173,6 +178,9 @@ export default function AddAthletePage() {
       setError("يرجى تعبئة الاسم ورقم الهاتف وكلمة المرور")
       return
     }
+
+    const parentPhoneErr = validateLibyanPhone(parentForm.phone)
+    if (parentPhoneErr) { setError(parentPhoneErr); return }
 
     try {
       setSubmitting(true)
