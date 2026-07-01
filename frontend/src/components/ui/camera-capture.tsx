@@ -57,7 +57,7 @@ export default function CameraCapture({ onCapture, buttonText = "خذ صورة �
         ref={cameraInputRef}
         type="file"
         accept="image/*"
-        capture="environment"
+        capture="user"
         className="hidden"
         onChange={onFileSelected}
       />
