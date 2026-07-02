@@ -58,38 +58,16 @@ STORAGES = {
     },
 }
 
-LOGGING = {
-    "version": 1,
-    "disable_existing_loggers": False,
-    "formatters": {
-        "verbose": {
-            "format": "{levelname} {asctime} {module} {message}",
-            "style": "{",
-        },
-    },
-    "handlers": {
-        "console": {
-            "class": "logging.StreamHandler",
-            "formatter": "verbose",
-        },
-    },
-    "root": {
-        "handlers": ["console"],
-        "level": os.environ.get("DJANGO_LOG_LEVEL", "INFO"),
-    },
-    "loggers": {
-        "django": {
-            "handlers": ["console"],
-            "level": os.environ.get("DJANGO_LOG_LEVEL", "INFO"),
-            "propagate": False,
-        },
-        "django.request": {
-            "handlers": ["console"],
-            "level": "ERROR",
-            "propagate": False,
-        },
-    },
+LOGGING = {**LOGGING, "handlers": {**LOGGING["handlers"]}, "root": {**LOGGING["root"]}}
+LOGGING["handlers"]["file"] = {
+    "class": "logging.handlers.RotatingFileHandler",
+    "filename": BASE_DIR / "logs" / "django.log",
+    "maxBytes": 10 * 1024 * 1024,
+    "backupCount": 5,
+    "formatter": "verbose",
+    "encoding": "utf-8",
 }
+LOGGING["root"]["handlers"] = ["console", "file"]
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 EMAIL_HOST = os.environ.get("EMAIL_HOST", "")

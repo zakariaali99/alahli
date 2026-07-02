@@ -3,6 +3,8 @@ if (!import.meta.env.VITE_API_URL) {
 }
 export const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000/api"
 
+const REQUEST_TIMEOUT_MS = 15_000
+
 interface TokenStore {
   access: string
   refresh: string
@@ -46,7 +48,7 @@ async function refreshTokens(): Promise<boolean> {
   if (!tokens) return false
   refreshPromise = (async () => {
     try {
-      const res = await fetch(`${API_BASE}/auth/token/refresh/`, {
+      const res = await fetchWithTimeout(`${API_BASE}/auth/token/refresh/`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ refresh: tokens.refresh }),
@@ -62,6 +64,25 @@ async function refreshTokens(): Promise<boolean> {
     }
   })()
   return refreshPromise
+}
+
+async function fetchWithTimeout(url: string, init: RequestInit = {}): Promise<Response> {
+  const controller = new AbortController()
+  const timeoutId = window.setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS)
+  try {
+    const response = await fetch(url, { ...init, signal: controller.signal })
+    return response
+  } catch (err: unknown) {
+    if (err instanceof DOMException && err.name === "AbortError") {
+      throw new ApiError("انتهت مهلة الاتصال بالخادم. حاول مرة أخرى.", 408)
+    }
+    if (err instanceof TypeError) {
+      throw new ApiError("تعذر الاتصال بالخادم. تحقق من اتصالك بالإنترنت.", 0)
+    }
+    throw err
+  } finally {
+    window.clearTimeout(timeoutId)
+  }
 }
 
 async function request<T = any>(
@@ -94,18 +115,24 @@ async function request<T = any>(
     fetchBody = opts.formData ? body : JSON.stringify(body)
   }
 
-  let res = await fetch(url.toString(), { method, headers, body: fetchBody })
+  let res: Response
+  try {
+    res = await fetchWithTimeout(url.toString(), { method, headers, body: fetchBody })
+  } catch (err) {
+    if (err instanceof ApiError) throw err
+    throw new ApiError("تعذر الاتصال بالخادم", 0)
+  }
 
   if (res.status === 401 && !opts.skipAuth) {
     const refreshed = await refreshTokens()
     if (refreshed) {
       const tokens = getTokens()
       headers["Authorization"] = `Bearer ${tokens!.access}`
-      res = await fetch(url.toString(), { method, headers, body: fetchBody })
+      res = await fetchWithTimeout(url.toString(), { method, headers, body: fetchBody })
     } else {
       clearTokens()
       window.dispatchEvent(new CustomEvent("auth:logout"))
-      throw new ApiError("Session expired", 401)
+      throw new ApiError("انتهت صلاحية الجلسة. يرجى تسجيل الدخول مرة أخرى.", 401)
     }
   }
 

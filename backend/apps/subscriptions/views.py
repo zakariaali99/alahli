@@ -180,7 +180,11 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
                 try:
                     athlete = Athlete.objects.get(id=data["athlete_id"])
                 except Athlete.DoesNotExist:
-                    pass
+                    import logging
+                    logging.getLogger(__name__).warning(
+                        "Athlete ID %s not found for user %s (checkout fallback)",
+                        data["athlete_id"], user.id,
+                    )
 
             if athlete is not None and getattr(user, "athlete", None) is None:
                 user.athlete = athlete

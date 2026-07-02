@@ -217,11 +217,14 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                   );
                 },
                 loading: () => const SizedBox.shrink(),
-                error: (e, s) => const SizedBox.shrink(),
+                error: (e, s) => TextButton.icon(
+                  icon: const Icon(Icons.refresh, size: 16),
+                  label: const Text('فشل التحميل، اضغط لإعادة المحاولة', style: TextStyle(fontSize: 12)),
+                  onPressed: () => ref.invalidate(departmentsProvider),
+                ),
               ),
               const SizedBox(height: 20),
             ],
-
             // Statistics Header
             const Text(
               'الاحصائيات والنشاط',
@@ -385,7 +388,10 @@ class _DashboardScreenState extends ConsumerState<DashboardScreen>
                   );
                 },
                 loading: () => const SizedBox.shrink(),
-                error: (e, s) => const SizedBox.shrink(),
+                error: (e, s) => AppErrorWidget(
+                  errorMessage: 'حدث خطأ أثناء تحميل البيانات',
+                  onRetry: () => ref.invalidate(dashboardStatsProvider(academyIdFilter)),
+                ),
               ),
             ],
           ],

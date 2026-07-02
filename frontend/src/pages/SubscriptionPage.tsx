@@ -80,7 +80,8 @@ export default function SubscriptionPage() {
             fetchAcademies()
           }
         })
-        .catch(() => {
+        .catch((err) => {
+          console.warn("Failed to fetch user profile, falling back to academies list:", err)
           fetchAcademies()
         })
     } else {

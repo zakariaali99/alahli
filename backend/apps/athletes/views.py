@@ -54,7 +54,7 @@ def register_view(request):
                 img_format, imgstr = photo_data.split(";base64,", 1)
                 ext = img_format.split("/")[-1] if "/" in img_format else "jpg"
                 photo_file = ContentFile(base64.b64decode(imgstr), name=f"{uuid.uuid4().hex}.{ext}")
-            except Exception:
+            except (ValueError, IndexError, TypeError):
                 return Response({"photo": "Invalid photo format"}, status=status.HTTP_400_BAD_REQUEST)
 
     with transaction.atomic():
@@ -306,16 +306,13 @@ class ParentAthleteViewSet(viewsets.ModelViewSet):
         if not full_name or not phone:
             return Response({"detail": "full_name and phone are required"}, status=status.HTTP_400_BAD_REQUEST)
 
-        try:
-            phone = validate_libyan_phone(phone)
-        except Exception as exc:
-            return Response({"phone": exc.detail if hasattr(exc, "detail") else str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+        phone = validate_libyan_phone(phone)
         if not photo_data:
             return Response({"detail": "photo is required"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             birth_date = datetime.date(int(birth_year), int(birth_month), int(birth_day))
-        except Exception:
+        except (ValueError, TypeError, OverflowError):
             return Response({"detail": "Invalid birth date"}, status=status.HTTP_400_BAD_REQUEST)
 
         if User.objects.filter(phone=phone).exists() or Athlete.objects.filter(phone=phone).exists():
@@ -325,7 +322,7 @@ class ParentAthleteViewSet(viewsets.ModelViewSet):
             img_format, imgstr = photo_data.split(";base64,")
             ext = img_format.split("/")[-1] if "/" in img_format else "jpg"
             photo_file = ContentFile(base64.b64decode(imgstr), name=f"{uuid.uuid4().hex}.{ext}")
-        except Exception:
+        except (ValueError, IndexError, TypeError):
             return Response({"detail": "Invalid photo format"}, status=status.HTTP_400_BAD_REQUEST)
 
         user = User.objects.create_user(

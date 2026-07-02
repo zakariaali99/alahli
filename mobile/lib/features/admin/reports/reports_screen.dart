@@ -7,6 +7,7 @@ import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/stat_card.dart';
 import '../../../core/helpers/numeral_converter.dart';
 import '../../../core/helpers/responsive_helper.dart';
+import '../../../core/widgets/app_error_widget.dart';
 import '../../../core/helpers/safe_json.dart';
 
 final monthlyRevenueProvider = FutureProvider.autoDispose<List<Map<String, dynamic>>>((ref) {
@@ -93,11 +94,14 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                     );
                   },
                   loading: () => const SizedBox.shrink(),
-                  error: (e, s) => const SizedBox.shrink(),
+                  error: (e, s) => TextButton.icon(
+                    icon: const Icon(Icons.refresh, size: 16),
+                    label: const Text('فشل التحميل، اضغط لإعادة المحاولة', style: TextStyle(fontSize: 12)),
+                    onPressed: () => ref.invalidate(departmentsProvider),
+                  ),
                 ),
                 const SizedBox(height: 16),
               ],
-
               // Revenue Overview Card
               statsAsync.when(
                 data: (stats) {
@@ -263,7 +267,10 @@ class _ReportsScreenState extends ConsumerState<ReportsScreen> {
                     );
                   },
                   loading: () => const SizedBox.shrink(),
-                  error: (e, s) => const SizedBox.shrink(),
+                  error: (e, s) => AppErrorWidget(
+                    errorMessage: 'حدث خطأ أثناء تحميل البيانات',
+                    onRetry: () => ref.invalidate(dashboardStatsProvider(academyIdFilter)),
+                  ),
                 ),
               ],
             ],

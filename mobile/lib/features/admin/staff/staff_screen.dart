@@ -146,7 +146,11 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
                         );
                       },
                       loading: () => const SizedBox.shrink(),
-                      error: (e, s) => const SizedBox.shrink(),
+                      error: (e, s) => TextButton.icon(
+                        icon: const Icon(Icons.refresh, size: 16),
+                        label: const Text('فشل التحميل، اضغط لإعادة المحاولة', style: TextStyle(fontSize: 12)),
+                        onPressed: () => ref.invalidate(departmentsProvider),
+                      ),
                     ),
                 ],
               ),

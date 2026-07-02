@@ -19,7 +19,10 @@ def _get_academy(request):
         try:
             academy = Department.objects.get(id=request.query_params.get("academy_id"))
         except (ValueError, Department.DoesNotExist):
-            pass
+            import logging
+            logging.getLogger(__name__).warning(
+                "Invalid academy_id in query params: %s", request.query_params.get("academy_id"),
+            )
     return academy
 
 

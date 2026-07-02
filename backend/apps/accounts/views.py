@@ -6,6 +6,7 @@ from rest_framework.decorators import api_view, permission_classes, throttle_cla
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle
+from rest_framework_simplejwt.exceptions import TokenError
 from rest_framework_simplejwt.token_blacklist.models import BlacklistedToken
 from rest_framework_simplejwt.tokens import OutstandingToken, RefreshToken
 
@@ -91,7 +92,7 @@ def logout_view(request):
         try:
             token = RefreshToken(refresh_token)
             token.blacklist()
-        except Exception:
+        except TokenError:
             return Response(
                 {"detail": "Invalid or expired refresh token"},
                 status=status.HTTP_400_BAD_REQUEST,

@@ -35,7 +35,7 @@ export default function RegisterAthlete() {
   useEffect(() => {
     api.get<{ results: Department[] } | Department[]>("/departments/")
       .then((res) => setDepartments(extractResults(res)))
-      .catch(() => {})
+      .catch((err) => console.warn("Failed to load departments:", err))
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {

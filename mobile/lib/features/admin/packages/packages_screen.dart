@@ -108,7 +108,11 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
                         );
                       },
                       loading: () => const SizedBox.shrink(),
-                      error: (e, s) => const SizedBox.shrink(),
+                      error: (e, s) => TextButton.icon(
+                        icon: const Icon(Icons.refresh, size: 16),
+                        label: const Text('فشل التحميل، اضغط لإعادة المحاولة', style: TextStyle(fontSize: 12)),
+                        onPressed: () => ref.invalidate(departmentsProvider),
+                      ),
                     ),
                     const SizedBox(height: 12),
                     Row(
@@ -455,7 +459,11 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
                                           return Text('الأكاديمية: ${dept.nameAr}');
                                         },
                                         loading: () => const SizedBox.shrink(),
-                                        error: (e, s) => const SizedBox.shrink(),
+                                        error: (e, s) => TextButton.icon(
+                                          icon: const Icon(Icons.refresh, size: 16),
+                                          label: const Text('فشل التحميل، اضغط لإعادة المحاولة', style: TextStyle(fontSize: 12)),
+                                          onPressed: () => ref.invalidate(departmentsProvider),
+                                        ),
                                       ),
                                   ],
                                 ),

@@ -16,8 +16,8 @@ export class ErrorBoundary extends Component<Props, State> {
     return { hasError: true }
   }
 
-  componentDidCatch(_error: Error, _errorInfo: ErrorInfo) {
-    // keep default behavior minimal; avoid crashing the whole shell
+  componentDidCatch(error: Error, errorInfo: ErrorInfo) {
+    console.error("[ErrorBoundary]", error, errorInfo)
   }
 
   handleReload = () => {

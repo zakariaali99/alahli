@@ -41,7 +41,7 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={value}>
       {children}
-      <div className="pointer-events-none fixed left-4 top-4 z-[120] flex w-[min(92vw,24rem)] flex-col gap-2">
+      <div className="pointer-events-none fixed right-4 top-4 z-[120] flex w-[min(92vw,24rem)] flex-col gap-2">
         {toasts.map((toast) => {
           const styleByType: Record<ToastType, string> = {
             success: "border-secondary/30 bg-secondary/10 text-secondary",

@@ -26,6 +26,9 @@ import AdminNotifications from "@/pages/admin/AdminNotifications"
 import StaffManagement from "@/pages/admin/StaffManagement"
 import CoachesManagement from "@/pages/admin/CoachesManagement"
 import { ToastProvider } from "@/lib/toast"
+import { ErrorBoundary } from "@/components/ui/error-boundary"
+import OfflineBar from "@/components/ui/offline-bar"
+import NotFound from "@/pages/NotFound"
 
 export default function App() {
   const [queryClient] = useState(
@@ -36,45 +39,48 @@ export default function App() {
   )
 
   return (
-    <QueryClientProvider client={queryClient}>
-      <AuthProvider>
-        <ToastProvider>
-          <BrowserRouter>
-            <Routes>
-              <Route path="/" element={<Landing />} />
-              <Route path="/login" element={<Login />} />
-              <Route path="/register/athlete" element={<RegisterAthlete />} />
-              <Route path="/register/parent" element={<RegisterParent />} />
+    <ErrorBoundary>
+      <OfflineBar />
+      <QueryClientProvider client={queryClient}>
+        <AuthProvider>
+          <ToastProvider>
+            <BrowserRouter>
+              <Routes>
+                <Route path="/" element={<Landing />} />
+                <Route path="/login" element={<Login />} />
+                <Route path="/register/athlete" element={<RegisterAthlete />} />
+                <Route path="/register/parent" element={<RegisterParent />} />
 
-              <Route path="/dashboard" element={<DashboardLayout />}>
-                <Route index element={<DashboardHome />} />
-                <Route path="athletes" element={<AthletesList />} />
-                <Route path="athletes/add" element={<AddAthlete />} />
-                <Route path="athletes/:id" element={<AthleteProfile />} />
-                <Route path="memberships" element={<Memberships />} />
-                <Route path="verify" element={<Verify />} />
-                <Route path="reports" element={<Reports />} />
-                <Route path="settings" element={<Settings />} />
-                <Route path="registrations" element={<NewAthletes />} />
-                <Route path="academies" element={<AcademyManagement />} />
-                <Route path="staff" element={<StaffManagement />} />
-                <Route path="coaches" element={<CoachesManagement />} />
-                <Route path="notifications" element={<AdminNotifications />} />
-                <Route path="notification-preferences" element={<Notifications />} />
-                <Route path="admin-notifications" element={<Navigate to="/dashboard/notifications" replace />} />
-              </Route>
+                <Route path="/dashboard" element={<DashboardLayout />}>
+                  <Route index element={<DashboardHome />} />
+                  <Route path="athletes" element={<AthletesList />} />
+                  <Route path="athletes/add" element={<AddAthlete />} />
+                  <Route path="athletes/:id" element={<AthleteProfile />} />
+                  <Route path="memberships" element={<Memberships />} />
+                  <Route path="verify" element={<Verify />} />
+                  <Route path="reports" element={<Reports />} />
+                  <Route path="settings" element={<Settings />} />
+                  <Route path="registrations" element={<NewAthletes />} />
+                  <Route path="academies" element={<AcademyManagement />} />
+                  <Route path="staff" element={<StaffManagement />} />
+                  <Route path="coaches" element={<CoachesManagement />} />
+                  <Route path="notifications" element={<AdminNotifications />} />
+                  <Route path="notification-preferences" element={<Notifications />} />
+                  <Route path="admin-notifications" element={<Navigate to="/dashboard/notifications" replace />} />
+                </Route>
 
-              <Route path="/user" element={<UserDashboardLayout />}>
-                <Route index element={<UserSubscriptions />} />
-                <Route path="subscribe" element={<SubscriptionPage />} />
-                <Route path="athlete" element={<AthletePage />} />
-              </Route>
+                <Route path="/user" element={<UserDashboardLayout />}>
+                  <Route index element={<UserSubscriptions />} />
+                  <Route path="subscribe" element={<SubscriptionPage />} />
+                  <Route path="athlete" element={<AthletePage />} />
+                </Route>
 
-              <Route path="*" element={<Navigate to="/login" replace />} />
-            </Routes>
-          </BrowserRouter>
-        </ToastProvider>
-      </AuthProvider>
-    </QueryClientProvider>
+                <Route path="*" element={<NotFound />} />
+              </Routes>
+            </BrowserRouter>
+          </ToastProvider>
+        </AuthProvider>
+      </QueryClientProvider>
+    </ErrorBoundary>
   )
 }

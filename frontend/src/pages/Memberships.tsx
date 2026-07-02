@@ -165,9 +165,8 @@ export default function MembershipsPage() {
         const items = (res as any).results || res
         setDepartments(Array.isArray(items) ? items : [])
       })
-      .catch(() => {})
+      .catch((err) => console.warn("Failed to load departments:", err))
   }, [])
-
   const { data, isLoading } = useSubscriptions({
     page,
     page_size: 20,

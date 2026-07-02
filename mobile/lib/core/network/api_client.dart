@@ -1,6 +1,10 @@
 import 'dart:async';
+
 import 'package:dio/dio.dart';
+
 import '../helpers/safe_json.dart';
+
+const _maxRetries = 2;
 
 class ApiClient {
   final Dio dio;
@@ -23,37 +27,109 @@ class ApiClient {
             },
           ),
         ) {
-    dio.interceptors.add(
-      InterceptorsWrapper(
-        onRequest: (options, handler) {
-          if (_accessToken != null) {
-            options.headers['Authorization'] = 'Bearer $_accessToken';
-          }
-          return handler.next(options);
-        },
-        onError: (DioException error, handler) async {
-          if (error.response?.statusCode == 401 && _refreshToken != null) {
-            final isRefreshRequest = error.requestOptions.path.contains('/auth/token/refresh/');
-            if (!isRefreshRequest) {
-              final success = await _refreshTokens();
-              if (success && _accessToken != null) {
-                try {
-                  error.requestOptions.headers['Authorization'] = 'Bearer $_accessToken';
-                  final retryResponse = await dio.fetch(error.requestOptions);
-                  return handler.resolve(retryResponse);
-                } catch (_) {
-                  return handler.next(error);
-                }
-              } else {
-                _onUnauthorized?.call();
-                return handler.next(error);
-              }
+    dio.interceptors.addAll([
+      _retryInterceptor(),
+      _authInterceptor(),
+    ]);
+  }
+
+  InterceptorsWrapper _retryInterceptor() {
+    return InterceptorsWrapper(
+      onError: (error, handler) async {
+        if (_isRetryable(error)) {
+          final retries = error.requestOptions.extra['retryCount'] as int? ?? 0;
+          if (retries < _maxRetries) {
+            final delay = Duration(seconds: (retries + 1) * 2);
+            await Future.delayed(delay);
+            final opts = error.requestOptions;
+            opts.extra['retryCount'] = retries + 1;
+            try {
+              final response = await dio.fetch(opts);
+              return handler.resolve(response);
+            } catch (e) {
+              return handler.next(e as DioException);
             }
           }
-          return handler.next(error);
-        },
-      ),
+        }
+        return handler.next(error);
+      },
     );
+  }
+
+  bool _isRetryable(DioException error) {
+    switch (error.type) {
+      case DioExceptionType.connectionTimeout:
+      case DioExceptionType.sendTimeout:
+      case DioExceptionType.receiveTimeout:
+      case DioExceptionType.connectionError:
+        return true;
+      case DioExceptionType.badResponse:
+        final status = error.response?.statusCode;
+        return status == 429 || status == 503;
+      default:
+        return false;
+    }
+  }
+
+  InterceptorsWrapper _authInterceptor() {
+    return InterceptorsWrapper(
+      onRequest: (options, handler) {
+        if (_accessToken != null) {
+          options.headers['Authorization'] = 'Bearer $_accessToken';
+        }
+        return handler.next(options);
+      },
+      onError: (DioException error, handler) async {
+        if (error.response?.statusCode == 401 && _refreshToken != null) {
+          final isRefreshRequest = error.requestOptions.path.contains('/auth/token/refresh/');
+          if (!isRefreshRequest) {
+            final success = await _refreshTokens();
+            if (success && _accessToken != null) {
+              try {
+                error.requestOptions.headers['Authorization'] = 'Bearer $_accessToken';
+                final retryResponse = await dio.fetch(error.requestOptions);
+                return handler.resolve(retryResponse);
+              } catch (_) {
+                return handler.next(error);
+              }
+            } else {
+              _onUnauthorized?.call();
+              return handler.next(error);
+            }
+          }
+        }
+        return handler.next(error);
+      },
+    );
+  }
+
+  String errorMessage(DioException error) {
+    switch (error.type) {
+      case DioExceptionType.connectionTimeout:
+      case DioExceptionType.sendTimeout:
+      case DioExceptionType.receiveTimeout:
+        return 'الخادم لا يستجيب. تحقق من اتصالك وحاول مرة أخرى.';
+      case DioExceptionType.connectionError:
+        return 'تعذر الاتصال بالخادم. تحقق من اتصالك بالإنترنت.';
+      case DioExceptionType.badResponse:
+        final status = error.response?.statusCode;
+        final body = error.response?.data;
+        if (body is Map) {
+          final detail = body['detail'];
+          if (detail is String && detail.isNotEmpty) return detail;
+          final messages = body.values.whereType<String>().toList();
+          if (messages.isNotEmpty) return messages.join('\n');
+        }
+        if (status == 500) return 'حدث خطأ في الخادم. حاول مرة أخرى لاحقاً.';
+        if (status == 403) return 'ليس لديك صلاحية للقيام بهذه العملية.';
+        if (status == 404) return 'العنصر المطلوب غير موجود.';
+        if (status == 429) return 'لقد تجاوزت الحد المسموح من الطلبات. حاول لاحقاً.';
+        return 'حدث خطأ غير متوقع.';
+      case DioExceptionType.cancel:
+        return 'تم إلغاء العملية.';
+      default:
+        return 'حدث خطأ غير متوقع. حاول مرة أخرى.';
+    }
   }
 
   Future<bool> _refreshTokens() async {
