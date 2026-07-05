@@ -103,14 +103,21 @@ class _CoachesScreenState extends ConsumerState<CoachesScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-        child: PinnedBottomSheet(
-          title: coach == null ? 'إضافة مدرب جديد' : 'تعديل بيانات المدرب',
-          submitLabel: coach == null ? 'إضافة المدرب' : 'حفظ التعديلات',
+      builder: (ctx) => SafeArea(
+        top: false,
+        child: Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          child: Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(ctx).size.height * 0.85,
+            ),
+            child: PinnedBottomSheet(
+            title: coach == null ? 'إضافة مدرب جديد' : 'تعديل بيانات المدرب',
+            submitLabel: coach == null ? 'إضافة المدرب' : 'حفظ التعديلات',
           onSubmit: () async {
             if (submitting) return;
             if (!formKey.currentState!.validate()) return;
+            final navigator = Navigator.of(ctx);
             submitting = true;
             try {
               final map = {
@@ -126,26 +133,26 @@ class _CoachesScreenState extends ConsumerState<CoachesScreen> {
               if (selectedImage != null) {
                 map['photo'] = await MultipartFile.fromFile(selectedImage!.path);
               }
-              if (!context.mounted) return;
+              if (!mounted) return;
               final formData = FormData.fromMap(map);
 
               if (coach == null) {
                 await ref.read(trainerRepositoryProvider).createTrainer(formData);
-                if (!context.mounted) return;
+                if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('تم إضافة المدرب بنجاح')),
                 );
               } else {
                 await ref.read(trainerRepositoryProvider).updateTrainer(coach.id, formData);
-                if (!context.mounted) return;
+                if (!mounted) return;
                 ScaffoldMessenger.of(context).showSnackBar(
                   const SnackBar(content: Text('تم تحديث المدرب بنجاح')),
                 );
               }
               ref.invalidate(trainersProvider);
-              Navigator.pop(ctx);
+              navigator.pop();
             } catch (e) {
-              if (context.mounted) {
+              if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(content: Text('خطأ: $e')),
                 );
@@ -201,10 +208,10 @@ class _CoachesScreenState extends ConsumerState<CoachesScreen> {
                     children: [
                       Expanded(
                         child: TextFormField(
-                          controller: lastNameController,
+                          controller: firstNameController,
                           textAlign: TextAlign.right,
                           decoration: InputDecoration(
-                            labelText: 'اللقب / العائلة',
+                            labelText: 'الاسم الأول',
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                           validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
@@ -213,10 +220,10 @@ class _CoachesScreenState extends ConsumerState<CoachesScreen> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: TextFormField(
-                          controller: firstNameController,
+                          controller: lastNameController,
                           textAlign: TextAlign.right,
                           decoration: InputDecoration(
-                            labelText: 'الاسم الأول',
+                            labelText: 'اللقب / العائلة',
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                           validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
@@ -266,6 +273,8 @@ class _CoachesScreenState extends ConsumerState<CoachesScreen> {
               ),
             ),
           ),
+          ),
+          ),
         ),
       ),
     );
@@ -297,10 +306,7 @@ class _CoachesScreenState extends ConsumerState<CoachesScreen> {
             });
           }
         },
-        child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 300),
-          child: _showingDetails ? _buildDetailsView(isDark) : _buildListView(trainersAsync, user?.role, isDark),
-        ),
+        child: _showingDetails ? _buildDetailsView(isDark) : _buildListView(trainersAsync, user?.role, isDark),
       ),
     );
   }

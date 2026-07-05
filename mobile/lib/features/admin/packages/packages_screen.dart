@@ -45,9 +45,15 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
       ),
       builder: (ctx) {
         final departmentsAsync = ref.watch(departmentsProvider);
-        return Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-          child: PinnedBottomSheet(
+        return SafeArea(
+          top: false,
+          child: Padding(
+            padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+            child: Container(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(ctx).size.height * 0.85,
+              ),
+              child: PinnedBottomSheet(
             title: package == null ? 'إضافة باقة جديدة' : 'تعديل الباقة',
             submitLabel: package == null ? 'إضافة' : 'تعديل',
             onSubmit: () {
@@ -235,6 +241,8 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
                 ),
               ),
             ),
+          ),
+          ),
           ),
         );
       },

@@ -98,9 +98,15 @@ class _AcademiesScreenState extends ConsumerState<AcademiesScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-        child: PinnedBottomSheet(
+      builder: (ctx) => SafeArea(
+        top: false,
+        child: Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          child: Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(ctx).size.height * 0.85,
+            ),
+            child: PinnedBottomSheet(
           title: academy == null ? 'إضافة أكاديمية جديدة' : 'تعديل الأكاديمية',
           submitLabel: academy == null ? 'إضافة' : 'حفظ',
           onSubmit: () {
@@ -163,6 +169,8 @@ class _AcademiesScreenState extends ConsumerState<AcademiesScreen> {
               ],
             ),
           ),
+          ),
+        ),
         ),
       ),
     );
@@ -211,9 +219,15 @@ class _AcademiesScreenState extends ConsumerState<AcademiesScreen> {
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (ctx) => Padding(
-        padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-        child: PinnedBottomSheet(
+      builder: (ctx) => SafeArea(
+        top: false,
+        child: Padding(
+          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+          child: Container(
+            constraints: BoxConstraints(
+              maxHeight: MediaQuery.of(ctx).size.height * 0.85,
+            ),
+            child: PinnedBottomSheet(
           title: sport == null ? 'إضافة رياضة جديدة' : 'تعديل الرياضة',
           submitLabel: sport == null ? 'إضافة' : 'حفظ',
           onSubmit: () {
@@ -248,6 +262,8 @@ class _AcademiesScreenState extends ConsumerState<AcademiesScreen> {
               ],
             ),
           ),
+          ),
+        ),
         ),
       ),
     );
@@ -301,9 +317,15 @@ class _AcademiesScreenState extends ConsumerState<AcademiesScreen> {
       ),
       builder: (ctx) {
         final trainersAsync = ref.watch(trainersProvider);
-        return Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-          child: PinnedBottomSheet(
+        return SafeArea(
+          top: false,
+          child: Padding(
+            padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
+            child: Container(
+              constraints: BoxConstraints(
+                maxHeight: MediaQuery.of(ctx).size.height * 0.85,
+              ),
+              child: PinnedBottomSheet(
             title: group == null ? 'إضافة مجموعة جديدة' : 'تعديل المجموعة',
             submitLabel: group == null ? 'إضافة' : 'حفظ',
             onSubmit: () {
@@ -359,7 +381,15 @@ class _AcademiesScreenState extends ConsumerState<AcademiesScreen> {
                           onChanged: (v) => setDlgState(() => selectedCoachId = v),
                         );
                       },
-                      loading: () => const SizedBox.shrink(),
+                      loading: () => DropdownButtonFormField<int?>(
+                        value: null,
+                        decoration: InputDecoration(
+                          labelText: 'جاري تحميل المدربين...',
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        items: const [],
+                        onChanged: null,
+                      ),
                       error: (e, s) => TextButton.icon(
                         icon: const Icon(Icons.refresh, size: 16),
                         label: const Text('فشل التحميل، اضغط لإعادة المحاولة', style: TextStyle(fontSize: 12)),
@@ -408,6 +438,14 @@ class _AcademiesScreenState extends ConsumerState<AcademiesScreen> {
                         return FilterChip(
                           label: Text(day['label']!),
                           selected: isChecked,
+                          selectedColor: AppColors.secondary.withValues(alpha: 0.2),
+                          checkmarkColor: AppColors.secondary,
+                          labelStyle: TextStyle(
+                            color: isChecked
+                                ? AppColors.secondary
+                                : (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Colors.black87),
+                            fontWeight: isChecked ? FontWeight.bold : FontWeight.normal,
+                          ),
                           onSelected: (val) {
                             setDlgState(() {
                               if (val) {
@@ -424,6 +462,8 @@ class _AcademiesScreenState extends ConsumerState<AcademiesScreen> {
                 ),
               ),
             ),
+          ),
+          ),
           ),
         );
       },

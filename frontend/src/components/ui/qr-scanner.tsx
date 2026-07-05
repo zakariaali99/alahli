@@ -36,7 +36,7 @@ export function QRScanner({ onScan, onError }: Props) {
     }
   }, [])
 
-  const startCamera = async () => {
+  const startCamera = useCallback(async () => {
     if (active || starting) return
 
     setStarting(true)
@@ -70,13 +70,14 @@ export function QRScanner({ onScan, onError }: Props) {
     } finally {
       setStarting(false)
     }
-  }
+  }, [active, starting, onScan, onError, stopCamera])
 
   useEffect(() => {
+    void startCamera()
     return () => {
       void stopCamera()
     }
-  }, [stopCamera])
+  }, [startCamera, stopCamera])
 
   return (
     <div className="relative">

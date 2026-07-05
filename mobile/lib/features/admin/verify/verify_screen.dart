@@ -16,7 +16,7 @@ class VerifyScreen extends ConsumerStatefulWidget {
 
 class _VerifyScreenState extends ConsumerState<VerifyScreen> {
   final _manualController = TextEditingController();
-  final _scannerController = MobileScannerController();
+  MobileScannerController? _scannerController;
   bool _isScanning = false;
   bool _cameraError = false;
   bool _isProcessing = false;
@@ -25,9 +25,22 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
   bool _isCheckedIn = false;
 
   @override
+  void initState() {
+    super.initState();
+    _isScanning = true;
+    try {
+      _scannerController = MobileScannerController();
+      _scannerController!.start();
+    } catch (e) {
+      _cameraError = true;
+      _isScanning = false;
+    }
+  }
+
+  @override
   void dispose() {
     _manualController.dispose();
-    _scannerController.dispose();
+    _scannerController?.dispose();
     super.dispose();
   }
 
@@ -106,9 +119,20 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
                       setState(() {
                         _isScanning = !_isScanning;
                         if (_isScanning) {
-                          _scannerController.start();
+                          _cameraError = false;
+                          try {
+                            _scannerController = MobileScannerController();
+                            _scannerController!.start();
+                          } catch (e) {
+                            _cameraError = true;
+                            _isScanning = false;
+                          }
                         } else {
-                          _scannerController.stop();
+                          try {
+                            _scannerController?.stop();
+                          } catch (_) {}
+                          _scannerController?.dispose();
+                          _scannerController = null;
                         }
                       });
                     },
@@ -199,10 +223,14 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
                           child: TextField(
                             controller: _manualController,
                             textAlign: TextAlign.right,
+                            style: TextStyle(
+                              color: isDark ? Colors.white : Colors.black87,
+                            ),
                             decoration: InputDecoration(
+                              labelText: 'رقم العضوية',
                               hintText: 'مثال: ALA-XXXXXX',
                               border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
                             ),
                           ),
                         ),

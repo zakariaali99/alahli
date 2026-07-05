@@ -90,6 +90,7 @@ class AdminShell extends ConsumerWidget {
 
     return Scaffold(
       drawer: Drawer(
+        width: 260,
         backgroundColor: const Color(0xFF0D1B2A), // Matches the dark sidebar bg
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.zero,
@@ -168,9 +169,12 @@ class AdminShell extends ConsumerWidget {
 
               // Navigation Items
               Expanded(
-                child: ListView(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                  children: [
+                child: MediaQuery.removePadding(
+                  context: context,
+                  removeTop: true,
+                  child: ListView(
+                    padding: const EdgeInsets.only(top: 0, left: 12, right: 12, bottom: 8),
+                    children: [
                     if (Permissions.can(user?.role, AppAction.analyticsRead))
                       _SidebarItem(
                         icon: Icons.dashboard_outlined,
@@ -252,6 +256,7 @@ class AdminShell extends ConsumerWidget {
                   ],
                 ),
               ),
+            ),
               const Divider(color: Color(0xFF1B2A4A), height: 1),
 
               // Bottom section
