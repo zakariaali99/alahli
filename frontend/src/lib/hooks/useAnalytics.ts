@@ -17,7 +17,7 @@ interface MonthlyGrowth {
 }
 
 interface DepartmentDistribution {
-  department__name_ar: string
+  department_name: string
   count: number
 }
 

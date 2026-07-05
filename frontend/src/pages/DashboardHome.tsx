@@ -296,7 +296,7 @@ export default function DashboardPage() {
               return (
                 <div key={idx} className="p-4 rounded-2xl bg-surface-container-lowest border border-outline-variant/30">
                   <div className="flex justify-between items-center mb-3">
-                    <span className="text-sm font-bold text-foreground">{dept.department__name_ar}</span>
+                    <span className="text-sm font-bold text-foreground">{dept.department_name}</span>
                     <span className="text-xs font-semibold text-muted-foreground">{dept.count} لاعب</span>
                   </div>
                   <div className="w-full bg-surface-variant rounded-full h-1.5 overflow-hidden">

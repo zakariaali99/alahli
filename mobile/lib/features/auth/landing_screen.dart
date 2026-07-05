@@ -241,7 +241,7 @@ class LandingScreen extends StatelessWidget {
                       // Tracks section (Center of Fitness & Academy)
                       _buildTrackCard(
                         icon: Icons.fitness_center,
-                        title: 'مركز اللياقة',
+                        title: 'مركز الاهلي الرياضي',
                         subtitle: 'تدريب بدني متكامل',
                         points: ['برامج قوة وتحمل', 'خطط متابعة شهرية', 'إشراف مدربين متخصصين'],
                         gradient: const LinearGradient(

@@ -128,14 +128,13 @@ export default function DashboardLayout() {
           bg-sidebar-bg border-l border-sidebar-border
           shadow-[4px_0_24px_rgba(0,0,0,0.12)]`}
       >
-        {/* Sidebar Header */}
-        <div className="flex items-center justify-between p-5 border-b border-sidebar-border">
+        <div className="flex items-center justify-between px-5 py-2 border-b border-sidebar-border">
           <div className="flex items-center gap-3 min-w-0">
             <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary-container flex items-center justify-center text-white font-bold text-sm shadow-lg shrink-0">
-              أ
+              م
             </div>
             <div className="min-w-0">
-              <h2 className="text-sm font-bold text-white truncate">الأهلي للياقة</h2>
+              <h2 className="text-sm font-bold text-white truncate">مركز الاهلي الرياضي</h2>
               <p className="text-[10px] text-sidebar-fg truncate">نظام إدارة الأداء</p>
             </div>
           </div>

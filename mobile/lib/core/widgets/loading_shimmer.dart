@@ -141,13 +141,15 @@ class ShimmerGrid extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final isSmallPhone = MediaQuery.sizeOf(context).width <= 360;
+
     return GridView.count(
       crossAxisCount: 2,
       shrinkWrap: true,
       physics: const NeverScrollableScrollPhysics(),
       crossAxisSpacing: 12,
       mainAxisSpacing: 12,
-      childAspectRatio: 1.75,
+      childAspectRatio: isSmallPhone ? 1.2 : 1.45,
       children: List.generate(itemCount, (index) {
         return AppCard(
           padding: const EdgeInsets.all(16),
@@ -184,4 +186,3 @@ class ShimmerGrid extends StatelessWidget {
     );
   }
 }
-

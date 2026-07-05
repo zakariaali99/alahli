@@ -143,7 +143,7 @@ class AdminShell extends ConsumerWidget {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'الأهلي للياقة',
+                              'مركز الاهلي الرياضي',
                               style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,

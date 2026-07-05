@@ -27,7 +27,7 @@ const itemVariants: Variants = {
 }
 
 const departmentIcons: Record<string, string> = {
-  "الأهلي للياقة": "🏋️",
+  "مركز الاهلي الرياضي": "🏋️",
   "أكاديمية كرة القدم": "⚽",
   "السباحة": "🏊",
 }

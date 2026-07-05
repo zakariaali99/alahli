@@ -124,7 +124,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                     ),
                     const SizedBox(height: 16),
                     const Text(
-                      'أكاديمية النادي الأهلي',
+                      'مركز الاهلي الرياضي',
                       textAlign: TextAlign.center,
                       style: TextStyle(
                         fontSize: 24,

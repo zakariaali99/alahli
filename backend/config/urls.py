@@ -39,7 +39,8 @@ urlpatterns = [
 if settings.DEBUG:
     urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
 
-urlpatterns += router.urls
+# Exclude API root (^$) so it doesn't hijack the SPA catch-all at /
+urlpatterns += [url for url in router.urls if getattr(url, "name", None) != "api-root"]
 
 # SPA catch-all — must be last so it doesn't hijack api/ or router routes
 urlpatterns += [
