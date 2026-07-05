@@ -53,6 +53,33 @@ function collectErrorMessages(value: unknown): string[] {
   return []
 }
 
+function getErrorMessage(error: unknown, fallback = "حدث خطأ غير متوقع"): string {
+  if (error instanceof ApiError) {
+    return error.message || fallback
+  }
+
+  if (error instanceof Error) {
+    if (error.message && error.message !== "[object Object]") {
+      return error.message
+    }
+  }
+
+  if (typeof error === "object" && error !== null) {
+    const objectError = error as Record<string, unknown>
+    return collectErrorMessages(objectError.detail).join("\n")
+      || collectErrorMessages(objectError.non_field_errors).join("\n")
+      || collectErrorMessages(objectError.data).join("\n")
+      || collectErrorMessages(objectError).join("\n")
+      || fallback
+  }
+
+  if (typeof error === "string" && error.trim()) {
+    return error
+  }
+
+  return fallback
+}
+
 let refreshPromise: Promise<boolean> | null = null
 
 async function refreshTokens(): Promise<boolean> {
@@ -188,6 +215,7 @@ export const api = {
   clearTokens,
   getTokens,
   ApiError,
+  getErrorMessage,
 }
 
 export type { TokenStore }

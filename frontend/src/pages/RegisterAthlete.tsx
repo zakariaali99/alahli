@@ -58,7 +58,7 @@ export default function RegisterAthlete() {
       await api.post("/auth/register/", body)
       setSuccess(true)
     } catch (err: any) {
-      setError(err.message || "حدث خطأ أثناء التسجيل")
+      setError(api.getErrorMessage(err, "حدث خطأ أثناء التسجيل"))
     } finally {
       setLoading(false)
     }

@@ -91,7 +91,7 @@ export default function AddAthletePage() {
           setAthleteForm((prev) => ({ ...prev, full_name: data.user_name, phone: data.user_phone }))
         }
       } catch (err: any) {
-        setError(err?.message || "تعذر تحميل طلب التسجيل")
+        setError(api.getErrorMessage(err, "تعذر تحميل طلب التسجيل"))
       } finally {
         setLoadingRegistration(false)
       }
@@ -119,7 +119,7 @@ export default function AddAthletePage() {
         if (data.photo) setPhoto(data.photo)
         setScenario("athlete")
       } catch (err: any) {
-        setError(err?.message || "تعذر تحميل بيانات الرياضي")
+        setError(api.getErrorMessage(err, "تعذر تحميل بيانات الرياضي"))
       } finally {
         setLoadingEdit(false)
       }
@@ -203,7 +203,7 @@ export default function AddAthletePage() {
       toast.success("تم إنشاء الرياضي وربطه بحسابه بنجاح")
       navigate(`/dashboard/athletes/${createdAthlete.id}`)
     } catch (err: any) {
-      setError(err?.message || "حدث خطأ أثناء التسجيل")
+      setError(api.getErrorMessage(err, "حدث خطأ أثناء التسجيل"))
     } finally {
       setSubmitting(false)
     }
@@ -235,7 +235,7 @@ export default function AddAthletePage() {
       setSuccess(true)
       toast.success("تم تسجيل ولي الأمر بنجاح")
     } catch (err: any) {
-      setError(err?.message || "حدث خطأ أثناء التسجيل")
+      setError(api.getErrorMessage(err, "حدث خطأ أثناء التسجيل"))
     } finally {
       setSubmitting(false)
     }
