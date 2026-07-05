@@ -29,7 +29,6 @@ class PinnedBottomSheet extends StatelessWidget {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Column(
-      mainAxisSize: MainAxisSize.min,
       children: [
         const SizedBox(height: 10),
         // Drag handle
@@ -63,8 +62,8 @@ class PinnedBottomSheet extends StatelessWidget {
             ],
           ),
         ),
-        // Scrollable body
-        Flexible(
+        // Scrollable body — Expanded ensures footer stays pinned
+        Expanded(
           child: SingleChildScrollView(
             padding: const EdgeInsets.symmetric(horizontal: 20),
             child: body,

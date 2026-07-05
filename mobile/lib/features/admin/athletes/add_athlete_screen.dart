@@ -28,9 +28,6 @@ class _AddAthleteScreenState extends ConsumerState<AddAthleteScreen> {
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _weightController = TextEditingController();
-  final _heightController = TextEditingController();
-
   String _selectedGender = 'male';
   int? _selectedDepartmentId;
   DateTime? _selectedBirthDate;
@@ -43,8 +40,6 @@ class _AddAthleteScreenState extends ConsumerState<AddAthleteScreen> {
     _nameController.dispose();
     _phoneController.dispose();
     _passwordController.dispose();
-    _weightController.dispose();
-    _heightController.dispose();
     super.dispose();
   }
 
@@ -163,11 +158,6 @@ class _AddAthleteScreenState extends ConsumerState<AddAthleteScreen> {
         payload['gender'] = _selectedGender;
         payload['department'] = _selectedDepartmentId;
         payload['photo'] = photoBase64;
-        
-        final double? w = double.tryParse(_weightController.text.trim().toWesternDigits());
-        final double? h = double.tryParse(_heightController.text.trim().toWesternDigits());
-        if (w != null) payload['weight'] = w;
-        if (h != null) payload['height'] = h;
       }
 
       // Hits register view endpoint: POST /auth/register/
@@ -576,47 +566,6 @@ class _AddAthleteScreenState extends ConsumerState<AddAthleteScreen> {
                 loading: () => const Center(child: LinearProgressIndicator()),
                 error: (err, s) => Text('خطأ في تحميل الأكاديميات: $err'),
               ),
-              const SizedBox(height: 16),
-
-              // Weight / Height
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _heightController,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      textAlign: TextAlign.right,
-                      decoration: InputDecoration(
-                        labelText: 'الطول (سم)',
-                        prefixIcon: const Icon(Icons.height),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      validator: (val) {
-                        if (val == null || val.isEmpty) return 'مطلوب';
-                        return null;
-                      },
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _weightController,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      textAlign: TextAlign.right,
-                      decoration: InputDecoration(
-                        labelText: 'الوزن (كجم)',
-                        prefixIcon: const Icon(Icons.scale),
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      validator: (val) {
-                        if (val == null || val.isEmpty) return 'مطلوب';
-                        return null;
-                      },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
             ],
 
             const SizedBox(height: 16),

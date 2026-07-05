@@ -14,7 +14,8 @@ class VerifyScreen extends ConsumerStatefulWidget {
   ConsumerState<VerifyScreen> createState() => _VerifyScreenState();
 }
 
-class _VerifyScreenState extends ConsumerState<VerifyScreen> {
+class _VerifyScreenState extends ConsumerState<VerifyScreen>
+    with WidgetsBindingObserver {
   final _manualController = TextEditingController();
   MobileScannerController? _scannerController;
   bool _isScanning = false;
@@ -23,25 +24,84 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
   Map<String, dynamic>? _scanResult;
   String? _errorMsg;
   bool _isCheckedIn = false;
+  bool _isCameraStarting = false;
 
   @override
   void initState() {
     super.initState();
-    _isScanning = true;
-    try {
-      _scannerController = MobileScannerController();
-      _scannerController!.start();
-    } catch (e) {
-      _cameraError = true;
-      _isScanning = false;
-    }
+    WidgetsBinding.instance.addObserver(this);
+    WidgetsBinding.instance.addPostFrameCallback((_) => _startScanner());
   }
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     _manualController.dispose();
-    _scannerController?.dispose();
+    _stopScanner();
     super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      if (!_isScanning && !_cameraError) {
+        _startScanner();
+      }
+    } else if (state == AppLifecycleState.paused) {
+      _stopScanner();
+    }
+  }
+
+  Future<void> _startScanner() async {
+    if (_isScanning || _isCameraStarting) return;
+    setState(() {
+      _isCameraStarting = true;
+      _cameraError = false;
+    });
+    try {
+      final controller = MobileScannerController();
+      await controller.start();
+      if (!mounted) {
+        await controller.dispose();
+        return;
+      }
+      setState(() {
+        _scannerController = controller;
+        _isScanning = true;
+        _isCameraStarting = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _cameraError = true;
+        _isScanning = false;
+        _isCameraStarting = false;
+      });
+    }
+  }
+
+  Future<void> _stopScanner() async {
+    try {
+      await _scannerController?.stop();
+    } catch (_) {}
+    try {
+      await _scannerController?.dispose();
+    } catch (_) {}
+    _scannerController = null;
+    if (mounted) {
+      setState(() {
+        _isScanning = false;
+        _isCameraStarting = false;
+      });
+    }
+  }
+
+  Future<void> _toggleScanner() async {
+    if (_isScanning) {
+      await _stopScanner();
+    } else {
+      await _startScanner();
+    }
   }
 
   Future<void> _processVerification(String membershipNumber) async {
@@ -66,7 +126,6 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
       final subId = asInt(result['subscription_id']);
 
       if (isActive && athleteId != null) {
-        // Post to attendance log viewset
         final client = ref.read(apiClientProvider);
         await client.dio.post(
           '/attendance/',
@@ -114,83 +173,112 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
                     ),
                   ),
                   IconButton(
-                    icon: Icon(_isScanning ? Icons.videocam_off : Icons.videocam),
-                    onPressed: () {
-                      setState(() {
-                        _isScanning = !_isScanning;
-                        if (_isScanning) {
-                          _cameraError = false;
-                          try {
-                            _scannerController = MobileScannerController();
-                            _scannerController!.start();
-                          } catch (e) {
-                            _cameraError = true;
-                            _isScanning = false;
-                          }
-                        } else {
-                          try {
-                            _scannerController?.stop();
-                          } catch (_) {}
-                          _scannerController?.dispose();
-                          _scannerController = null;
-                        }
-                      });
-                    },
+                    icon: Icon(
+                      _isScanning
+                          ? Icons.videocam
+                          : _cameraError
+                              ? Icons.videocam_off
+                              : Icons.videocam,
+                    ),
+                    onPressed: _toggleScanner,
                   ),
                 ],
               ),
               const SizedBox(height: 20),
-              // Scanner container
-              if (_isScanning) ...[
-                _cameraError
-                    ? Container(
-                        height: 240,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AppColors.destructive, width: 2),
-                          color: AppColors.destructive.withValues(alpha: 0.05),
+
+              // Camera scanner section
+              if (_isCameraStarting)
+                Container(
+                  height: 200,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    color: isDark ? AppColors.darkCard : Colors.grey.shade100,
+                  ),
+                  child: const Center(child: CircularProgressIndicator()),
+                )
+              else if (_isScanning && !_cameraError)
+                Container(
+                  height: 200,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: AppColors.primary, width: 2),
+                  ),
+                  clipBehavior: Clip.antiAlias,
+                  child: MobileScanner(
+                    controller: _scannerController,
+                    onDetect: (capture) {
+                      final barcodes = capture.barcodes;
+                      if (barcodes.isNotEmpty && !_isProcessing) {
+                        final code = barcodes.first.rawValue;
+                        if (code != null) {
+                          _processVerification(code);
+                        }
+                      }
+                    },
+                    errorBuilder: (context, error, child) {
+                      WidgetsBinding.instance.addPostFrameCallback((_) {
+                        if (!_cameraError) setState(() => _cameraError = true);
+                      });
+                      return child ?? const SizedBox.shrink();
+                    },
+                  ),
+                )
+              else
+                Container(
+                  height: 100,
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(
+                      color: _cameraError
+                          ? AppColors.destructive.withValues(alpha: 0.5)
+                          : AppColors.border,
+                      width: 1.5,
+                    ),
+                    color: _cameraError
+                        ? AppColors.destructive.withValues(alpha: 0.05)
+                        : (isDark ? AppColors.darkCard : Colors.grey.shade50),
+                  ),
+                  child: Center(
+                    child: Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.videocam_off,
+                          size: 20,
+                          color: _cameraError
+                              ? AppColors.destructive
+                              : Colors.grey,
                         ),
-                        child: const Center(
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Icon(Icons.videocam_off, size: 40, color: AppColors.destructive),
-                              SizedBox(height: 8),
-                              Text('\u062A\u0639\u0630\u0631 \u062A\u0634\u063A\u064A\u0644 \u0627\u0644\u0643\u0627\u0645\u064A\u0631\u0627', style: TextStyle(color: AppColors.destructive)),
-                            ],
+                        const SizedBox(width: 8),
+                        Text(
+                          _cameraError
+                              ? 'تعذر تشغيل الكاميرا'
+                              : 'اضغط على أيقونة الكاميرا للتفعيل',
+                          style: TextStyle(
+                            color: _cameraError
+                                ? AppColors.destructive
+                                : Colors.grey,
+                            fontSize: 13,
                           ),
                         ),
-                      )
-                    : Container(
-                        height: 240,
-                        decoration: BoxDecoration(
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(color: AppColors.primary, width: 2),
-                        ),
-                        clipBehavior: Clip.antiAlias,
-                        child: MobileScanner(
-                          controller: _scannerController,
-                          onDetect: (capture) {
-                            final List<Barcode> barcodes = capture.barcodes;
-                            if (barcodes.isNotEmpty && !_isProcessing) {
-                              final String? code = barcodes.first.rawValue;
-                              if (code != null) {
-                                _processVerification(code);
-                              }
-                            }
-                          },
-                          errorBuilder: (context, error, child) {
-                            WidgetsBinding.instance.addPostFrameCallback((_) {
-                              if (!_cameraError) setState(() => _cameraError = true);
-                            });
-                            return child ?? const SizedBox.shrink();
-                          },
-                        ),
-                      ),
-                const SizedBox(height: 16),
-              ],
+                      ],
+                    ),
+                  ),
+                ),
 
-              // Manual Entry field
+              if (!_cameraError && _isScanning)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8),
+                  child: Text(
+                    'وجّه الكاميرا نحو رمز QR على بطاقة العضوية',
+                    style: TextStyle(color: Colors.grey.shade600, fontSize: 12),
+                    textAlign: TextAlign.center,
+                  ),
+                ),
+
+              const SizedBox(height: 20),
+
+              // Manual Entry section - always visible
               AppCard(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -200,41 +288,45 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
                       style: TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
                     ),
                     const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        ElevatedButton(
-                          onPressed: _isProcessing
-                              ? null
-                              : () {
-                                  if (_manualController.text.isNotEmpty) {
-                                    _processVerification(_manualController.text);
-                                  }
-                                },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: AppColors.primary,
-                            foregroundColor: Colors.white,
-                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 14),
-                          ),
-                          child: const Text('فحص'),
+                    TextField(
+                      controller: _manualController,
+                      textAlign: TextAlign.right,
+                      style: TextStyle(
+                        color: isDark ? Colors.white : Colors.black87,
+                        fontSize: 16,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: 'رقم العضوية',
+                        hintText: 'أدخل رقم العضوية للتحقق',
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
                         ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: TextField(
-                            controller: _manualController,
-                            textAlign: TextAlign.right,
-                            style: TextStyle(
-                              color: isDark ? Colors.white : Colors.black87,
-                            ),
-                            decoration: InputDecoration(
-                              labelText: 'رقم العضوية',
-                              hintText: 'مثال: ALA-XXXXXX',
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                              contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 14),
-                            ),
-                          ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 16,
                         ),
-                      ],
+                      ),
+                    ),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton(
+                        onPressed: _isProcessing || _manualController.text.trim().isEmpty
+                            ? null
+                            : () => _processVerification(_manualController.text.trim()),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: AppColors.primary,
+                          foregroundColor: Colors.white,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                        ),
+                        child: Text(
+                          _isProcessing ? 'جاري التحقق...' : 'فحص',
+                          style: const TextStyle(fontSize: 15),
+                        ),
+                      ),
                     ),
                   ],
                 ),
@@ -258,18 +350,24 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
                   decoration: BoxDecoration(
                     color: AppColors.destructive.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: AppColors.destructive.withValues(alpha: 0.3)),
+                    border: Border.all(
+                      color: AppColors.destructive.withValues(alpha: 0.3),
+                    ),
                   ),
                   child: Text(
                     _errorMsg!,
                     textAlign: TextAlign.center,
-                    style: const TextStyle(color: AppColors.destructive, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      color: AppColors.destructive,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
               ],
 
               // Scan Result Layout
               if (_scanResult != null) ...[
+                const SizedBox(height: 12),
                 _buildResultLayout(_scanResult!, isDark),
               ],
             ],
@@ -289,7 +387,9 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
-        color: active ? AppColors.secondary.withValues(alpha: 0.1) : AppColors.destructive.withValues(alpha: 0.1),
+        color: active
+            ? AppColors.secondary.withValues(alpha: 0.1)
+            : AppColors.destructive.withValues(alpha: 0.1),
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
           color: active ? AppColors.secondary : AppColors.destructive,
@@ -323,9 +423,17 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
             style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 4),
-          Text('رقم العضوية: ${code.toWesternDigits()}', style: const TextStyle(fontSize: 13)),
-          if (dept.isNotEmpty) Text('الأكاديمية: $dept', style: const TextStyle(fontSize: 13)),
-          if (expiry.isNotEmpty) Text('تاريخ الانتهاء: ${expiry.toWesternDigits()}', style: const TextStyle(fontSize: 13)),
+          Text(
+            'رقم العضوية: ${code.toWesternDigits()}',
+            style: const TextStyle(fontSize: 13),
+          ),
+          if (dept.isNotEmpty)
+            Text('الأكاديمية: $dept', style: const TextStyle(fontSize: 13)),
+          if (expiry.isNotEmpty)
+            Text(
+              'تاريخ الانتهاء: ${expiry.toWesternDigits()}',
+              style: const TextStyle(fontSize: 13),
+            ),
           const SizedBox(height: 16),
           if (active && _isCheckedIn)
             Container(
@@ -341,7 +449,11 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
                   SizedBox(width: 8),
                   Text(
                     'تم تسجيل الحضور تلقائياً بنجاح',
-                    style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+                    style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                      fontSize: 13,
+                    ),
                   ),
                 ],
               ),

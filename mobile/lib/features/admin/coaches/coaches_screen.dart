@@ -208,10 +208,10 @@ class _CoachesScreenState extends ConsumerState<CoachesScreen> {
                     children: [
                       Expanded(
                         child: TextFormField(
-                          controller: firstNameController,
+                          controller: lastNameController,
                           textAlign: TextAlign.right,
                           decoration: InputDecoration(
-                            labelText: 'الاسم الأول',
+                            labelText: 'اللقب / العائلة',
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                           validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
@@ -220,10 +220,10 @@ class _CoachesScreenState extends ConsumerState<CoachesScreen> {
                       const SizedBox(width: 10),
                       Expanded(
                         child: TextFormField(
-                          controller: lastNameController,
+                          controller: firstNameController,
                           textAlign: TextAlign.right,
                           decoration: InputDecoration(
-                            labelText: 'اللقب / العائلة',
+                            labelText: 'الاسم الأول',
                             border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                           validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
@@ -547,7 +547,9 @@ class _CoachesScreenState extends ConsumerState<CoachesScreen> {
                   mainAxisAlignment: MainAxisAlignment.end,
                   children: [
                     OutlinedButton.icon(
-                      onPressed: () => _showAddEditCoachDialog(coach),
+                      onPressed: Permissions.can(ref.read(authProvider)?.role, AppAction.coachesUpdate)
+                          ? () => _showAddEditCoachDialog(coach)
+                          : null,
                       icon: const Icon(Icons.edit, size: 16),
                       label: const Text('تعديل الحساب'),
                       style: OutlinedButton.styleFrom(

@@ -21,8 +21,6 @@ class _RegisterAthleteScreenState extends ConsumerState<RegisterAthleteScreen> {
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
-  final _weightController = TextEditingController();
-  final _heightController = TextEditingController();
   final _dayController = TextEditingController();
   final _monthController = TextEditingController();
   final _yearController = TextEditingController();
@@ -40,8 +38,6 @@ class _RegisterAthleteScreenState extends ConsumerState<RegisterAthleteScreen> {
     _nameController.dispose();
     _phoneController.dispose();
     _passwordController.dispose();
-    _weightController.dispose();
-    _heightController.dispose();
     _dayController.dispose();
     _monthController.dispose();
     _yearController.dispose();
@@ -119,17 +115,15 @@ class _RegisterAthleteScreenState extends ConsumerState<RegisterAthleteScreen> {
     try {
       final apiClient = ref.read(apiClientProvider);
       
-      final birthDate = '${_yearController.text}-${_monthController.text.padLeft(2, '0')}-${_dayController.text.padLeft(2, '0')}';
-
       await apiClient.dio.post('/auth/register/', data: {
         'role': 'athlete',
         'full_name': _nameController.text.trim(),
         'phone': _phoneController.text.trim(),
         'password': _passwordController.text,
         'photo': _photoBase64,
-        'weight': double.tryParse(_weightController.text) ?? 0.0,
-        'height': double.tryParse(_heightController.text) ?? 0.0,
-        'birth_date': birthDate,
+        'birth_day': int.tryParse(_dayController.text),
+        'birth_month': int.tryParse(_monthController.text),
+        'birth_year': int.tryParse(_yearController.text),
       });
 
       setState(() {
@@ -356,36 +350,6 @@ class _RegisterAthleteScreenState extends ConsumerState<RegisterAthleteScreen> {
                         if (y == null || y < 1900 || y > currentYear) return 'سنة خطأ';
                         return null;
                       },
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 16),
-
-              // Weight & Height
-              Row(
-                children: [
-                  Expanded(
-                    child: TextFormField(
-                      controller: _weightController,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      textAlign: TextAlign.right,
-                      decoration: const InputDecoration(
-                        labelText: 'الوزن (كجم)',
-                      ),
-                      validator: (val) => val == null || val.isEmpty ? 'مطلوب' : null,
-                    ),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: TextFormField(
-                      controller: _heightController,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      textAlign: TextAlign.right,
-                      decoration: const InputDecoration(
-                        labelText: 'الطول (سم)',
-                      ),
-                      validator: (val) => val == null || val.isEmpty ? 'مطلوب' : null,
                     ),
                   ),
                 ],

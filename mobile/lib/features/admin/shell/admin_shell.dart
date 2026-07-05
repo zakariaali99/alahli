@@ -90,7 +90,7 @@ class AdminShell extends ConsumerWidget {
 
     return Scaffold(
       drawer: Drawer(
-        width: 260,
+        width: 240,
         backgroundColor: const Color(0xFF0D1B2A), // Matches the dark sidebar bg
         shape: const RoundedRectangleBorder(
           borderRadius: BorderRadius.zero,
@@ -106,7 +106,7 @@ class AdminShell extends ConsumerWidget {
               // Sidebar Header
               SafeArea(
                 child: Padding(
-                  padding: const EdgeInsets.all(20.0),
+                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 12),
                   child: Row(
                     children: [
                       Container(
@@ -365,7 +365,7 @@ class _SidebarItem extends StatelessWidget {
         : (isSelected ? Colors.white : const Color(0xFF8E9AAF));
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 2.0),
+                    padding: const EdgeInsets.symmetric(vertical: 1.5),
       child: Material(
         color: isSelected ? activeBgColor : Colors.transparent,
         borderRadius: BorderRadius.circular(12),
@@ -373,7 +373,7 @@ class _SidebarItem extends StatelessWidget {
           onTap: onTap,
           borderRadius: BorderRadius.circular(12),
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+            padding: const EdgeInsets.symmetric(horizontal: 14.0, vertical: 10.0),
             child: Row(
               children: [
                 Icon(

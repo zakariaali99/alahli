@@ -52,12 +52,12 @@ class Permissions {
     AppAction.subscriptionsDelete: ['super_admin'],
     AppAction.subscriptionsRenew: ['super_admin', 'academy_manager'],
 
-    AppAction.packagesCreate: ['super_admin'],
-    AppAction.packagesUpdate: ['super_admin'],
+    AppAction.packagesCreate: ['super_admin', 'academy_manager'],
+    AppAction.packagesUpdate: ['super_admin', 'academy_manager'],
     AppAction.packagesDelete: ['super_admin'],
 
-    AppAction.departmentsCreate: ['super_admin'],
-    AppAction.departmentsUpdate: ['super_admin'],
+    AppAction.departmentsCreate: ['super_admin', 'academy_manager'],
+    AppAction.departmentsUpdate: ['super_admin', 'academy_manager'],
     AppAction.departmentsDelete: ['super_admin'],
 
     AppAction.staffRead: ['super_admin', 'academy_manager'],
