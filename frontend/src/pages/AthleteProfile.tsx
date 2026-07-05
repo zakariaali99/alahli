@@ -4,9 +4,9 @@ import { useParams } from "react-router-dom"
 import { Link } from "react-router-dom"
 import {
   ChevronLeft, Edit, RefreshCw, Printer, Shield,
-  Calendar, Award, Receipt, Users, Activity,
+  Calendar, Award, Receipt, Users,
   CreditCard, Hash, Clock, BadgeCheck,
-  Phone, User, Briefcase,
+  Phone, User, Briefcase, Activity,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
@@ -108,7 +108,7 @@ export default function AthleteProfilePage() {
           <span className="text-primary font-bold">ملف اللاعب</span>
         </div>
         <div className="flex items-center gap-3 w-full md:w-auto">
-          <Link to={`/dashboard/athletes/add`}>
+          <Link to={`/dashboard/athletes/${id}/edit`}>
             <Button variant="outline" size="lg">
               <Edit className="w-4 h-4" />
               تعديل البيانات
@@ -155,6 +155,12 @@ export default function AthleteProfilePage() {
                 <Calendar className="w-3.5 h-3.5 text-primary" />
                 {formatDate(athlete.birth_date)}
               </div>
+              {athlete.age != null && (
+                <div className="bg-surface-container-low px-3 py-1.5 rounded-lg border border-border/20 inline-flex items-center gap-1.5 text-xs font-semibold text-foreground">
+                  <Activity className="w-3.5 h-3.5 text-primary" />
+                  {athlete.age} سنة
+                </div>
+              )}
             </div>
           </div>
         </div>

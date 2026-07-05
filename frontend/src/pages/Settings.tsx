@@ -27,6 +27,7 @@ import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { useAuth } from "@/lib/auth"
 import { api } from "@/lib/api"
 import { usePreferences, useUpdatePreferences } from "@/lib/hooks/usePreferences"
+import { Can } from "@/components/ui/can"
 
 type SettingsTab = "profile" | "notifications" | "security" | "appearance"
 
@@ -328,32 +329,34 @@ export default function SettingsPage() {
           </TabPanel>
 
           <TabPanel active={activeTab === "notifications"}>
-            <div className="space-y-1">
-              <h3 className="section-header text-lg mb-6">إعدادات الإشعارات</h3>
-              {notificationItems.map((item, i) => {
-                const Icon = item.icon
-                return (
-                  <motion.div
-                    key={i}
-                    initial={{ opacity: 0, y: 12 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: i * 0.05 }}
-                    className="group flex items-center justify-between py-4 px-5 rounded-2xl hover:bg-surface-container/40 transition-all duration-200"
-                  >
-                    <div className="flex items-center gap-4">
-                      <div className="w-10 h-10 rounded-xl bg-primary/10 dark:bg-primary/15 flex items-center justify-center shrink-0 group-hover:bg-primary/15 dark:group-hover:bg-primary/20 transition-colors">
-                        <Icon className="w-4.5 h-4.5 text-primary" />
+            <Can action="settings:update">
+              <div className="space-y-1">
+                <h3 className="section-header text-lg mb-6">إعدادات الإشعارات</h3>
+                {notificationItems.map((item, i) => {
+                  const Icon = item.icon
+                  return (
+                    <motion.div
+                      key={i}
+                      initial={{ opacity: 0, y: 12 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      transition={{ delay: i * 0.05 }}
+                      className="group flex items-center justify-between py-4 px-5 rounded-2xl hover:bg-surface-container/40 transition-all duration-200"
+                    >
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-xl bg-primary/10 dark:bg-primary/15 flex items-center justify-center shrink-0 group-hover:bg-primary/15 dark:group-hover:bg-primary/20 transition-colors">
+                          <Icon className="w-4.5 h-4.5 text-primary" />
+                        </div>
+                        <div>
+                          <p className="text-sm font-semibold text-foreground">{item.label}</p>
+                          <p className="text-xs text-muted-foreground mt-0.5">{item.desc}</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm font-semibold text-foreground">{item.label}</p>
-                        <p className="text-xs text-muted-foreground mt-0.5">{item.desc}</p>
-                      </div>
-                    </div>
-                    <Toggle checked={prefs ? prefs[item.field] : true} onChange={() => toggleNotif(item.field)} />
-                  </motion.div>
-                )
-              })}
-            </div>
+                      <Toggle checked={prefs ? prefs[item.field] : true} onChange={() => toggleNotif(item.field)} />
+                    </motion.div>
+                  )
+                })}
+              </div>
+            </Can>
           </TabPanel>
 
           <TabPanel active={activeTab === "security"}>

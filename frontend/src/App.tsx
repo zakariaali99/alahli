@@ -55,6 +55,7 @@ export default function App() {
                   <Route index element={<DashboardHome />} />
                   <Route path="athletes" element={<AthletesList />} />
                   <Route path="athletes/add" element={<AddAthlete />} />
+                  <Route path="athletes/:id/edit" element={<AddAthlete />} />
                   <Route path="athletes/:id" element={<AthleteProfile />} />
                   <Route path="memberships" element={<Memberships />} />
                   <Route path="verify" element={<Verify />} />

@@ -8,6 +8,7 @@ import { extractResults } from "@/lib/response"
 import { useToast } from "@/lib/toast"
 import { validateLibyanPhone } from "@/lib/utils"
 import type { Group } from "@/lib/types"
+import { Can } from "@/components/ui/can"
 
 type Coach = {
   id: number
@@ -137,7 +138,7 @@ export default function CoachesManagement() {
           <h2 className="text-xl font-bold">المدربون</h2>
           <p className="mt-1 text-xs text-muted-foreground">إدارة ملفات المدربين وصورهم والمجموعات المسندة إليهم.</p>
         </div>
-        <Button onClick={openCreateModal}><Plus className="h-4 w-4" /> إضافة مدرب</Button>
+        <Can action="coaches:create"><Button onClick={openCreateModal}><Plus className="h-4 w-4" /> إضافة مدرب</Button></Can>
       </div>
 
       {pageError && <div className="rounded-xl border border-error/30 bg-error/10 p-3 text-xs text-error">{pageError}</div>}
@@ -178,15 +179,17 @@ export default function CoachesManagement() {
                     className="group relative cursor-pointer rounded-2xl border-2 border-border bg-card p-5 transition hover:border-primary"
                     onClick={() => openCoachDetails(coach.id)}
                   >
-                    <button
-                      className="absolute left-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary opacity-0 transition hover:bg-primary/20 group-hover:opacity-100"
-                      onClick={(e) => {
-                        e.stopPropagation()
-                        openEditModal(coach)
-                      }}
-                    >
-                      <Pencil className="h-3.5 w-3.5" />
-                    </button>
+                    <Can action="coaches:update">
+                      <button
+                        className="absolute left-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary opacity-0 transition hover:bg-primary/20 group-hover:opacity-100"
+                        onClick={(e) => {
+                          e.stopPropagation()
+                          openEditModal(coach)
+                        }}
+                      >
+                        <Pencil className="h-3.5 w-3.5" />
+                      </button>
+                    </Can>
                     <div className="flex items-start gap-3">
                       {coach.photo ? (
                         <img src={coach.photo} alt={coach.full_name_ar} className="h-12 w-12 rounded-xl object-cover shadow" />
@@ -236,15 +239,17 @@ export default function CoachesManagement() {
                 </div>
               )}
             </div>
-            <button
-              className="absolute left-4 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-xl bg-card/80 text-muted-foreground shadow-sm backdrop-blur transition hover:bg-card hover:text-foreground"
-              onClick={(e) => {
-                e.stopPropagation()
-                openEditModal(selectedCoach)
-              }}
-            >
-              <Pencil className="h-4 w-4" />
-            </button>
+            <Can action="coaches:update">
+              <button
+                className="absolute left-4 top-4 z-10 flex h-8 w-8 items-center justify-center rounded-xl bg-card/80 text-muted-foreground shadow-sm backdrop-blur transition hover:bg-card hover:text-foreground"
+                onClick={(e) => {
+                  e.stopPropagation()
+                  openEditModal(selectedCoach)
+                }}
+              >
+                <Pencil className="h-4 w-4" />
+              </button>
+            </Can>
             <div className="absolute left-4 bottom-4 flex items-center gap-1.5">
               <span className={`h-2.5 w-2.5 rounded-full ${selectedCoach.is_active ? "bg-secondary" : "bg-error"}`} />
               <span className="text-xs text-muted-foreground">{selectedCoach.is_active ? "نشط" : "موقوف"}</span>

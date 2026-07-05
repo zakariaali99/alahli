@@ -53,11 +53,15 @@ async function refreshTokens(): Promise<boolean> {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ refresh: tokens.refresh }),
       })
-      if (!res.ok) return false
+      if (!res.ok) {
+        clearTokens()
+        return false
+      }
       const data = await res.json()
       setTokens(data.access, data.refresh)
       return true
     } catch {
+      clearTokens()
       return false
     } finally {
       refreshPromise = null

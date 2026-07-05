@@ -28,6 +28,7 @@ import { Link } from "react-router-dom"
 import { api } from "@/lib/api"
 import { useAuth } from "@/lib/auth"
 import { toAbsoluteMediaUrl } from "@/lib/media"
+import { Can } from "@/components/ui/can"
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -128,6 +129,8 @@ export default function MembershipsPage() {
   const [flash, setFlash] = useState<FlashMessage | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<SubscriptionPackage | null>(null)
   const [detailsSub, setDetailsSub] = useState<any | null>(null)
+  const [rejectTarget, setRejectTarget] = useState<{ id: number; name: string } | null>(null)
+  const [rejectReason, setRejectReason] = useState("")
   const [showCreateSubModal, setShowCreateSubModal] = useState(false)
   const [createSubLoading, setCreateSubLoading] = useState(false)
   const [createSubError, setCreateSubError] = useState<string | null>(null)
@@ -347,9 +350,9 @@ export default function MembershipsPage() {
     }
   }
 
-  const handleReject = async (id: number) => {
+  const handleReject = async (id: number, reason: string) => {
     try {
-      await updateSubscriptionMut.mutateAsync({ id, status: "rejected" })
+      await updateSubscriptionMut.mutateAsync({ id, status: "rejected", rejection_reason: reason || undefined })
       setFlash({ type: "success", text: "تم رفض الاشتراك." })
     } catch (err: any) {
       setFlash({ type: "error", text: err?.message || "فشل رفض الاشتراك." })
@@ -546,10 +549,12 @@ export default function MembershipsPage() {
           <h1 className="text-3xl font-extrabold gradient-text">إدارة الاشتراكات</h1>
           <p className="text-muted-foreground mt-1 text-sm">تجديد، متابعة، وإدارة الباقات المالية للاعبين.</p>
         </div>
-        <Button size="lg" className="w-full md:w-auto bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/25" onClick={() => void openCreateSubscriptionModal()}>
-          <PlusCircle className="w-5 h-5" />
-          اشتراك جديد
-        </Button>
+        <Can action="subscriptions:create">
+          <Button size="lg" className="w-full md:w-auto bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/25" onClick={() => void openCreateSubscriptionModal()}>
+            <PlusCircle className="w-5 h-5" />
+            اشتراك جديد
+          </Button>
+        </Can>
       </motion.div>
 
       {/* ── Quick Renewal Packages ── */}
@@ -611,16 +616,18 @@ export default function MembershipsPage() {
                     ))}
                   </ul>
 
-                  {canManagePackages && (
+                  <Can action="packages:update">
                     <div className="mb-3 flex items-center justify-end gap-2">
                       <Button type="button" variant="ghost" size="sm" onClick={() => openEditPackageModal(pkg.raw)}>
                         <Pencil className="w-4 h-4" /> تعديل
                       </Button>
-                      <Button type="button" variant="destructive" size="sm" onClick={() => deletePackage(pkg.raw)}>
-                        <Trash2 className="w-4 h-4" /> حذف
-                      </Button>
+                      <Can action="packages:delete">
+                        <Button type="button" variant="destructive" size="sm" onClick={() => deletePackage(pkg.raw)}>
+                          <Trash2 className="w-4 h-4" /> حذف
+                        </Button>
+                      </Can>
                     </div>
-                  )}
+                  </Can>
 
                   <button
                     onClick={() => openQuickRenew({
@@ -643,7 +650,7 @@ export default function MembershipsPage() {
             )
           })}
 
-          {canManagePackages && (
+          <Can action="packages:create">
             <motion.button
               type="button"
               variants={cardVariants}
@@ -660,7 +667,7 @@ export default function MembershipsPage() {
               <p className="font-bold text-primary">إضافة باقة جديدة</p>
               <p className="text-xs text-muted-foreground">إنشاء باقات جديدة مع الأسعار والمدة والخصائص</p>
             </motion.button>
-          )}
+          </Can>
         </div>
       </section>
 
@@ -766,24 +773,28 @@ export default function MembershipsPage() {
                       <td className="px-6 py-4 text-center">
                         {sub.status === "pending" ? (
                           <div className="flex items-center justify-center gap-1.5">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="text-secondary hover:text-secondary hover:bg-secondary/10 px-2.5 py-1 h-7 text-xs font-bold rounded-lg flex items-center gap-1"
-                              onClick={(e) => { e.stopPropagation(); void handleApprove(sub.id) }}
-                            >
-                              <CheckCircle2 className="w-3.5 h-3.5" />
-                              تأكيد
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              className="text-error hover:text-error hover:bg-error/10 px-2.5 py-1 h-7 text-xs font-bold rounded-lg flex items-center gap-1"
-                              onClick={(e) => { e.stopPropagation(); void handleReject(sub.id) }}
-                            >
-                              <X className="w-3.5 h-3.5" />
-                              رفض
-                            </Button>
+                            <Can action="subscriptions:update">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="text-secondary hover:text-secondary hover:bg-secondary/10 px-2.5 py-1 h-7 text-xs font-bold rounded-lg flex items-center gap-1"
+                                onClick={(e) => { e.stopPropagation(); void handleApprove(sub.id) }}
+                              >
+                                <CheckCircle2 className="w-3.5 h-3.5" />
+                                تأكيد
+                              </Button>
+                            </Can>
+                            <Can action="subscriptions:update">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                className="text-error hover:text-error hover:bg-error/10 px-2.5 py-1 h-7 text-xs font-bold rounded-lg flex items-center gap-1"
+                                onClick={(e) => { e.stopPropagation(); setRejectTarget({ id: sub.id, name: sub.athlete_name }); setRejectReason("") }}
+                              >
+                                <X className="w-3.5 h-3.5" />
+                                رفض
+                              </Button>
+                            </Can>
                           </div>
                         ) : (
                           <button
@@ -863,6 +874,40 @@ export default function MembershipsPage() {
             <div className="flex justify-end gap-2">
               <Button type="button" variant="ghost" onClick={() => setDeleteTarget(null)}>إلغاء</Button>
               <Button type="button" variant="destructive" onClick={confirmDeletePackage}>حذف</Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {rejectTarget && (
+        <div className="fixed inset-0 z-50 bg-black/50 p-4 flex items-center justify-center" onClick={() => setRejectTarget(null)}>
+          <div className="w-full max-w-md rounded-2xl border border-border bg-card p-5 space-y-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-bold">رفض الاشتراك</h3>
+            <p className="text-sm text-muted-foreground">
+              سيتم رفض اشتراك <span className="font-semibold text-foreground">{rejectTarget.name}</span>.
+            </p>
+            <div>
+              <label className="mb-1 block text-xs text-muted-foreground">سبب الرفض (اختياري)</label>
+              <textarea
+                rows={3}
+                value={rejectReason}
+                onChange={(e) => setRejectReason(e.target.value)}
+                className="w-full rounded-xl border border-border bg-surface-container-low px-3 py-2 text-sm outline-none focus:ring-2 focus:ring-primary"
+                placeholder="اكتب سبب الرفض..."
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="ghost" onClick={() => setRejectTarget(null)}>إلغاء</Button>
+              <Button
+                type="button"
+                variant="destructive"
+                onClick={() => {
+                  void handleReject(rejectTarget.id, rejectReason)
+                  setRejectTarget(null)
+                }}
+              >
+                تأكيد الرفض
+              </Button>
             </div>
           </div>
         </div>
@@ -1105,6 +1150,12 @@ export default function MembershipsPage() {
               <div><p className="text-muted-foreground">النهاية</p><p className="font-semibold">{formatDate(detailsSub.end_date)}</p></div>
               <div><p className="text-muted-foreground">المبلغ</p><p className="font-semibold">{Number(detailsSub.amount).toLocaleString("ar-SA-u-nu-latn")} د.ل</p></div>
               <div><p className="text-muted-foreground">الحالة</p><p className="font-semibold">{statusMap[detailsSub.status]?.label || detailsSub.status}</p></div>
+              {detailsSub.status === "rejected" && detailsSub.rejection_reason && (
+                <div className="col-span-2 rounded-xl border border-error/30 bg-error/10 p-3 text-xs">
+                  <p className="text-muted-foreground mb-0.5">سبب الرفض</p>
+                  <p className="font-semibold text-error">{detailsSub.rejection_reason}</p>
+                </div>
+              )}
             </div>
             <div className="flex flex-wrap justify-end gap-2">
               {detailsSub.invoice_pdf_url && (

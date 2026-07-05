@@ -14,6 +14,7 @@ import { TableSkeleton } from "@/components/ui/loading-spinner"
 import { useToast } from "@/lib/toast"
 import { useMutation, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api"
+import { Can } from "@/components/ui/can"
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -157,12 +158,14 @@ export default function AthletesPage() {
             عرض وإدارة بيانات جميع الرياضيين المسجلين في النظام.
           </p>
         </div>
-        <Link to="/dashboard/athletes/add">
-          <Button size="lg" className="bg-gradient-to-r from-primary to-primary-container text-primary-foreground shadow-lg shadow-primary/20 hover:shadow-primary/30">
-            <Plus className="w-4 h-4" />
-            إضافة رياضي جديد
-          </Button>
-        </Link>
+        <Can action="athletes:create">
+          <Link to="/dashboard/athletes/add">
+            <Button size="lg" className="bg-gradient-to-r from-primary to-primary-container text-primary-foreground shadow-lg shadow-primary/20 hover:shadow-primary/30">
+              <Plus className="w-4 h-4" />
+              إضافة رياضي جديد
+            </Button>
+          </Link>
+        </Can>
       </motion.div>
 
       {/* ── Filter Bar ── */}
@@ -315,16 +318,18 @@ export default function AthletesPage() {
                               <Eye className="w-4 h-4" />
                             </motion.button>
                           </Link>
-                          <Link to={`/dashboard/athletes/${athlete.id}`}>
-                            <motion.button
-                              whileHover={{ scale: 1.1 }}
-                              whileTap={{ scale: 0.9 }}
-                              className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary-container/20 transition-colors"
-                              title="تعديل"
-                            >
-                              <Edit2 className="w-4 h-4" />
-                            </motion.button>
-                          </Link>
+                          <Can action="athletes:update">
+                            <Link to={`/dashboard/athletes/${athlete.id}`}>
+                              <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                                className="p-2 rounded-lg text-muted-foreground hover:text-primary hover:bg-primary-container/20 transition-colors"
+                                title="تعديل"
+                              >
+                                <Edit2 className="w-4 h-4" />
+                              </motion.button>
+                            </Link>
+                          </Can>
                           <div className="relative">
                             <motion.button
                               whileHover={{ scale: 1.1 }}
@@ -350,26 +355,30 @@ export default function AthletesPage() {
                                     <Eye className="w-3.5 h-3.5" />
                                     <span>عرض التفاصيل</span>
                                   </Link>
-                                  <button
-                                    onClick={() => {
-                                      setActiveMenuId(null);
-                                      handleToggleActive(athlete);
-                                    }}
-                                    className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted text-foreground transition-colors w-full text-right cursor-pointer"
-                                  >
-                                    <UserCog className="w-3.5 h-3.5" />
-                                    <span>{athlete.is_active ? "تجميد الحساب" : "تنشيط الحساب"}</span>
-                                  </button>
-                                  <button
-                                    onClick={() => {
-                                      setActiveMenuId(null);
-                                      handleDeleteAthlete(athlete);
-                                    }}
-                                    className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-error/10 text-error hover:text-error transition-colors w-full text-right cursor-pointer"
-                                  >
-                                    <Trash2 className="w-3.5 h-3.5" />
-                                    <span>حذف اللاعب</span>
-                                  </button>
+                                  <Can action="athletes:update">
+                                    <button
+                                      onClick={() => {
+                                        setActiveMenuId(null);
+                                        handleToggleActive(athlete);
+                                      }}
+                                      className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted text-foreground transition-colors w-full text-right cursor-pointer"
+                                    >
+                                      <UserCog className="w-3.5 h-3.5" />
+                                      <span>{athlete.is_active ? "تجميد الحساب" : "تنشيط الحساب"}</span>
+                                    </button>
+                                  </Can>
+                                  <Can action="athletes:delete">
+                                    <button
+                                      onClick={() => {
+                                        setActiveMenuId(null);
+                                        handleDeleteAthlete(athlete);
+                                      }}
+                                      className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-error/10 text-error hover:text-error transition-colors w-full text-right cursor-pointer"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                      <span>حذف اللاعب</span>
+                                    </button>
+                                  </Can>
                                 </div>
                               </>
                             )}
@@ -523,26 +532,30 @@ export default function AthletesPage() {
                             <Eye className="w-3.5 h-3.5" />
                             <span>عرض التفاصيل</span>
                           </Link>
-                          <button
-                            onClick={() => {
-                              setActiveMenuId(null);
-                              handleToggleActive(athlete);
-                            }}
-                            className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted text-foreground transition-colors w-full text-right cursor-pointer"
-                          >
-                            <UserCog className="w-3.5 h-3.5" />
-                            <span>{athlete.is_active ? "تجميد الحساب" : "تنشيط الحساب"}</span>
-                          </button>
-                          <button
-                            onClick={() => {
-                              setActiveMenuId(null);
-                              handleDeleteAthlete(athlete);
-                            }}
-                            className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-error/10 text-error hover:text-error transition-colors w-full text-right cursor-pointer"
-                          >
-                            <Trash2 className="w-3.5 h-3.5" />
-                            <span>حذف اللاعب</span>
-                          </button>
+                          <Can action="athletes:update">
+                            <button
+                              onClick={() => {
+                                setActiveMenuId(null);
+                                handleToggleActive(athlete);
+                              }}
+                              className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-muted text-foreground transition-colors w-full text-right cursor-pointer"
+                            >
+                              <UserCog className="w-3.5 h-3.5" />
+                              <span>{athlete.is_active ? "تجميد الحساب" : "تنشيط الحساب"}</span>
+                            </button>
+                          </Can>
+                          <Can action="athletes:delete">
+                            <button
+                              onClick={() => {
+                                setActiveMenuId(null);
+                                handleDeleteAthlete(athlete);
+                              }}
+                              className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-error/10 text-error hover:text-error transition-colors w-full text-right cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>حذف اللاعب</span>
+                            </button>
+                          </Can>
                         </div>
                       </>
                     )}

@@ -8,6 +8,7 @@ import { extractResults } from "@/lib/response"
 import type { RegistrationRequest, Subscription } from "@/lib/types"
 import { Building2, Check, Eye, FileText, UserRound, X } from "lucide-react"
 import { toAbsoluteMediaUrl } from "@/lib/media"
+import { Can } from "@/components/ui/can"
 
 function formatDate(value?: string | null) {
   if (!value) return "-"
@@ -75,7 +76,7 @@ export default function NewAthletes() {
   const reject = async (id: number) => {
     try {
       setActionLoadingId(id)
-      await api.post(`/athletes/registrations/${id}/reject/`, rejectNote.trim() ? { note: rejectNote.trim() } : undefined)
+      await api.post(`/athletes/registrations/${id}/reject/`, rejectNote.trim() ? { reason: rejectNote.trim() } : undefined)
       await fetchAll()
     } catch (err: any) {
       setActionError(err?.message || "تعذر رفض الطلب حالياً")
@@ -219,26 +220,30 @@ export default function NewAthletes() {
                         عرض الملف
                       </Button>
                     )}
-                    <Button
-                      className="min-w-24"
-                      disabled={actionLoadingId === registration.id || needsAthleteProfile}
-                      onClick={() => openConfirmation(registration, "approve")}
-                      size="sm"
-                      variant="outline"
-                    >
-                      <Check className="h-4 w-4" />
-                      اعتماد
-                    </Button>
-                    <Button
-                      className="min-w-24"
-                      disabled={actionLoadingId === registration.id}
-                      onClick={() => openConfirmation(registration, "reject")}
-                      size="sm"
-                      variant="destructive"
-                    >
-                      <X className="h-4 w-4" />
-                      رفض
-                    </Button>
+                    <Can action="registrations:approve">
+                      <Button
+                        className="min-w-24"
+                        disabled={actionLoadingId === registration.id || needsAthleteProfile}
+                        onClick={() => openConfirmation(registration, "approve")}
+                        size="sm"
+                        variant="outline"
+                      >
+                        <Check className="h-4 w-4" />
+                        اعتماد
+                      </Button>
+                    </Can>
+                    <Can action="registrations:reject">
+                      <Button
+                        className="min-w-24"
+                        disabled={actionLoadingId === registration.id}
+                        onClick={() => openConfirmation(registration, "reject")}
+                        size="sm"
+                        variant="destructive"
+                      >
+                        <X className="h-4 w-4" />
+                        رفض
+                      </Button>
+                    </Can>
                   </div>
                 </div>
               </motion.article>

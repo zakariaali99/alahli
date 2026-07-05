@@ -7,6 +7,7 @@ import { api } from "@/lib/api"
 import { extractResults } from "@/lib/response"
 import { validateLibyanPhone } from "@/lib/utils"
 import { useToast } from "@/lib/toast"
+import { Can } from "@/components/ui/can"
 
 type StaffUser = {
   id: number
@@ -215,7 +216,7 @@ export default function StaffManagement() {
           <option value="trainer">مدرب</option>
           <option value="viewer">مشاهد</option>
         </select>
-        <Button onClick={openCreateModal}><Plus className="h-4 w-4" /> إضافة موظف</Button>
+        <Can action="staff:create"><Button onClick={openCreateModal}><Plus className="h-4 w-4" /> إضافة موظف</Button></Can>
       </div>
 
       <div className="overflow-x-auto rounded-2xl border border-border bg-card">
@@ -248,8 +249,8 @@ export default function StaffManagement() {
                 <td className="px-4 py-3"><span className={`inline-flex items-center gap-1 text-xs ${user.is_active ? "text-secondary" : "text-error"}`}><span className={`h-1.5 w-1.5 rounded-full ${user.is_active ? "bg-secondary" : "bg-error"}`} />{user.is_active ? "نشط" : "موقوف"}</span></td>
                 <td className="px-4 py-3 text-center">
                   <div className="flex justify-center gap-1">
-                    <Button size="sm" variant="ghost" onClick={() => openEditModal(user)}><Pencil className="h-4 w-4" /></Button>
-                    <Button size="sm" variant="ghost" className="text-error hover:bg-error/10" onClick={() => handleDelete(user)}><Trash2 className="h-4 w-4" /></Button>
+                    <Can action="staff:update"><Button size="sm" variant="ghost" onClick={() => openEditModal(user)}><Pencil className="h-4 w-4" /></Button></Can>
+                    <Can action="staff:delete"><Button size="sm" variant="ghost" className="text-error hover:bg-error/10" onClick={() => handleDelete(user)}><Trash2 className="h-4 w-4" /></Button></Can>
                   </div>
                 </td>
               </tr>

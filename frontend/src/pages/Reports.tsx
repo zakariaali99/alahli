@@ -33,6 +33,7 @@ import { Button } from "@/components/ui/button"
 import { api } from "@/lib/api"
 import { extractResults } from "@/lib/response"
 import { useAuth } from "@/lib/auth"
+import { Can } from "@/components/ui/can"
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -144,6 +145,7 @@ export default function ReportsPage() {
   ]
 
   return (
+    <Can action="reports:read" fallback={<div className="rounded-2xl border border-border bg-card p-10 text-center text-muted-foreground"><p>ليس لديك صلاحية الوصول إلى التقارير</p></div>}>
     <motion.div className="space-y-8" dir="rtl" variants={containerVariants} initial="hidden" animate="visible">
       {/* ── Ambient Background ── */}
       <div className="fixed top-[-20%] right-[-10%] w-[60vw] h-[60vw] rounded-full bg-primary-container/10 blur-[120px] -z-10 pointer-events-none" />
@@ -363,5 +365,6 @@ export default function ReportsPage() {
         </div>
       </motion.div>
     </motion.div>
+    </Can>
   )
 }

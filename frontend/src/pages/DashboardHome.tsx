@@ -30,10 +30,10 @@ const cardVariants: Variants = {
 
 export default function DashboardPage() {
   const { user } = useAuth()
-  const { data: stats, isLoading: statsLoading } = useDashboardStats()
-  const { data: growthData, isLoading: growthLoading } = useMonthlyGrowth()
-  const { data: departments } = useDepartmentDistribution()
-  const { data: athletesData } = useAthletes({ ordering: "-created_at", page_size: 3 })
+  const { data: stats, isLoading: statsLoading, isError: statsError } = useDashboardStats()
+  const { data: growthData, isLoading: growthLoading, isError: growthError } = useMonthlyGrowth()
+  const { data: departments, isError: deptError } = useDepartmentDistribution()
+  const { data: athletesData, isError: athletesError } = useAthletes({ ordering: "-created_at", page_size: 3 })
   const [period, setPeriod] = useState<string>("شهر")
 
   const statCards = [
@@ -76,10 +76,11 @@ export default function DashboardPage() {
     },
   ]
 
+  const months = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"]
   const chartData = (growthData || []).map((d) => {
     const date = new Date(d.month)
-    const months = ["يناير", "فبراير", "مارس", "أبريل", "مايو", "يونيو", "يوليو", "أغسطس", "سبتمبر", "أكتوبر", "نوفمبر", "ديسمبر"]
-    return { name: months[date.getMonth()], value: d.count }
+    const monthName = months[date.getMonth()] || d.month
+    return { name: monthName, value: d.count }
   })
 
   const recentAthletes = (athletesData?.results || []).map((a) => ({

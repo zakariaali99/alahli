@@ -26,10 +26,13 @@ interface RevenueEntry {
   revenue: number
 }
 
+const ANALYTICS_STALE_TIME = 60_000
+
 export function useDashboardStats(academyId?: number) {
   return useQuery({
     queryKey: ["analytics", "stats", academyId],
     queryFn: () => api.get<DashboardStats>("/analytics/stats/", academyId ? { academy_id: String(academyId) } : {}),
+    staleTime: ANALYTICS_STALE_TIME,
   })
 }
 
@@ -37,6 +40,7 @@ export function useMonthlyGrowth(academyId?: number) {
   return useQuery({
     queryKey: ["analytics", "monthly-growth", academyId],
     queryFn: () => api.get<MonthlyGrowth[]>("/analytics/monthly-growth/", academyId ? { academy_id: String(academyId) } : {}),
+    staleTime: ANALYTICS_STALE_TIME,
   })
 }
 
@@ -44,6 +48,7 @@ export function useDepartmentDistribution(academyId?: number) {
   return useQuery({
     queryKey: ["analytics", "department-distribution", academyId],
     queryFn: () => api.get<DepartmentDistribution[]>("/analytics/department-distribution/", academyId ? { academy_id: String(academyId) } : {}),
+    staleTime: ANALYTICS_STALE_TIME,
   })
 }
 
@@ -51,5 +56,6 @@ export function useRevenue(academyId?: number) {
   return useQuery({
     queryKey: ["analytics", "revenue", academyId],
     queryFn: () => api.get<RevenueEntry[]>("/analytics/revenue/", academyId ? { academy_id: String(academyId) } : {}),
+    staleTime: ANALYTICS_STALE_TIME,
   })
 }

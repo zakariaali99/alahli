@@ -10,6 +10,7 @@ interface Athlete {
   parent_phone: string
   birth_date: string
   gender: "male" | "female"
+  age: number | null
   department: number | null
   department_name: string
   photo: string | null

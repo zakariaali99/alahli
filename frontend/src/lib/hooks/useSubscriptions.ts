@@ -92,8 +92,8 @@ export function useRenewSubscription() {
 export function useUpdateSubscription() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, status }: { id: number; status: "active" | "expired" | "pending" | "rejected" }) =>
-      api.patch<Subscription>(`/subscriptions/${id}/`, { status }),
+    mutationFn: ({ id, status, rejection_reason }: { id: number; status: "active" | "expired" | "pending" | "rejected"; rejection_reason?: string }) =>
+      api.patch<Subscription>(`/subscriptions/${id}/`, { status, rejection_reason }),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["subscriptions"] })
     },

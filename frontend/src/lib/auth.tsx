@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useState, useEffect, useCallback } from "react"
 import { api } from "./api"
 
-interface User {
+export interface User {
   id: number
   phone: string
   first_name_ar: string

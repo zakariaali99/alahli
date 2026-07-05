@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState, type FormEvent } from "react"
-import { Link, useNavigate, useSearchParams } from "react-router-dom"
+import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
 import { ArrowRight, Dumbbell, Users, Camera, X, CheckCircle, AlertCircle, Loader2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -9,6 +9,7 @@ import { extractResults } from "@/lib/response"
 import type { Department, RegistrationRequest } from "@/lib/types"
 import { validateLibyanPhone } from "@/lib/utils"
 import CameraCapture from "@/components/ui/camera-capture"
+import { LoadingSpinner } from "@/components/ui/loading-spinner"
 
 type Scenario = "choose" | "athlete" | "parent"
 
@@ -48,13 +49,16 @@ const defaultParentForm: ParentForm = {
 
 export default function AddAthletePage() {
   const navigate = useNavigate()
+  const { id: editId } = useParams()
   const [searchParams] = useSearchParams()
   const registrationId = searchParams.get("registration")
   const toast = useToast()
+  const isEditing = !!editId
 
   const [scenario, setScenario] = useState<Scenario>("choose")
   const [registration, setRegistration] = useState<RegistrationRequest | null>(null)
   const [loadingRegistration, setLoadingRegistration] = useState(false)
+  const [loadingEdit, setLoadingEdit] = useState(isEditing)
   const [departments, setDepartments] = useState<Department[]>([])
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState("")
@@ -96,6 +100,36 @@ export default function AddAthletePage() {
     void fetchRegistration()
   }, [registrationId])
 
+  useEffect(() => {
+    if (!isEditing || !editId) return
+    const fetchAthlete = async () => {
+      try {
+        setLoadingEdit(true)
+        const data = await api.get<any>(`/athletes/${editId}/`)
+        const bd = data.birth_date ? data.birth_date.split("-") : []
+        setAthleteForm({
+          full_name: data.full_name || "",
+          phone: data.phone || "",
+          password: "",
+          gender: data.gender || "male",
+          department: data.department ? String(data.department) : "",
+          birth_day: bd[2] || "",
+          birth_month: bd[1] || "",
+          birth_year: bd[0] || "",
+          weight: "",
+          height: "",
+        })
+        if (data.photo) setPhoto(data.photo)
+        setScenario("athlete")
+      } catch (err: any) {
+        setError(err?.message || "تعذر تحميل بيانات الرياضي")
+      } finally {
+        setLoadingEdit(false)
+      }
+    }
+    void fetchAthlete()
+  }, [isEditing, editId])
+
   const handleSubmitAthlete = async (e: FormEvent) => {
     e.preventDefault()
     setError("")
@@ -108,7 +142,7 @@ export default function AddAthletePage() {
     const phoneErr = validateLibyanPhone(athleteForm.phone)
     if (phoneErr) { setError(phoneErr); return }
 
-    if (!registrationId && !athleteForm.password.trim()) {
+    if (!registrationId && !isEditing && !athleteForm.password.trim()) {
       setError("يرجى تعبئة كلمة المرور")
       return
     }
@@ -116,7 +150,7 @@ export default function AddAthletePage() {
       setError("يرجى تعبئة تاريخ الميلاد")
       return
     }
-    if (!photo && !registration?.athlete_photo) {
+    if (!isEditing && !photo && !registration?.athlete_photo) {
       setError("يرجى التقاط أو رفع صورة شخصية للرياضي")
       return
     }
@@ -143,6 +177,20 @@ export default function AddAthletePage() {
         return
       }
 
+      if (isEditing) {
+        const body: Record<string, any> = {
+          full_name: athleteForm.full_name.trim(),
+          phone: athleteForm.phone.trim(),
+          gender: athleteForm.gender,
+          birth_date: `${athleteForm.birth_year}-${athleteForm.birth_month.padStart(2, "0")}-${athleteForm.birth_day.padStart(2, "0")}`,
+        }
+        if (athleteForm.department) body.department = parseInt(athleteForm.department)
+        await api.patch(`/athletes/${editId}/`, body)
+        toast.success("تم تحديث بيانات الرياضي بنجاح")
+        navigate(`/dashboard/athletes/${editId}`)
+        return
+      }
+
       const fd = new FormData()
       fd.append("full_name", athleteForm.full_name.trim())
       fd.append("phone", athleteForm.phone.trim())
@@ -153,12 +201,6 @@ export default function AddAthletePage() {
       }
       fd.append("is_active", "true")
       fd.append("birth_date", `${athleteForm.birth_year}-${athleteForm.birth_month.padStart(2, "0")}-${athleteForm.birth_day.padStart(2, "0")}`)
-
-      const weight = parseFloat(athleteForm.weight)
-      const height = parseFloat(athleteForm.height)
-      if (!Number.isNaN(weight) || !Number.isNaN(height)) {
-        fd.append("notes", `Weight: ${Number.isNaN(weight) ? "" : weight} | Height: ${Number.isNaN(height) ? "" : height}`)
-      }
 
       const createdAthlete = await api.post<{ id: number }>("/athletes/", fd, { formData: true })
       toast.success("تم إنشاء الرياضي وربطه بحسابه بنجاح")
@@ -209,9 +251,11 @@ export default function AddAthletePage() {
           <CheckCircle className="mx-auto mb-4 h-16 w-16 text-primary" />
           <h2 className="mb-2 text-2xl font-bold">تم التسجيل بنجاح</h2>
           <p className="mb-6 text-muted-foreground">
-            {registrationId
-              ? "تم إنشاء ملف الرياضي وربطه بالطلب. يمكنك الآن مراجعته واعتماده."
-              : "تم إنشاء الحساب. يمكن للمستخدم الآن تسجيل الدخول."}
+              {registrationId
+                ? "تم إنشاء ملف الرياضي وربطه بالطلب. يمكنك الآن مراجعته واعتماده."
+                : isEditing
+                  ? "تم تحديث بيانات الرياضي بنجاح."
+                  : "تم إنشاء الحساب. يمكن للمستخدم الآن تسجيل الدخول."}
           </p>
           <div className="flex justify-center gap-3">
             <Button onClick={() => navigate("/dashboard/registrations")}>الطلبات الجديدة</Button>
@@ -222,14 +266,24 @@ export default function AddAthletePage() {
     )
   }
 
+  if (loadingEdit) {
+    return (
+      <div className="flex items-center justify-center py-20">
+        <LoadingSpinner size="lg" />
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       <div>
-        <h1 className="text-2xl font-extrabold gradient-text">إضافة مستخدم جديد</h1>
+        <h1 className="text-2xl font-extrabold gradient-text">{isEditing ? "تعديل بيانات الرياضي" : "إضافة مستخدم جديد"}</h1>
         <p className="mt-1 text-xs text-muted-foreground">
           {registrationId
             ? `إنشاء ملف رياضي لطلب التسجيل: ${registration?.user_name || "..."}`
-            : "أنشئ حساب رياضي أو ولي أمر مباشرة من لوحة الإدارة."}
+            : isEditing
+              ? `تعديل بيانات ${athleteForm.full_name || "الرياضي"}`
+              : "أنشئ حساب رياضي أو ولي أمر مباشرة من لوحة الإدارة."}
         </p>
       </div>
 
@@ -298,13 +352,13 @@ export default function AddAthletePage() {
                 <input className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors" dir="ltr" value={athleteForm.phone} onChange={(e) => setAthleteForm((p) => ({ ...p, phone: e.target.value }))} required />
               </FormField>
 
-              {!registrationId && (
+              {!registrationId && !isEditing && (
                 <FormField label="كلمة المرور" required>
                   <input className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors" type="password" value={athleteForm.password} onChange={(e) => setAthleteForm((p) => ({ ...p, password: e.target.value }))} required />
                 </FormField>
               )}
 
-              {!registrationId && (
+              {(!registrationId || isEditing) && (
                 <div className="grid grid-cols-2 gap-3">
                   <FormField label="الجنس" required>
                     <select
@@ -355,19 +409,12 @@ export default function AddAthletePage() {
                 </div>
               </FormField>
 
-              <div className="grid grid-cols-2 gap-3">
-                <FormField label="الوزن (كجم)">
-                  <input className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors" type="number" step="0.1" value={athleteForm.weight} onChange={(e) => setAthleteForm((p) => ({ ...p, weight: e.target.value }))} />
-                </FormField>
-                <FormField label="الطول (سم)">
-                  <input className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors" type="number" step="0.1" value={athleteForm.height} onChange={(e) => setAthleteForm((p) => ({ ...p, height: e.target.value }))} />
-                </FormField>
-              </div>
+
 
               <div className="flex justify-between gap-2 pt-2">
-                <Button type="button" variant="ghost" onClick={() => setScenario("choose")}>رجوع</Button>
+                <Button type="button" variant="ghost" onClick={() => isEditing ? navigate(`/dashboard/athletes/${editId}`) : setScenario("choose")}>رجوع</Button>
                 <Button type="submit" disabled={submitting || loadingRegistration}>
-                  {submitting ? <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> جاري...</span> : <>{registrationId ? "إنشاء الملف الرياضي" : "إنشاء الرياضي"} <ArrowRight className="mr-1 h-4 w-4" /></>}
+                  {submitting ? <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> جاري...</span> : <>{registrationId ? "إنشاء الملف الرياضي" : isEditing ? "حفظ التعديلات" : "إنشاء الرياضي"} <ArrowRight className="mr-1 h-4 w-4" /></>}
                 </Button>
               </div>
             </form>

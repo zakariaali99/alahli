@@ -73,6 +73,7 @@ export interface RegistrationRequest {
   parent_phone: string | null
   role_choice: "athlete" | "parent"
   status: "pending" | "approved" | "rejected"
+  rejection_reason: string
   reviewed_by: number | null
   reviewed_at: string | null
   created_at: string
@@ -104,6 +105,7 @@ export interface Subscription {
   group: number | null
   group_name: string
   status: "active" | "expired" | "pending" | "rejected"
+  rejection_reason: string
   approved_by: number | null
   approved_at: string | null
   created_at: string

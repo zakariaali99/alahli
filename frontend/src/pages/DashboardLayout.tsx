@@ -23,18 +23,26 @@ import {
 import { useAuth } from "@/lib/auth"
 import { ErrorBoundary } from "@/components/ui/error-boundary"
 import { cn } from "@/lib/utils"
+import { can, roleLabel, type Role, type Action } from "@/lib/permissions"
 
-const navItems = [
-  { name: "لوحة القيادة", path: "/dashboard", icon: LayoutDashboard },
-  { name: "اللاعبين", path: "/dashboard/athletes", icon: Users },
-  { name: "الاشتراكات", path: "/dashboard/memberships", icon: CreditCard },
-  { name: "الفحص السريع", path: "/dashboard/verify", icon: QrCode },
-  { name: "الطلبات الجديدة", path: "/dashboard/registrations", icon: Users },
-  { name: "الأكاديميات", path: "/dashboard/academies", icon: Building2 },
-  { name: "المدربون", path: "/dashboard/coaches", icon: Dumbbell },
-  { name: "الإدارة", path: "/dashboard/staff", icon: UserCog },
-  { name: "التنبيهات", path: "/dashboard/notifications", icon: Bell },
-  { name: "التقارير", path: "/dashboard/reports", icon: BarChart3 },
+interface NavItem {
+  name: string
+  path: string
+  icon: React.ComponentType<{ className?: string }>
+  permission: Action
+}
+
+const allNavItems: NavItem[] = [
+  { name: "لوحة القيادة", path: "/dashboard", icon: LayoutDashboard, permission: "analytics:read" },
+  { name: "اللاعبين", path: "/dashboard/athletes", icon: Users, permission: "athletes:read" },
+  { name: "الاشتراكات", path: "/dashboard/memberships", icon: CreditCard, permission: "subscriptions:read" },
+  { name: "الفحص السريع", path: "/dashboard/verify", icon: QrCode, permission: "verify:read" },
+  { name: "الطلبات الجديدة", path: "/dashboard/registrations", icon: Users, permission: "registrations:read" },
+  { name: "الأكاديميات", path: "/dashboard/academies", icon: Building2, permission: "departments:read" },
+  { name: "المدربون", path: "/dashboard/coaches", icon: Dumbbell, permission: "coaches:read" },
+  { name: "الإدارة", path: "/dashboard/staff", icon: UserCog, permission: "staff:read" },
+  { name: "التنبيهات", path: "/dashboard/notifications", icon: Bell, permission: "notifications:read" },
+  { name: "التقارير", path: "/dashboard/reports", icon: BarChart3, permission: "reports:read" },
 ]
 
 export default function DashboardLayout() {
@@ -103,6 +111,8 @@ export default function DashboardLayout() {
   }
 
   if (!user) return <Navigate to="/login" replace />
+
+  const navItems = allNavItems.filter((item) => can(user, item.permission))
 
   const handleLogout = async () => {
     await logout()
@@ -271,7 +281,7 @@ export default function DashboardLayout() {
                     {user.full_name_ar || "المسؤول"}
                   </p>
                   <p className="text-[11px] text-muted-foreground">
-                    {user.is_superuser || user.role === "super_admin" ? "مدير النظام" : user.role === "reception" ? "موظف استقبال" : user.role === "academy_manager" ? "مدير الأكاديمية" : "مشاهد"}
+                    {roleLabel(user.role)}
                   </p>
                 </div>
                 <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-primary-container flex items-center justify-center text-white font-bold text-sm shadow-md shrink-0">
