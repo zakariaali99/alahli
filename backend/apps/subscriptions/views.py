@@ -1,16 +1,21 @@
 import datetime
 
 from dateutil.relativedelta import relativedelta
-from django.conf import settings
 from django.db import transaction
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from apps.accounts.permissions import IsReceptionOrAbove, is_admin_user
+from apps.accounts.permissions import (
+    IsManagementOrAbove,
+    IsStaffOrAbove,
+    is_management_staff,
+    is_super_admin,
+    scope_by_academy,
+)
 from apps.athletes.models import Athlete, ParentAthlete
-from apps.departments.models import Group, Sport
+from apps.departments.models import Group
 from apps.packages.models import SubscriptionPackage
 
 from .models import AttendanceLog, Renewal, Subscription
@@ -32,8 +37,7 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
         base = Subscription.objects.all().select_related(
             "athlete__department", "group", "approved_by",
         ).prefetch_related("renewals")
-        if getattr(user, "academy", None) is not None:
-            base = base.filter(athlete__department=user.academy)
+        base = scope_by_academy(user, base, academy_field="athlete__department")
         if hasattr(user, "athlete") and user.athlete is not None:
             return base.filter(athlete=user.athlete)
         if user.role == "parent":
@@ -50,10 +54,17 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
             updated_instance.approved_by = self.request.user
             updated_instance.approved_at = datetime.datetime.now()
             updated_instance.save(update_fields=["approved_by", "approved_at"])
+        elif old_status != updated_instance.status and updated_instance.status == Subscription.Status.REJECTED:
+            from apps.notifications.models import Notification
+            Notification.objects.create(
+                athlete=updated_instance.athlete,
+                title="تم رفض الاشتراك",
+                body=updated_instance.rejection_reason or "تم رفض طلب الاشتراك الخاص بك. يرجى التواصل مع الإدارة للمزيد من المعلومات.",
+            )
 
     def get_permissions(self):
         if self.action in ["create", "update", "partial_update", "destroy"]:
-            return [IsReceptionOrAbove()]
+            return [IsManagementOrAbove()]
         return [IsAuthenticated()]
 
     @transaction.atomic
@@ -62,10 +73,7 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
         subscription = self.get_object()
         user = request.user
 
-        # Staff can renew any subscription
-        # Athletes can only renew their own
-        # Parents can only renew their children's
-        if not (is_admin_user(user) or user.role == "reception"):
+        if not (is_super_admin(user) or user.role in ["reception", "academy_manager"]):
             if hasattr(user, "athlete") and user.athlete is not None:
                 if subscription.athlete != user.athlete:
                     return Response(
@@ -256,13 +264,14 @@ class AttendanceLogViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         base = AttendanceLog.objects.all().select_related("athlete", "verified_by", "subscription")
+        base = scope_by_academy(user, base, academy_field="athlete__department")
         if hasattr(user, "athlete") and user.athlete is not None:
             return base.filter(athlete=user.athlete)
         return base
 
     def get_permissions(self):
         if self.action in ["create", "update", "partial_update", "destroy"]:
-            return [IsReceptionOrAbove()]
+            return [IsStaffOrAbove()]
         return [IsAuthenticated()]
 
     def perform_create(self, serializer):

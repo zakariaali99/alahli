@@ -4,21 +4,27 @@ from rest_framework.exceptions import PermissionDenied
 from rest_framework.permissions import SAFE_METHODS, IsAuthenticated
 from rest_framework.response import Response
 
-from apps.accounts.permissions import IsReceptionOrAbove
+from apps.accounts.permissions import IsManagementOrAbove, IsStaffOrAbove, IsSuperAdmin, scope_by_academy
 
 from .models import Trainer, TrainerReview
 from .serializers import TrainerClassSerializer, TrainerReviewSerializer, TrainerSerializer
 
 
 class TrainerViewSet(viewsets.ModelViewSet):
-    queryset = Trainer.objects.all().prefetch_related('classes')
+    queryset = Trainer.objects.all().prefetch_related("classes")
     serializer_class = TrainerSerializer
     search_fields = ["full_name_ar", "role"]
 
+    def get_queryset(self):
+        qs = Trainer.objects.all().prefetch_related("classes")
+        return scope_by_academy(self.request.user, qs, academy_field="academy")
+
     def get_permissions(self):
-        if self.action in ["create", "update", "partial_update", "destroy"]:
-            return [IsReceptionOrAbove()]
-        return super().get_permissions()
+        if self.action == "destroy":
+            return [IsSuperAdmin()]
+        if self.action in ["create", "update", "partial_update"]:
+            return [IsManagementOrAbove()]
+        return [IsStaffOrAbove()]
 
     @action(detail=True, methods=["get"])
     def classes(self, request, pk=None):
@@ -28,14 +34,14 @@ class TrainerViewSet(viewsets.ModelViewSet):
 
 
 class TrainerReviewViewSet(viewsets.ModelViewSet):
-    queryset = TrainerReview.objects.all().select_related('athlete', 'trainer')
+    queryset = TrainerReview.objects.all().select_related("athlete", "trainer")
     serializer_class = TrainerReviewSerializer
     filterset_fields = ["trainer"]
 
     def get_permissions(self):
         if self.request.method not in SAFE_METHODS:
-            return [IsReceptionOrAbove()]
-        return [IsAuthenticated()]
+            return [IsAuthenticated()]
+        return [IsStaffOrAbove()]
 
     def perform_create(self, serializer):
         athlete = getattr(self.request.user, "athlete", None)

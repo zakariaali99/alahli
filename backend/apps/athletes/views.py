@@ -11,7 +11,13 @@ from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 
 from apps.accounts.models import User
-from apps.accounts.permissions import IsReceptionOrAbove, IsSuperAdminOrReadOnly
+from apps.accounts.permissions import (
+    IsManagementOrAbove,
+    IsStaffOrAbove,
+    IsSuperAdmin,
+    is_staff_user,
+    scope_by_academy,
+)
 from apps.accounts.serializers import UserSerializer
 from apps.accounts.validators import validate_libyan_phone
 from apps.subscriptions.models import Subscription
@@ -72,21 +78,13 @@ def register_view(request):
         )
 
         if serializer.validated_data["role"] == "athlete":
-            weight = serializer.validated_data.get("weight")
-            height = serializer.validated_data.get("height")
-            notes_parts = []
-            if weight is not None:
-                notes_parts.append(f"Weight: {weight}")
-            if height is not None:
-                notes_parts.append(f"Height: {height}")
-
             athlete = Athlete.objects.create(
                 full_name=serializer.validated_data["full_name"],
                 phone=serializer.validated_data["phone"],
                 birth_date=serializer.validated_data["birth_date"],
                 gender="male",
                 photo=photo_file,
-                notes=" | ".join(notes_parts) if notes_parts else "",
+                notes="",
                 is_active=False,
                 registration=registration,
                 department_id=serializer.validated_data.get("department"),
@@ -121,11 +119,10 @@ class AthleteViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         qs = Athlete.objects.select_related("department", "registration")
         user = self.request.user
-        if getattr(user, "academy", None) is not None:
-            qs = qs.filter(department=user.academy)
-        if getattr(user, "role", None) in [User.Role.SUPER_ADMIN, User.Role.RECEPTION, "academy_manager"]:
-            return qs
-        return qs.filter(is_active=True)
+        qs = scope_by_academy(user, qs, academy_field="department")
+        if not is_staff_user(user):
+            return qs.filter(is_active=True)
+        return qs
 
     def get_serializer_class(self):
         if self.action == "list":
@@ -133,9 +130,13 @@ class AthleteViewSet(viewsets.ModelViewSet):
         return AthleteDetailSerializer
 
     def get_permissions(self):
-        if self.action in ["create", "update", "partial_update", "destroy"]:
-            return [IsReceptionOrAbove()]
-        return [IsSuperAdminOrReadOnly()]
+        if self.action == "destroy":
+            return [IsSuperAdmin()]
+        if self.action in ["create", "update", "partial_update"]:
+            return [IsManagementOrAbove()]
+        if self.action == "me":
+            return [IsAuthenticated()]
+        return [IsStaffOrAbove()]
 
     @transaction.atomic
     def create(self, request, *args, **kwargs):
@@ -174,6 +175,18 @@ class AthleteViewSet(viewsets.ModelViewSet):
         response_data = self.get_serializer(athlete).data
         return Response(response_data, status=status.HTTP_201_CREATED, headers=headers)
 
+    @action(detail=False, methods=["get"])
+    def me(self, request):
+        user = request.user
+        if user.athlete:
+            serializer = AthleteDetailSerializer(user.athlete, context={"request": request})
+            return Response(serializer.data)
+        linked = Athlete.objects.filter(parents__parent=user)
+        if linked.exists():
+            serializer = AthleteListSerializer(linked, many=True, context={"request": request})
+            return Response(serializer.data)
+        return Response({"detail": "لم يتم العثور على ملف رياضي"}, status=status.HTTP_404_NOT_FOUND)
+
     @action(detail=False, methods=["get"], url_path="verify/(?P<membership_number>[^/.]+)")
     def verify(self, request, membership_number=None):
         try:
@@ -200,13 +213,17 @@ class AthleteViewSet(viewsets.ModelViewSet):
 
 class RegistrationRequestViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = RegistrationRequestSerializer
-    permission_classes = [IsReceptionOrAbove]
+    permission_classes = [IsManagementOrAbove]
     filterset_fields = ["status", "role_choice"]
 
     def get_queryset(self):
-        return RegistrationRequest.objects.all().select_related(
-            "user", "reviewed_by", "athlete", "athlete__department"
-        ).prefetch_related("athlete__parents__parent")
+        return scope_by_academy(
+            self.request.user,
+            RegistrationRequest.objects.all().select_related(
+                "user", "reviewed_by", "athlete", "athlete__department"
+            ).prefetch_related("athlete__parents__parent"),
+            academy_field="athlete__department",
+        )
 
     @transaction.atomic
     @action(detail=True, methods=["post"], url_path="create-athlete")
@@ -267,10 +284,26 @@ class RegistrationRequestViewSet(viewsets.ReadOnlyModelViewSet):
         registration = self.get_object()
         if registration.status != RegistrationRequest.Status.PENDING:
             return Response({"detail": "Registration already processed"}, status=status.HTTP_400_BAD_REQUEST)
+
+        serializer = RegistrationRejectSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        reason = serializer.validated_data.get("reason", "")
+
         registration.status = RegistrationRequest.Status.REJECTED
         registration.reviewed_by = request.user
         registration.reviewed_at = datetime.datetime.now()
+        registration.rejection_reason = reason
         registration.save()
+
+        from apps.notifications.models import Notification
+
+        athlete = getattr(registration, "athlete", None)
+        Notification.objects.create(
+            athlete=athlete,
+            user=registration.user if not athlete else None,
+            title="تم رفض طلب التسجيل",
+            body=reason or "تم رفض طلب التسجيل الخاص بك. يرجى التواصل مع الإدارة للمزيد من المعلومات.",
+        )
 
         return Response({"detail": "Registration rejected"})
 
@@ -300,8 +333,6 @@ class ParentAthleteViewSet(viewsets.ModelViewSet):
         birth_day = request.data.get("birth_day")
         birth_month = request.data.get("birth_month")
         birth_year = request.data.get("birth_year")
-        weight = request.data.get("weight")
-        height = request.data.get("height")
 
         if not full_name or not phone:
             return Response({"detail": "full_name and phone are required"}, status=status.HTTP_400_BAD_REQUEST)
@@ -343,7 +374,7 @@ class ParentAthleteViewSet(viewsets.ModelViewSet):
             birth_date=birth_date,
             gender="male",
             photo=photo_file,
-            notes=f"Weight: {weight or ''} | Height: {height or ''}",
+            notes="",
             is_active=False,
             registration=registration,
         )
@@ -355,3 +386,9 @@ class ParentAthleteViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         serializer.save(parent=self.request.user)
+
+    @action(detail=False, methods=["get"])
+    def children(self, request):
+        athletes = Athlete.objects.filter(parents__parent=request.user)
+        serializer = AthleteDetailSerializer(athletes, many=True, context={"request": request})
+        return Response(serializer.data)

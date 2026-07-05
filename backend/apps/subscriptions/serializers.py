@@ -24,7 +24,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
     class Meta:
         model = Subscription
         fields = "__all__"
-        read_only_fields = ["approved_by", "approved_at"]
+        read_only_fields = ["approved_by", "approved_at", "rejection_reason"]
 
     def get_invoice_pdf_url(self, obj):
         if obj.invoice_pdf:

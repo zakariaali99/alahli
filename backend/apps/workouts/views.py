@@ -4,7 +4,7 @@ from rest_framework import viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from apps.accounts.permissions import IsReceptionOrAbove
+from apps.accounts.permissions import IsManagementOrAbove, IsStaffOrAbove, scope_by_academy
 
 from .models import Booking, Exercise, SessionCategory, WorkoutSession
 from .serializers import (
@@ -16,15 +16,19 @@ from .serializers import (
 
 
 class WorkoutSessionViewSet(viewsets.ModelViewSet):
-    queryset = WorkoutSession.objects.all().select_related('category', 'trainer')
+    queryset = WorkoutSession.objects.all().select_related("category", "trainer")
     serializer_class = WorkoutSessionSerializer
     filterset_fields = ["category", "date"]
     search_fields = ["name", "location"]
 
+    def get_queryset(self):
+        qs = WorkoutSession.objects.all().select_related("category", "trainer")
+        return scope_by_academy(self.request.user, qs, academy_field="trainer__academy")
+
     def get_permissions(self):
         if self.action in ["create", "update", "partial_update", "destroy"]:
-            return [IsReceptionOrAbove()]
-        return super().get_permissions()
+            return [IsManagementOrAbove()]
+        return [IsStaffOrAbove()]
 
     @action(detail=False, methods=["get"])
     def categories(self, request):
@@ -34,14 +38,14 @@ class WorkoutSessionViewSet(viewsets.ModelViewSet):
 
 
 class ExerciseViewSet(viewsets.ModelViewSet):
-    queryset = Exercise.objects.all().prefetch_related('movements', 'equipment')
+    queryset = Exercise.objects.all().prefetch_related("movements", "equipment")
     serializer_class = ExerciseSerializer
     search_fields = ["title", "description"]
 
     def get_permissions(self):
         if self.action in ["create", "update", "partial_update", "destroy"]:
-            return [IsReceptionOrAbove()]
-        return super().get_permissions()
+            return [IsManagementOrAbove()]
+        return [IsStaffOrAbove()]
 
     @action(detail=True, methods=["post"])
     def start(self, request, pk=None):
@@ -59,7 +63,7 @@ class BookingViewSet(viewsets.ModelViewSet):
     filterset_fields = ["status"]
 
     def get_queryset(self):
-        return Booking.objects.filter(user=self.request.user).select_related('workout_session__trainer')
+        return Booking.objects.filter(user=self.request.user).select_related("workout_session__trainer")
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)

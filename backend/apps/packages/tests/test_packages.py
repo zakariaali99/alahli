@@ -72,8 +72,8 @@ class TestPackageRead:
 
 @pytest.mark.django_db
 class TestPackageWrite:
-    def test_create_package_reception(self, admin_auth_client, admin_user):
-        admin_user.role = "reception"
+    def test_create_package_super_admin(self, admin_auth_client, admin_user):
+        admin_user.role = "super_admin"
         admin_user.save()
         response = admin_auth_client.post("/api/packages/", {
             "name": "الباقة الفضية",
@@ -84,7 +84,7 @@ class TestPackageWrite:
         assert response.status_code == status.HTTP_201_CREATED
 
     def test_update_package(self, admin_auth_client, admin_user, package):
-        admin_user.role = "reception"
+        admin_user.role = "super_admin"
         admin_user.save()
         response = admin_auth_client.patch(f"/api/packages/{package.id}/", {"price": 600})
         assert response.status_code == status.HTTP_200_OK
@@ -92,7 +92,7 @@ class TestPackageWrite:
         assert package.price == 600
 
     def test_delete_package(self, admin_auth_client, admin_user, package):
-        admin_user.role = "reception"
+        admin_user.role = "super_admin"
         admin_user.save()
         response = admin_auth_client.delete(f"/api/packages/{package.id}/")
         assert response.status_code == status.HTTP_204_NO_CONTENT

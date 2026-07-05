@@ -1,3 +1,5 @@
+from datetime import date
+
 from rest_framework import serializers
 
 from apps.accounts.validators import validate_libyan_phone
@@ -29,11 +31,20 @@ class AthleteListSerializer(serializers.ModelSerializer):
 class AthleteDetailSerializer(serializers.ModelSerializer):
     department_name = serializers.CharField(source="department.name_ar", read_only=True)
     is_active = serializers.BooleanField(required=False, default=True)
+    age = serializers.SerializerMethodField()
 
     class Meta:
         model = Athlete
         fields = "__all__"
         read_only_fields = ["membership_number", "qr_code"]
+
+    def get_age(self, obj):
+        if not obj.birth_date:
+            return None
+        today = date.today()
+        return today.year - obj.birth_date.year - (
+            (today.month, today.day) < (obj.birth_date.month, obj.birth_date.day)
+        )
 
     def create(self, validated_data):
         return Athlete.objects.create(**validated_data)
@@ -65,7 +76,7 @@ class RegistrationRequestSerializer(serializers.ModelSerializer):
     class Meta:
         model = RegistrationRequest
         fields = "__all__"
-        read_only_fields = ["status", "reviewed_by", "reviewed_at"]
+        read_only_fields = ["status", "reviewed_by", "reviewed_at", "rejection_reason"]
 
     def get_athlete_id(self, obj):
         athlete = getattr(obj, "athlete", None)
@@ -137,8 +148,6 @@ class RegisterSerializer(serializers.Serializer):
     phone = serializers.CharField(max_length=20, validators=[validate_libyan_phone])
     password = serializers.CharField(write_only=True, min_length=1)
     photo = serializers.CharField(required=False, allow_null=True, help_text="Base64 camera capture")
-    weight = serializers.FloatField(required=False, allow_null=True)
-    height = serializers.FloatField(required=False, allow_null=True)
     birth_day = serializers.IntegerField(min_value=1, max_value=31)
     birth_month = serializers.IntegerField(min_value=1, max_value=12)
     birth_year = serializers.IntegerField(min_value=1900)
@@ -158,14 +167,8 @@ class RegisterSerializer(serializers.Serializer):
         if attrs["role"] == "athlete":
             if not attrs.get("photo"):
                 raise serializers.ValidationError({"photo": "Photo is required for athletes"})
-            if attrs.get("weight") is None:
-                raise serializers.ValidationError({"weight": "Weight is required for athletes"})
-            if attrs.get("height") is None:
-                raise serializers.ValidationError({"height": "Height is required for athletes"})
         else:
             attrs.pop("photo", None)
-            attrs.pop("weight", None)
-            attrs.pop("height", None)
 
         department_id = attrs.get("department")
         if department_id is not None:

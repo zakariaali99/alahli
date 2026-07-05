@@ -4,9 +4,9 @@ from datetime import date, timedelta
 from django.db.models import Count, Sum, Value
 from django.db.models.functions import Coalesce, TruncMonth
 from rest_framework.decorators import api_view, permission_classes
-from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
+from apps.accounts.permissions import IsStaffOrAbove
 from apps.athletes.models import Athlete
 from apps.subscriptions.models import Renewal, Subscription
 from apps.departments.models import Department
@@ -27,7 +27,7 @@ def _get_academy(request):
 
 
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsStaffOrAbove])
 def dashboard_stats(request):
     today = date.today()
     week_later = today + timedelta(days=7)
@@ -58,7 +58,7 @@ def dashboard_stats(request):
     total_revenue = subscription_revenue + renewal_revenue
 
     total_subscriptions = subs_qs.count()
-    renewal_count = renewals_qs.values('subscription').distinct().count()
+    renewal_count = renewals_qs.values("subscription").distinct().count()
     renewal_rate = round((renewal_count / total_subscriptions * 100) if total_subscriptions else 0)
 
     return Response({
@@ -73,7 +73,7 @@ def dashboard_stats(request):
 
 
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsStaffOrAbove])
 def monthly_growth(request):
     academy = _get_academy(request)
     qs = Athlete.objects.filter(is_active=True)
@@ -92,7 +92,7 @@ def monthly_growth(request):
 
 
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsStaffOrAbove])
 def department_distribution(request):
     academy = _get_academy(request)
     qs = Athlete.objects.filter(is_active=True)
@@ -108,7 +108,7 @@ def department_distribution(request):
 
 
 @api_view(["GET"])
-@permission_classes([IsAuthenticated])
+@permission_classes([IsStaffOrAbove])
 def revenue_by_month(request):
     academy = _get_academy(request)
     subs_qs = Subscription.objects.all()

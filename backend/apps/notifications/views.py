@@ -1,9 +1,15 @@
+from django.db import models
 from rest_framework import mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 
-from apps.accounts.permissions import IsReceptionOrAbove, is_admin_user
+from apps.accounts.permissions import (
+    IsManagementOrAbove,
+    IsStaffOrAbove,
+    is_staff_user,
+    scope_by_academy,
+)
 
 from .models import Announcement, Device, Notification
 from .serializers import AnnouncementSerializer, DeviceSerializer, NotificationSerializer
@@ -15,20 +21,23 @@ class NotificationViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         user = self.request.user
-        if is_admin_user(user) or user.role == "reception":
+        if is_staff_user(user):
             qs = Notification.objects.all()
+            qs = scope_by_academy(user, qs, academy_field="athlete__department")
             athlete_id = self.request.query_params.get("athlete")
             if athlete_id:
                 return qs.filter(athlete_id=athlete_id)
             return qs
         athlete = getattr(user, "athlete", None)
         if athlete:
-            return Notification.objects.filter(athlete=athlete)
-        return Notification.objects.none()
+            return Notification.objects.filter(
+                models.Q(athlete=athlete) | models.Q(user=user)
+            )
+        return Notification.objects.filter(user=user)
 
     def get_permissions(self):
         if self.action in ["create", "update", "partial_update", "destroy"]:
-            return [IsReceptionOrAbove()]
+            return [IsManagementOrAbove()]
         return [IsAuthenticated()]
 
     @action(detail=True, methods=["post"])

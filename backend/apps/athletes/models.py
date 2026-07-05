@@ -88,6 +88,7 @@ class RegistrationRequest(models.Model):
         related_name="reviewed_registrations",
     )
     reviewed_at = models.DateTimeField(null=True, blank=True)
+    rejection_reason = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

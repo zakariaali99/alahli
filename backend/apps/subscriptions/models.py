@@ -37,6 +37,7 @@ class Subscription(models.Model):
         related_name="approved_subscriptions",
     )
     approved_at = models.DateTimeField(null=True, blank=True)
+    rejection_reason = models.TextField(blank=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

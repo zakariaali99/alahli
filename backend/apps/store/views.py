@@ -2,7 +2,7 @@ from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
 
-from apps.accounts.permissions import IsReceptionOrAbove
+from apps.accounts.permissions import IsStaffOrAbove, IsSuperAdmin
 
 from .models import CartItem, Product, ProductCategory, WishlistItem
 from .serializers import (
@@ -14,15 +14,15 @@ from .serializers import (
 
 
 class ProductViewSet(viewsets.ModelViewSet):
-    queryset = Product.objects.filter(in_stock=True).select_related('category')
+    queryset = Product.objects.filter(in_stock=True).select_related("category")
     serializer_class = ProductSerializer
     filterset_fields = ["category"]
     search_fields = ["name", "description"]
 
     def get_permissions(self):
         if self.action in ["create", "update", "partial_update", "destroy"]:
-            return [IsReceptionOrAbove()]
-        return super().get_permissions()
+            return [IsSuperAdmin()]
+        return [IsStaffOrAbove()]
 
     @action(detail=False, methods=["get"])
     def categories(self, request):
@@ -36,7 +36,7 @@ class CartItemViewSet(viewsets.ModelViewSet):
     filterset_fields = ["product"]
 
     def get_queryset(self):
-        return CartItem.objects.filter(user=self.request.user).select_related('product__category')
+        return CartItem.objects.filter(user=self.request.user).select_related("product__category")
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)
@@ -47,7 +47,7 @@ class WishlistItemViewSet(viewsets.ModelViewSet):
     filterset_fields = ["product"]
 
     def get_queryset(self):
-        return WishlistItem.objects.filter(user=self.request.user).select_related('product__category')
+        return WishlistItem.objects.filter(user=self.request.user).select_related("product__category")
 
     def perform_create(self, serializer):
         serializer.save(user=self.request.user)

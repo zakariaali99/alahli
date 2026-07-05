@@ -119,11 +119,11 @@ class TestSubscriptionPermissions:
 
 @pytest.mark.django_db
 class TestAttendanceLogPermissions:
-    def test_viewer_cannot_create_attendance(self, viewer_client, athlete):
+    def test_viewer_can_create_attendance(self, viewer_client, athlete):
         response = viewer_client.post("/attendance/", {
             "athlete": athlete.id,
         })
-        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert response.status_code == status.HTTP_201_CREATED
 
     def test_reception_can_create_attendance(self, reception_client, athlete):
         response = reception_client.post("/attendance/", {
@@ -181,12 +181,12 @@ class TestProductPermissions:
         })
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-    def test_reception_can_create_product(self, reception_client):
+    def test_reception_cannot_create_product(self, reception_client):
         response = reception_client.post("/api/store/products/", {
             "name": "منتج",
             "price": 50,
         })
-        assert response.status_code == status.HTTP_201_CREATED
+        assert response.status_code == status.HTTP_403_FORBIDDEN
 
 
 @pytest.mark.django_db

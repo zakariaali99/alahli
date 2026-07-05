@@ -7,6 +7,9 @@ class Notification(models.Model):
     athlete = models.ForeignKey(
         "athletes.Athlete", on_delete=models.CASCADE, related_name="notifications", null=True, blank=True, db_index=True
     )
+    user = models.ForeignKey(
+        "accounts.User", on_delete=models.CASCADE, related_name="notifications", null=True, blank=True, db_index=True
+    )
     title = models.CharField(max_length=200)
     body = models.TextField()
     is_read = models.BooleanField(default=False, db_index=True)

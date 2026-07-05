@@ -18,7 +18,7 @@ from .serializers import (
     UserCreateSerializer,
     UserUpdateSerializer,
 )
-from .permissions import IsReceptionOrAbove
+from .permissions import IsStaffOrAbove, IsSuperAdmin, scope_by_academy
 
 
 class LoginRateThrottle(AnonRateThrottle):
@@ -26,12 +26,15 @@ class LoginRateThrottle(AnonRateThrottle):
 
 
 class UserViewSet(viewsets.ModelViewSet):
-    queryset = User.objects.filter(
-        role__in=["super_admin", "reception", "academy_manager", "trainer", "viewer"]
-    ).order_by("-id")
-    permission_classes = [IsReceptionOrAbove]
+    serializer_class = UserSerializer
     filterset_fields = ["role"]
     search_fields = ["phone", "full_name_ar"]
+
+    def get_queryset(self):
+        qs = User.objects.filter(
+            role__in=["super_admin", "reception", "academy_manager", "trainer", "viewer"]
+        ).order_by("-id")
+        return scope_by_academy(self.request.user, qs, academy_field="academy")
 
     def get_serializer_class(self):
         if self.action == "create":
@@ -39,6 +42,11 @@ class UserViewSet(viewsets.ModelViewSet):
         if self.action in ["update", "partial_update"]:
             return UserUpdateSerializer
         return UserSerializer
+
+    def get_permissions(self):
+        if self.action in ["create", "update", "partial_update", "destroy"]:
+            return [IsSuperAdmin()]
+        return [IsStaffOrAbove()]
 
     def create(self, request, *args, **kwargs):
         return super().create(request, *args, **kwargs)

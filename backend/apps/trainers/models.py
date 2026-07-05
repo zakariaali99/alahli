@@ -16,6 +16,10 @@ class Trainer(models.Model):
     reviews_count = models.PositiveIntegerField(default=0)
     experience_years = models.PositiveIntegerField(default=0)
     profile_image = models.URLField(blank=True)
+    academy = models.ForeignKey(
+        "departments.Department", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="trainers",
+    )
 
     class Meta:
         ordering = ["full_name_ar"]
