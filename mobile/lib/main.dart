@@ -83,34 +83,37 @@ class AlAhlyApp extends ConsumerWidget {
 
     ref.read(pushServiceProvider).setRouter(router);
 
-    return Stack(
-      children: [
-        MaterialApp.router(
-          title: 'مركز الأهلي الرياضي - الإدارة',
-          debugShowCheckedModeBanner: false,
-          routerConfig: router,
-          theme: AppTheme.lightTheme,
-          darkTheme: AppTheme.darkTheme,
-          themeMode: ThemeMode.system,
-          locale: const Locale('ar', 'LY'),
-          supportedLocales: const [
-            Locale('ar', 'LY'),
-            Locale('en', 'US'),
-          ],
-          localizationsDelegates: const [
-            GlobalMaterialLocalizations.delegate,
-            GlobalWidgetsLocalizations.delegate,
-            GlobalCupertinoLocalizations.delegate,
-          ],
-        ),
-        if (!isOnline)
-          Positioned(
-            top: MediaQuery.of(context).viewPadding.top,
-            left: 0,
-            right: 0,
-            child: const OfflineBanner(),
-          ),
+    return MaterialApp.router(
+      title: 'مركز الأهلي الرياضي - الإدارة',
+      debugShowCheckedModeBanner: false,
+      routerConfig: router,
+      theme: AppTheme.lightTheme,
+      darkTheme: AppTheme.darkTheme,
+      themeMode: ThemeMode.system,
+      locale: const Locale('ar', 'LY'),
+      supportedLocales: const [
+        Locale('ar', 'LY'),
+        Locale('en', 'US'),
       ],
+      localizationsDelegates: const [
+        GlobalMaterialLocalizations.delegate,
+        GlobalWidgetsLocalizations.delegate,
+        GlobalCupertinoLocalizations.delegate,
+      ],
+      builder: (context, child) {
+        return Stack(
+          children: [
+            if (child != null) child,
+            if (!isOnline)
+              Positioned(
+                top: MediaQuery.of(context).viewPadding.top,
+                left: 0,
+                right: 0,
+                child: const OfflineBanner(),
+              ),
+          ],
+        );
+      },
     );
   }
 }

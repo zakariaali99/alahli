@@ -546,12 +546,10 @@ export default function MembershipsPage() {
           <h1 className="text-3xl font-extrabold gradient-text">إدارة الاشتراكات</h1>
           <p className="text-muted-foreground mt-1 text-sm">تجديد، متابعة، وإدارة الباقات المالية للاعبين.</p>
         </div>
-        <button className="w-full md:w-auto" onClick={() => void openCreateSubscriptionModal()} type="button">
-          <Button size="lg" className="w-full md:w-auto bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/25">
-            <PlusCircle className="w-5 h-5" />
-            اشتراك جديد
-          </Button>
-        </button>
+        <Button size="lg" className="w-full md:w-auto bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/25" onClick={() => void openCreateSubscriptionModal()}>
+          <PlusCircle className="w-5 h-5" />
+          اشتراك جديد
+        </Button>
       </motion.div>
 
       {/* ── Quick Renewal Packages ── */}

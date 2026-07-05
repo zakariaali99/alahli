@@ -4,7 +4,6 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../providers/providers.dart';
 import '../../features/auth/splash_screen.dart';
 import '../../features/auth/login_screen.dart';
-import '../../features/auth/landing_screen.dart';
 import '../../features/auth/register_athlete_screen.dart';
 import '../../features/auth/register_parent_screen.dart';
 import '../../features/admin/shell/admin_shell.dart';
@@ -115,7 +114,7 @@ final goRouterProvider = Provider<GoRouter>((ref) {
       GoRoute(
         path: '/',
         parentNavigatorKey: _rootNavigatorKey,
-        builder: (context, state) => const LandingScreen(),
+        builder: (context, state) => const LoginScreen(),
       ),
       GoRoute(
         path: '/register/athlete',

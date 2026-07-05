@@ -74,7 +74,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
               height: 300,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                color: const Color(0xFF0F4C81).withValues(alpha: 0.1),
+                color: AppColors.primary.withValues(alpha: 0.1),
               ),
               child: BackdropFilter(
                 filter: ImageFilter.blur(sigmaX: 100, sigmaY: 100),
@@ -112,54 +112,35 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                       child: Container(
                         padding: const EdgeInsets.all(12),
                         decoration: BoxDecoration(
-                          color: const Color(0xFF0F4C81).withValues(alpha: 0.1),
+                          color: AppColors.primary.withValues(alpha: 0.1),
                           shape: BoxShape.circle,
                         ),
                         child: const Icon(
-                          Icons.shield_outlined,
-                          color: Color(0xFF0F4C81),
+                          Icons.fitness_center,
+                          color: AppColors.primary,
                           size: 32,
                         ),
                       ),
                     ),
                     const SizedBox(height: 16),
                     const Text(
-                      'منصة إدارة الأكاديمية',
+                      'أكاديمية النادي الأهلي',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 22,
+                        fontSize: 24,
                         fontWeight: FontWeight.w900,
                         color: Color(0xFF102033),
                       ),
                     ),
                     const SizedBox(height: 4),
                     const Text(
-                      'تسجيل دخول آمن',
+                      'بوابة التسجيل والاشتراكات',
                       textAlign: TextAlign.center,
                       style: TextStyle(
-                        fontSize: 14,
+                        fontSize: 13,
                         fontWeight: FontWeight.bold,
-                        color: Color(0xFF0F4C81),
+                        color: AppColors.primary,
                       ),
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'سجّل الدخول للوصول إلى لوحة الإدارة أو لوحة المستخدم حسب صلاحية الحساب.',
-                      textAlign: TextAlign.center,
-                      style: TextStyle(color: AppColors.mutedForeground, fontSize: 13, height: 1.5),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Bullets list
-                    const Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text('• تسجيل ذاتي للرياضي وولي الأمر', style: TextStyle(color: AppColors.mutedForeground, fontSize: 11)),
-                        SizedBox(height: 4),
-                        Text('• مسار اشتراك متعدد الخطوات', style: TextStyle(color: AppColors.mutedForeground, fontSize: 11)),
-                        SizedBox(height: 4),
-                        Text('• مراجعة واعتماد الطلبات عبر الإدارة', style: TextStyle(color: AppColors.mutedForeground, fontSize: 11)),
-                      ],
                     ),
                     const SizedBox(height: 24),
 
@@ -274,28 +255,56 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                         ),
                       ),
                     ),
-                    const SizedBox(height: 32),
-
-                    // Navigation to register screens
+                    const SizedBox(height: 24),
+                    const Text(
+                      'ليس لديك حساب؟ سجل الآن',
+                      textAlign: TextAlign.center,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: AppColors.mutedForeground,
+                      ),
+                    ),
+                    const SizedBox(height: 16),
                     Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        GestureDetector(
-                          onTap: () => context.push('/register/athlete'),
-                          child: const Text(
-                            'تسجيل رياضي',
-                            style: TextStyle(color: Color(0xFF0F4C81), fontWeight: FontWeight.bold, fontSize: 13),
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => context.push('/register/athlete'),
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: AppColors.primary, width: 1.5),
+                              foregroundColor: AppColors.primary,
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                            ),
+                            child: const Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.person_add_alt_1_outlined, size: 24),
+                                SizedBox(height: 6),
+                                Text('حساب رياضي', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                              ],
+                            ),
                           ),
                         ),
-                        const Padding(
-                          padding: EdgeInsets.symmetric(horizontal: 8.0),
-                          child: Text('•', style: TextStyle(color: Colors.grey)),
-                        ),
-                        GestureDetector(
-                          onTap: () => context.push('/register/parent'),
-                          child: const Text(
-                            'تسجيل ولي أمر',
-                            style: TextStyle(color: Color(0xFF0F4C81), fontWeight: FontWeight.bold, fontSize: 13),
+                        const SizedBox(width: 16),
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => context.push('/register/parent'),
+                            style: OutlinedButton.styleFrom(
+                              side: const BorderSide(color: Color(0xFF102033), width: 1.5),
+                              foregroundColor: const Color(0xFF102033),
+                              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                              padding: const EdgeInsets.symmetric(vertical: 14),
+                            ),
+                            child: const Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Icon(Icons.group_add_outlined, size: 24),
+                                SizedBox(height: 6),
+                                Text('حساب ولي أمر', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold)),
+                              ],
+                            ),
                           ),
                         ),
                       ],

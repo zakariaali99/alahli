@@ -54,7 +54,7 @@ void main() {
       );
 
       expect(find.text('لا توجد بيانات'), findsOneWidget);
-      expect(find.byIcon(Icons.info_outline), findsOneWidget);
+      expect(find.byIcon(Icons.inbox_outlined), findsOneWidget);
     });
 
     testWidgets('renders custom icon', (tester) async {
