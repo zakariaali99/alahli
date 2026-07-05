@@ -28,8 +28,7 @@ class _PackageFormScreenState extends ConsumerState<PackageFormScreen> {
 
   String _durationType = 'months';
   String _tag = 'normal';
-  String _iconName = 'award';
-  String _colorClass = 'blue';
+
   int? _selectedDeptId;
   bool _isActive = true;
   bool _isSubmitting = false;
@@ -59,8 +58,7 @@ class _PackageFormScreenState extends ConsumerState<PackageFormScreen> {
     _valueController.text = pkg.durationValue.toString();
     _athletesController.text = pkg.maxAthletes.toString();
     _tag = pkg.tag;
-    _iconName = pkg.iconName;
-    _colorClass = pkg.colorClass;
+
     _orderController.text = pkg.order.toString();
     _isActive = pkg.isActive;
     _featuresController.text = pkg.features.join('\n');
@@ -98,8 +96,7 @@ class _PackageFormScreenState extends ConsumerState<PackageFormScreen> {
         'duration_value': int.parse(_valueController.text.trim().toWesternDigits()),
         'max_athletes': int.parse(_athletesController.text.trim().toWesternDigits()),
         'tag': _tag,
-        'icon_name': _iconName.trim(),
-        'color_class': _colorClass.trim(),
+
         'order': int.parse(_orderController.text.trim().toWesternDigits()),
         'is_active': _isActive,
         'features': features,
@@ -248,34 +245,7 @@ class _PackageFormScreenState extends ConsumerState<PackageFormScreen> {
                 if (val != null) setState(() => _tag = val);
               },
             ),
-            const SizedBox(height: 12),
-            Row(
-              children: [
-                Expanded(
-                  child: TextFormField(
-                    controller: TextEditingController(text: _iconName),
-                    textAlign: TextAlign.right,
-                    decoration: InputDecoration(
-                      labelText: 'اسم الأيقونة',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    onChanged: (v) => _iconName = v,
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: TextFormField(
-                    controller: TextEditingController(text: _colorClass),
-                    textAlign: TextAlign.right,
-                    decoration: InputDecoration(
-                      labelText: 'فئة اللون (كلاس)',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                    ),
-                    onChanged: (v) => _colorClass = v,
-                  ),
-                ),
-              ],
-            ),
+
             const SizedBox(height: 12),
             TextFormField(
               controller: _orderController,

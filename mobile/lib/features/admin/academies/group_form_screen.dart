@@ -73,6 +73,20 @@ class _GroupFormScreenState extends ConsumerState<GroupFormScreen> {
     super.dispose();
   }
 
+  Future<void> _pickTime(TextEditingController controller, String label) async {
+    final initial = TimeOfDay.fromDateTime(
+      DateTime(2000, 1, 1, int.tryParse(controller.text.split(':').first) ?? 16, int.tryParse(controller.text.split(':').last) ?? 0),
+    );
+    final picked = await showTimePicker(
+      context: context,
+      initialTime: initial,
+      builder: (context, child) => Directionality(textDirection: TextDirection.ltr, child: child!),
+    );
+    if (picked != null) {
+      controller.text = '${picked.hour.toString().padLeft(2, '0')}:${picked.minute.toString().padLeft(2, '0')}';
+    }
+  }
+
   Future<void> _submit() async {
     if (!_formKey.currentState!.validate()) return;
     if (_selectedDays.isEmpty) {
@@ -166,26 +180,40 @@ class _GroupFormScreenState extends ConsumerState<GroupFormScreen> {
             Row(
               children: [
                 Expanded(
-                  child: TextFormField(
-                    controller: _startTimeController,
-                    textAlign: TextAlign.right,
-                    decoration: InputDecoration(
-                      labelText: 'وقت البداية',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  child: InkWell(
+                    onTap: () => _pickTime(_startTimeController, 'وقت البداية'),
+                    borderRadius: BorderRadius.circular(12),
+                    child: IgnorePointer(
+                      child: TextFormField(
+                        controller: _startTimeController,
+                        textAlign: TextAlign.right,
+                        decoration: InputDecoration(
+                          labelText: 'وقت البداية',
+                          prefixIcon: const Icon(Icons.access_time),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
+                      ),
                     ),
-                    validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
                   ),
                 ),
                 const SizedBox(width: 8),
                 Expanded(
-                  child: TextFormField(
-                    controller: _endTimeController,
-                    textAlign: TextAlign.right,
-                    decoration: InputDecoration(
-                      labelText: 'وقت النهاية',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                  child: InkWell(
+                    onTap: () => _pickTime(_endTimeController, 'وقت النهاية'),
+                    borderRadius: BorderRadius.circular(12),
+                    child: IgnorePointer(
+                      child: TextFormField(
+                        controller: _endTimeController,
+                        textAlign: TextAlign.right,
+                        decoration: InputDecoration(
+                          labelText: 'وقت النهاية',
+                          prefixIcon: const Icon(Icons.access_time),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
+                        ),
+                        validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
+                      ),
                     ),
-                    validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
                   ),
                 ),
               ],
