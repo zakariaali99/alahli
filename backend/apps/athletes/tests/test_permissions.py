@@ -341,7 +341,7 @@ class TestRegistrationRequestPermissions:
     def test_reception_can_approve_registration(self, reception_client, registration):
         response = reception_client.post(f"/api/athletes/registrations/{registration.id}/approve/")
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert "profile first" in response.data["detail"]
+        assert "ملف رياضي أولاً" in response.data["detail"]
 
     def test_reception_can_reject_registration(self, reception_client, registration):
         response = reception_client.post(f"/api/athletes/registrations/{registration.id}/reject/", {"reason": "مرفوض"})

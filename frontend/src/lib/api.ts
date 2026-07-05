@@ -150,8 +150,30 @@ async function request<T = any>(
   }
 
   if (!res.ok) {
-    const detail = data.detail || Object.values(data).flat().join(", ") || "Unknown error"
-    throw new ApiError(detail, res.status, data)
+    const detail = data.detail
+    let message = ""
+    if (typeof detail === "string") {
+      message = detail
+    } else if (typeof detail === "object" && detail !== null) {
+      // Backend wraps validation errors as detail: { field: [msg] }
+      const parts: string[] = []
+      for (const val of Object.values(detail)) {
+        if (Array.isArray(val)) {
+          parts.push(...val.map(String))
+        } else if (typeof val === "string") {
+          parts.push(val)
+        } else {
+          parts.push(String(val))
+        }
+      }
+      message = parts.join("\n")
+    } else if (data.non_field_errors) {
+      message = (Array.isArray(data.non_field_errors) ? data.non_field_errors : [data.non_field_errors]).join("\n")
+    } else {
+      // Fallback: flatten all values
+      message = Object.values(data).flat().filter(Boolean).join(", ") || "حدث خطأ غير متوقع"
+    }
+    throw new ApiError(message, res.status, data)
   }
 
   return data as T

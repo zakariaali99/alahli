@@ -70,6 +70,7 @@ def register_view(request):
             last_name_ar="",
             password=serializer.validated_data["password"],
             role=serializer.validated_data["role"],
+            is_active=False,
         )
 
         registration = RegistrationRequest.objects.create(
@@ -233,7 +234,7 @@ class RegistrationRequestViewSet(viewsets.ReadOnlyModelViewSet):
         registration = self.get_object()
 
         if registration.role_choice != RegistrationRequest.RoleChoice.ATHLETE:
-            return Response({"detail": "Only athlete registrations can create athlete profiles"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "فقط تسجيلات الرياضيين يمكنها إنشاء ملف رياضي"}, status=status.HTTP_400_BAD_REQUEST)
 
         if hasattr(registration, "athlete") and registration.athlete:
             return Response(
@@ -258,10 +259,10 @@ class RegistrationRequestViewSet(viewsets.ReadOnlyModelViewSet):
     def approve(self, request, pk=None):
         registration = self.get_object()
         if registration.status != RegistrationRequest.Status.PENDING:
-            return Response({"detail": "Registration already processed"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "تمت معالجة طلب التسجيل بالفعل"}, status=status.HTTP_400_BAD_REQUEST)
 
         if registration.role_choice == RegistrationRequest.RoleChoice.ATHLETE and not hasattr(registration, "athlete"):
-            return Response({"detail": "Create athlete profile first"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "يرجى إنشاء ملف رياضي أولاً"}, status=status.HTTP_400_BAD_REQUEST)
 
         registration.status = RegistrationRequest.Status.APPROVED
         registration.reviewed_by = request.user
@@ -279,35 +280,27 @@ class RegistrationRequestViewSet(viewsets.ReadOnlyModelViewSet):
             athlete.is_active = True
             athlete.save(update_fields=["is_active"])
 
-        return Response({"detail": "Registration approved", "registration_id": registration.id})
+        return Response({"detail": "تم قبول طلب التسجيل", "registration_id": registration.id})
 
     @action(detail=True, methods=["post"])
     def reject(self, request, pk=None):
         registration = self.get_object()
         if registration.status != RegistrationRequest.Status.PENDING:
-            return Response({"detail": "Registration already processed"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "تمت معالجة طلب التسجيل بالفعل"}, status=status.HTTP_400_BAD_REQUEST)
 
         serializer = RegistrationRejectSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         reason = serializer.validated_data.get("reason", "")
 
-        registration.status = RegistrationRequest.Status.REJECTED
-        registration.reviewed_by = request.user
-        registration.reviewed_at = datetime.datetime.now()
-        registration.rejection_reason = reason
-        registration.save()
+        # Delete registration and linked athlete (cascade)
+        registration.delete()
 
-        from apps.notifications.models import Notification
+        # Delete the user if it was a public registration (athlete/parent role)
+        user = registration.user
+        if user and user.role in ['athlete', 'parent']:
+            user.delete()
 
-        athlete = getattr(registration, "athlete", None)
-        Notification.objects.create(
-            athlete=athlete,
-            user=registration.user if not athlete else None,
-            title="تم رفض طلب التسجيل",
-            body=reason or "تم رفض طلب التسجيل الخاص بك. يرجى التواصل مع الإدارة للمزيد من المعلومات.",
-        )
-
-        return Response({"detail": "Registration rejected"})
+        return Response({"detail": "تم رفض طلب التسجيل وحذف الحساب"})
 
 
 class ParentAthleteViewSet(viewsets.ModelViewSet):

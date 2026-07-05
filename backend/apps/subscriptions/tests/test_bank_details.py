@@ -52,4 +52,4 @@ class TestBankDetailsEndpoint:
         response = auth_client.get("/api/subscriptions/bank_details/")
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST
-        assert response.data["detail"] == "group_id is required"
+        assert response.data["detail"] == "معرف المجموعة مطلوب"

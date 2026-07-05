@@ -166,14 +166,24 @@ class RegisterSerializer(serializers.Serializer):
     def validate_phone(self, value):
         from django.contrib.auth import get_user_model
         User = get_user_model()
-        if User.objects.filter(phone=value).exists():
-            raise serializers.ValidationError("رقم الهاتف هذا مسجل بالفعل")
+        user = User.objects.filter(phone=value).first()
+        if user:
+            # Allow if user has no active athlete (rejected/pending registration)
+            athlete = getattr(user, "athlete", None)
+            if athlete and athlete.is_active:
+                raise serializers.ValidationError("رقم الهاتف هذا مسجل بالفعل")
+            # Also check if there are any active/pending subscriptions
+            if athlete and athlete.subscriptions.filter(status__in=["active", "pending"]).exists():
+                raise serializers.ValidationError("رقم الهاتف هذا مسجل بالفعل")
+            # If the user has staff roles, don't allow reuse
+            if user.role not in ["athlete", "parent"]:
+                raise serializers.ValidationError("رقم الهاتف هذا مسجل بالفعل")
         return value
 
     def validate(self, attrs):
         if attrs["role"] == "athlete":
             if not attrs.get("photo"):
-                raise serializers.ValidationError({"photo": "Photo is required for athletes"})
+                raise serializers.ValidationError({"photo": "الصورة مطلوبة للاعبين"})
         else:
             attrs.pop("photo", None)
 
@@ -181,7 +191,7 @@ class RegisterSerializer(serializers.Serializer):
         if department_id is not None:
             from apps.departments.models import Department
             if not Department.objects.filter(id=department_id).exists():
-                raise serializers.ValidationError({"department": "Invalid department ID"})
+                raise serializers.ValidationError({"department": "رقم الأكاديمية غير صحيح"})
 
         attrs["birth_date"] = self.validate_birth_date(attrs)
         return attrs

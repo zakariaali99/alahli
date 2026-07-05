@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import '../helpers/api_error_parser.dart';
 import '../models/paginated_response.dart';
 
 enum PaginatedState { idle, loading, loadingMore, error }
@@ -57,7 +58,7 @@ class PaginatedListNotifier<T, P> extends StateNotifier<PaginatedListState<T>> {
     } catch (e) {
       state = state.copyWith(
         state: PaginatedState.error,
-        error: e.toString().replaceAll('Exception: ', ''),
+        error: parseApiError(e).message,
       );
     }
   }
@@ -79,7 +80,7 @@ class PaginatedListNotifier<T, P> extends StateNotifier<PaginatedListState<T>> {
       _currentPage--;
       state = state.copyWith(
         state: PaginatedState.idle,
-        error: e.toString().replaceAll('Exception: ', ''),
+        error: parseApiError(e).message,
       );
     }
   }

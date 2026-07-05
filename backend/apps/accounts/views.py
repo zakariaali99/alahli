@@ -77,7 +77,7 @@ def login_view(request):
 
     if not user:
         return Response(
-            {"detail": "Invalid phone number or password"},
+            {"detail": "رقم الهاتف أو كلمة المرور غير صحيحة"},
             status=status.HTTP_401_UNAUTHORIZED,
         )
 
@@ -102,14 +102,14 @@ def logout_view(request):
             token.blacklist()
         except TokenError:
             return Response(
-                {"detail": "Invalid or expired refresh token"},
+                {"detail": "رمز التحديث غير صالح أو منتهي الصلاحية"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
     else:
         user = request.user
         for token in OutstandingToken.objects.filter(user=user):
             BlacklistedToken.objects.get_or_create(token=token)
-    return Response({"detail": "Logged out successfully"})
+    return Response({"detail": "تم تسجيل الخروج بنجاح"})
 
 
 @api_view(["GET"])
@@ -135,4 +135,4 @@ def change_password_view(request):
     for token in OutstandingToken.objects.filter(user=request.user):
         BlacklistedToken.objects.get_or_create(token=token)
 
-    return Response({"detail": "Password changed successfully. Please log in again."})
+    return Response({"detail": "تم تغيير كلمة المرور بنجاح. يرجى تسجيل الدخول مرة أخرى."})

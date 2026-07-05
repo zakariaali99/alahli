@@ -5,6 +5,7 @@ import 'package:dio/dio.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/providers/providers.dart';
 import '../../../core/widgets/app_card.dart';
+import '../../../core/helpers/api_error_parser.dart';
 
 class UserSubscriptionScreen extends ConsumerStatefulWidget {
   const UserSubscriptionScreen({super.key});
@@ -48,10 +49,47 @@ class _UserSubscriptionScreenState extends ConsumerState<UserSubscriptionScreen>
 
   final ImagePicker _picker = ImagePicker();
 
+  // Rejected subscription state
+  Map<String, dynamic>? _rejectedSubscription;
+  bool _loadingRejected = false;
+
   @override
   void initState() {
     super.initState();
-    Future.microtask(() => _initWorkflow());
+    Future.microtask(() => _checkRejectedSubscription());
+  }
+
+  Future<void> _checkRejectedSubscription() async {
+    setState(() { _loadingRejected = true; });
+    try {
+      final apiClient = ref.read(apiClientProvider);
+      final user = ref.read(authProvider);
+      final athleteId = user?.athleteDetail?.id;
+      if (athleteId == null) {
+        setState(() { _loadingRejected = false; });
+        await _initWorkflow();
+        return;
+      }
+      final res = await apiClient.dio.get('/subscriptions/', queryParameters: {
+        'athlete': athleteId.toString(),
+        'status': 'rejected',
+      });
+      final data = res.data;
+      dynamic results = data is Map ? data['results'] ?? data['data'] ?? [] : data is List ? data : [];
+      if (results is List && results.isNotEmpty) {
+        setState(() {
+          _rejectedSubscription = results.first as Map<String, dynamic>;
+          _loadingRejected = false;
+        });
+      } else {
+        setState(() { _loadingRejected = false; });
+        await _initWorkflow();
+      }
+    } catch (e) {
+      debugPrint('checkRejectedSubscription error: ${parseApiError(e).message}');
+      setState(() { _loadingRejected = false; });
+      await _initWorkflow();
+    }
   }
 
   Future<void> _initWorkflow() async {
@@ -260,6 +298,66 @@ class _UserSubscriptionScreenState extends ConsumerState<UserSubscriptionScreen>
     final isParent = user?.role == 'parent';
     final totalSteps = isParent ? 6 : 5;
     final theme = Theme.of(context);
+
+    if (_loadingRejected) {
+      return const Scaffold(body: Center(child: CircularProgressIndicator()));
+    }
+
+    if (_rejectedSubscription != null) {
+      final sub = _rejectedSubscription!;
+      final reason = sub['rejection_reason'] as String? ?? 'لم يتم تحديد سبب';
+      return Scaffold(
+        body: SafeArea(
+          child: Center(
+            child: Padding(
+              padding: const EdgeInsets.all(24),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(Icons.cancel_outlined, color: Colors.red, size: 80),
+                  const SizedBox(height: 24),
+                  Text(
+                    'تم رفض الاشتراك',
+                    style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(16),
+                    decoration: BoxDecoration(
+                      color: Colors.red.withValues(alpha: 0.05),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.red.withValues(alpha: 0.2)),
+                    ),
+                    child: Column(
+                      children: [
+                        Text('سبب الرفض:', style: TextStyle(fontWeight: FontWeight.bold, color: Colors.red.shade700)),
+                        const SizedBox(height: 8),
+                        Text(reason, textAlign: TextAlign.center, style: TextStyle(color: Colors.red.shade700, height: 1.5)),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 32),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FilledButton.icon(
+                      onPressed: () {
+                        setState(() {
+                          _rejectedSubscription = null;
+                        });
+                        _initWorkflow();
+                      },
+                      icon: const Icon(Icons.add),
+                      label: const Text('تقديم طلب اشتراك جديد'),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      );
+    }
 
     if (_success) {
       return Scaffold(

@@ -120,11 +120,11 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
     def bank_details(self, request):
         group_id = request.query_params.get("group_id")
         if not group_id:
-            return Response({"detail": "group_id is required"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "معرف المجموعة مطلوب"}, status=status.HTTP_400_BAD_REQUEST)
         try:
             group = Group.objects.select_related("sport__department").get(id=group_id)
         except Group.DoesNotExist:
-            return Response({"detail": "Group not found"}, status=status.HTTP_404_NOT_FOUND)
+            return Response({"detail": "المجموعة غير موجودة"}, status=status.HTTP_404_NOT_FOUND)
         department = group.sport.department
         return Response({
             "account_number": department.bank_account_number or "",
@@ -143,7 +143,7 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
         group = Group.objects.select_related("sport__department").get(id=data["group_id"])
         if group.sport_id != data["sport_id"]:
             return Response(
-                {"group_id": "Group does not belong to the selected sport"},
+                {"group_id": "المجموعة لا تنتمي إلى الرياضة المحددة"},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -153,12 +153,12 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
             athlete_id = data.get("athlete_id")
             if not athlete_id:
                 return Response(
-                    {"athlete_id": "Required for parent accounts"},
+                    {"athlete_id": "مطلوب لحسابات أولياء الأمور"},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
             if not ParentAthlete.objects.filter(parent=user, athlete_id=athlete_id).exists():
                 return Response(
-                    {"athlete_id": "Athlete not found under your account"},
+                    {"athlete_id": "اللاعب غير موجود ضمن حسابك"},
                     status=status.HTTP_403_FORBIDDEN,
                 )
             athlete = Athlete.objects.get(id=athlete_id)
