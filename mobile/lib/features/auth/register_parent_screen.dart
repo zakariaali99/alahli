@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/providers.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/helpers/phone_validator.dart';
+import '../../core/helpers/api_error_parser.dart';
 
 class RegisterParentScreen extends ConsumerStatefulWidget {
   const RegisterParentScreen({super.key});
@@ -47,22 +48,23 @@ class _RegisterParentScreenState extends ConsumerState<RegisterParentScreen> {
     try {
       final apiClient = ref.read(apiClientProvider);
       
-      final birthDate = '${_yearController.text}-${_monthController.text.padLeft(2, '0')}-${_dayController.text.padLeft(2, '0')}';
-
       await apiClient.dio.post('/auth/register/', data: {
         'role': 'parent',
         'full_name': _nameController.text.trim(),
         'phone': _phoneController.text.trim(),
         'password': _passwordController.text,
-        'birth_date': birthDate,
+        'birth_day': int.tryParse(_dayController.text),
+        'birth_month': int.tryParse(_monthController.text),
+        'birth_year': int.tryParse(_yearController.text),
       });
 
       setState(() {
         _success = true;
       });
     } catch (err) {
+      final parsed = parseApiError(err);
       setState(() {
-        _error = 'فشل التسجيل. يرجى التأكد من البيانات أو أن الهاتف غير مسجل مسبقاً.';
+        _error = parsed.message;
       });
     } finally {
       setState(() {

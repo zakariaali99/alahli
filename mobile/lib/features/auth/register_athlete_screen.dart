@@ -31,6 +31,7 @@ class _RegisterAthleteScreenState extends ConsumerState<RegisterAthleteScreen> {
   bool _loading = false;
   String? _error;
   bool _success = false;
+  int? _selectedDepartmentId;
 
   final ImagePicker _picker = ImagePicker();
 
@@ -107,6 +108,12 @@ class _RegisterAthleteScreenState extends ConsumerState<RegisterAthleteScreen> {
       });
       return;
     }
+    if (_selectedDepartmentId == null) {
+      setState(() {
+        _error = 'يرجى اختيار الأكاديمية';
+      });
+      return;
+    }
 
     setState(() {
       _loading = true;
@@ -125,6 +132,7 @@ class _RegisterAthleteScreenState extends ConsumerState<RegisterAthleteScreen> {
         'birth_day': int.tryParse(_dayController.text),
         'birth_month': int.tryParse(_monthController.text),
         'birth_year': int.tryParse(_yearController.text),
+        'department': _selectedDepartmentId,
       });
 
       setState(() {
@@ -355,6 +363,37 @@ class _RegisterAthleteScreenState extends ConsumerState<RegisterAthleteScreen> {
                     ),
                   ),
                 ],
+              ),
+              const SizedBox(height: 24),
+
+              // Department
+              const Text(
+                'الأكاديمية',
+                style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.mutedForeground),
+              ),
+              const SizedBox(height: 8),
+              ref.watch(departmentsProvider).when(
+                data: (list) => DropdownButtonFormField<int?>(
+                  value: _selectedDepartmentId,
+                  decoration: const InputDecoration(
+                    hintText: 'اختر الأكاديمية',
+                    contentPadding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+                  ),
+                  dropdownColor: isDark ? AppColors.darkCard : Colors.white,
+                  items: list
+                      .map((dept) => DropdownMenuItem<int?>(
+                            value: dept.id,
+                            child: Text(dept.nameAr),
+                          ))
+                      .toList(),
+                  onChanged: (val) {
+                    setState(() {
+                      _selectedDepartmentId = val;
+                    });
+                  },
+                ),
+                loading: () => const Center(child: LinearProgressIndicator()),
+                error: (err, s) => Text('خطأ في تحميل الأكاديميات'),
               ),
               const SizedBox(height: 24),
 

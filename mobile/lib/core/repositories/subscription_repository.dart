@@ -68,15 +68,19 @@ class SubscriptionRepository {
     }
   }
 
-  Future<SubscriptionModel> updateSubscriptionStatus(int id, String status) async {
+  Future<SubscriptionModel> updateSubscriptionStatus(int id, String status, {String? rejectionReason}) async {
     try {
+      final data = <String, dynamic>{'status': status};
+      if (rejectionReason != null && rejectionReason.isNotEmpty) {
+        data['rejection_reason'] = rejectionReason;
+      }
       final res = await apiClient.dio.patch(
         '${ApiEndpoints.subscriptions}$id/',
-        data: {'status': status},
+        data: data,
       );
-      final data = asMap(res.data);
-      if (data == null) throw _appEx('فشل تحديث حالة الاشتراك');
-      return SubscriptionModel.fromJson(data);
+      final resData = asMap(res.data);
+      if (resData == null) throw _appEx('فشل تحديث حالة الاشتراك');
+      return SubscriptionModel.fromJson(resData);
     } on DioException catch (e) {
       throw dioToAppApiException(e, fallback: 'فشل معالجة الطلب');
     }

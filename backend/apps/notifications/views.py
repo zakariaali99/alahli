@@ -49,11 +49,17 @@ class NotificationViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["post"])
     def mark_all_read(self, request):
-        athlete_id = request.query_params.get("athlete") or getattr(getattr(request.user, "athlete", None), "id", None)
-        if not athlete_id:
-            return Response({"detail": "athlete_id is required"}, status=status.HTTP_400_BAD_REQUEST)
-        self.get_queryset().filter(athlete_id=athlete_id).update(is_read=True)
-        return Response({"detail": "All notifications marked as read"})
+        user = request.user
+        athlete = getattr(user, "athlete", None)
+        qs = self.get_queryset()
+        if athlete:
+            qs = qs.filter(models.Q(athlete=athlete) | models.Q(user=user))
+        elif is_staff_user(user):
+            pass  # qs is already scoped by get_queryset
+        else:
+            qs = qs.filter(user=user)
+        qs.update(is_read=True)
+        return Response({"detail": "تم تحديث جميع التنبيهات كمقروءة"})
 
 
 class AnnouncementViewSet(viewsets.ReadOnlyModelViewSet):

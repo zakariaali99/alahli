@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../network/api_client.dart';
 import '../constants/api_endpoints.dart';
@@ -169,21 +170,24 @@ class AuthNotifier extends StateNotifier<UserModel?> {
     await _registerPushToken();
   }
 
+  String get _platform => defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android';
+
   Future<void> _registerPushToken() async {
     try {
       final pushService = ref.read(pushServiceProvider);
       final fcmToken = await pushService.getFCMToken();
+      final platform = _platform;
       if (fcmToken != null) {
         await notificationRepository.registerDeviceToken(
           fcmToken: fcmToken,
-          platform: 'android',
+          platform: platform,
         );
       }
       pushService.setOnTokenRefresh((newToken) async {
         try {
           await notificationRepository.registerDeviceToken(
             fcmToken: newToken,
-            platform: 'android',
+            platform: platform,
           );
         } catch (_) {}
       });

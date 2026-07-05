@@ -45,6 +45,11 @@ class SubscriptionModel {
   final String? invoicePdf;
   final String? invoicePdfUrl;
   final String status;
+  final int? approvedBy;
+  final String? approvedAt;
+  final String? rejectionReason;
+  final String? createdAt;
+  final String? updatedAt;
   final List<RenewalModel> renewals;
 
   SubscriptionModel({
@@ -63,6 +68,11 @@ class SubscriptionModel {
     this.invoicePdf,
     this.invoicePdfUrl,
     required this.status,
+    this.approvedBy,
+    this.approvedAt,
+    this.rejectionReason,
+    this.createdAt,
+    this.updatedAt,
     required this.renewals,
   });
 
@@ -83,6 +93,11 @@ class SubscriptionModel {
       invoicePdf: asString(json['invoice_pdf']),
       invoicePdfUrl: asString(json['invoice_pdf_url']),
       status: asString(json['status']) ?? 'pending',
+      approvedBy: asInt(json['approved_by']),
+      approvedAt: asString(json['approved_at']),
+      rejectionReason: asString(json['rejection_reason']),
+      createdAt: asString(json['created_at']),
+      updatedAt: asString(json['updated_at']),
       renewals: asList(json['renewals'], (e) => RenewalModel.fromJson(asMap(e) ?? {})) ?? [],
     );
   }

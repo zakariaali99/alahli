@@ -5,6 +5,7 @@ import 'package:image_picker/image_picker.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/helpers/phone_validator.dart';
 import '../../../core/helpers/photo_utils.dart';
+import '../../../core/helpers/api_error_parser.dart';
 import '../../../core/providers/providers.dart';
 import '../../../core/widgets/app_card.dart';
 
@@ -26,8 +27,7 @@ class _UserAthleteScreenState extends ConsumerState<UserAthleteScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
-  final _weightController = TextEditingController();
-  final _heightController = TextEditingController();
+
   final _dayController = TextEditingController();
   final _monthController = TextEditingController();
   final _yearController = TextEditingController();
@@ -49,8 +49,7 @@ class _UserAthleteScreenState extends ConsumerState<UserAthleteScreen> {
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
-    _weightController.dispose();
-    _heightController.dispose();
+
     _dayController.dispose();
     _monthController.dispose();
     _yearController.dispose();
@@ -171,14 +170,12 @@ class _UserAthleteScreenState extends ConsumerState<UserAthleteScreen> {
     try {
       final apiClient = ref.read(apiClientProvider);
       
-      final birthDate = '${_yearController.text}-${_monthController.text.padLeft(2, '0')}-${_dayController.text.padLeft(2, '0')}';
-
       await apiClient.dio.post('/athletes/parent/athletes/', data: {
         'full_name': _nameController.text.trim(),
         'phone': _phoneController.text.trim(),
-        'birth_date': birthDate,
-        'weight': double.tryParse(_weightController.text) ?? 0.0,
-        'height': double.tryParse(_heightController.text) ?? 0.0,
+        'birth_day': int.tryParse(_dayController.text),
+        'birth_month': int.tryParse(_monthController.text),
+        'birth_year': int.tryParse(_yearController.text),
         'photo': _photoBase64,
       });
 
@@ -188,8 +185,7 @@ class _UserAthleteScreenState extends ConsumerState<UserAthleteScreen> {
         _pickedFile = null;
         _nameController.clear();
         _phoneController.clear();
-        _weightController.clear();
-        _heightController.clear();
+
         _dayController.clear();
         _monthController.clear();
         _yearController.clear();
@@ -197,8 +193,9 @@ class _UserAthleteScreenState extends ConsumerState<UserAthleteScreen> {
 
       _fetchData();
     } catch (e) {
+      final parsed = parseApiError(e);
       setState(() {
-        _submitError = 'فشل إضافة الرياضي. يرجى التأكد من البيانات.';
+        _submitError = parsed.message;
       });
     } finally {
       setState(() {
@@ -357,28 +354,6 @@ class _UserAthleteScreenState extends ConsumerState<UserAthleteScreen> {
                                 textAlign: TextAlign.center,
                                 decoration: const InputDecoration(hintText: 'YYYY', contentPadding: EdgeInsets.zero),
                                 validator: (val) => int.tryParse(val ?? '') == null ? 'خطأ' : null,
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 12),
-
-                        // Weight Height
-                        Row(
-                          children: [
-                            Expanded(
-                              child: TextFormField(
-                                controller: _weightController,
-                                keyboardType: TextInputType.number,
-                                decoration: const InputDecoration(labelText: 'الوزن (كجم)'),
-                              ),
-                            ),
-                            const SizedBox(width: 8),
-                            Expanded(
-                              child: TextFormField(
-                                controller: _heightController,
-                                keyboardType: TextInputType.number,
-                                decoration: const InputDecoration(labelText: 'الطول (سم)'),
                               ),
                             ),
                           ],

@@ -52,11 +52,9 @@ class _SubscriptionsScreenState extends ConsumerState<SubscriptionsScreen> {
   }
 
   SubscriptionFilter _currentFilter() {
-    final user = ref.read(authProvider);
     return SubscriptionFilter(
       status: _selectedStatus,
       search: _searchQuery.isNotEmpty ? _searchQuery : null,
-      athleteId: user?.role == 'academy_manager' ? null : null,
     );
   }
 

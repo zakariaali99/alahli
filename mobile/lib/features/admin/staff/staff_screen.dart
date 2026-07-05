@@ -13,6 +13,7 @@ import '../../../core/widgets/staggered_list_item.dart';
 import '../../../core/widgets/confirm_dialog.dart';
 import '../../../core/helpers/numeral_converter.dart';
 import '../../../core/helpers/api_error_parser.dart';
+import '../../../core/helpers/permissions.dart';
 import '../../../core/models/user_model.dart';
 
 class StaffScreen extends ConsumerStatefulWidget {
@@ -60,13 +61,14 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
     ref.read(staffPaginatedProvider(_currentFilter()).notifier).refresh();
   }
 
-  Future<void> _showAddStaffDialog() async {
-    final phoneController = TextEditingController();
-    final firstNameController = TextEditingController();
-    final lastNameController = TextEditingController();
+  Future<void> _showAddStaffDialog({UserModel? existing}) async {
+    final phoneController = TextEditingController(text: existing?.phone);
+    final firstNameController = TextEditingController(text: existing?.firstNameAr);
+    final lastNameController = TextEditingController(text: existing?.lastNameAr);
     final passwordController = TextEditingController();
-    String selectedRole = 'reception';
-    int? selectedAcademyId;
+    String selectedRole = existing?.role ?? 'reception';
+    int? selectedAcademyId = existing?.academy;
+    bool isEdit = existing != null;
     final formKey = GlobalKey<FormState>();
 
     final deptsAsync = ref.read(departmentsProvider);
@@ -76,7 +78,7 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
       context: context,
       builder: (ctx) => StatefulBuilder(
         builder: (context, setDlgState) => AlertDialog(
-          title: const Text('إضافة موظف/مدير جديد', textAlign: TextAlign.right),
+          title: Text(isEdit ? 'تعديل حساب الموظف' : 'إضافة موظف/مدير جديد', textAlign: TextAlign.right),
           content: Form(
             key: formKey,
             child: SingleChildScrollView(
@@ -105,12 +107,18 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
                     validator: (v) => v == null || v.isEmpty ? 'مطلوب' : null,
                   ),
                   const SizedBox(height: 8),
-                  TextFormField(
+                    TextFormField(
                     controller: passwordController,
                     obscureText: true,
                     textAlign: TextAlign.right,
-                    decoration: const InputDecoration(labelText: 'كلمة المرور (8 خانات على الأقل)'),
-                    validator: (v) => v == null || v.length < 8 ? 'يجب أن لا تقل عن 8 خانات' : null,
+                    decoration: InputDecoration(
+                      labelText: isEdit ? 'كلمة المرور (اتركه فارغاً إذا لم ترد التغيير)' : 'كلمة المرور (8 خانات على الأقل)',
+                    ),
+                    validator: (v) {
+                      if (isEdit && (v == null || v.isEmpty)) return null;
+                      if (v == null || v.length < 8) return 'يجب أن لا تقل عن 8 خانات';
+                      return null;
+                    },
                   ),
                   const SizedBox(height: 8),
                   DropdownButtonFormField<String>(
@@ -174,21 +182,27 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
     if (confirm == true) {
       if (!formKey.currentState!.validate()) return;
       try {
-        final data = {
+        final data = <String, dynamic>{
           'first_name_ar': firstNameController.text.trim(),
           'last_name_ar': lastNameController.text.trim(),
           'phone': phoneController.text.trim().toWesternDigits(),
-          'password': passwordController.text,
           'role': selectedRole,
           'academy': selectedAcademyId,
           'is_active': true,
         };
+        if (passwordController.text.isNotEmpty) {
+          data['password'] = passwordController.text;
+        }
 
-        await ref.read(staffRepositoryProvider).createStaff(data);
+        if (isEdit) {
+          await ref.read(staffRepositoryProvider).updateStaff(existing.id, data);
+        } else {
+          await ref.read(staffRepositoryProvider).createStaff(data);
+        }
         await _refreshStaff();
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(content: Text('تم إضافة الموظف/المدير بنجاح')),
+            SnackBar(content: Text(isEdit ? 'تم تعديل حساب الموظف بنجاح' : 'تم إضافة الموظف/المدير بنجاح')),
           );
         }
       } catch (e) {
@@ -252,13 +266,20 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
     final staffState = ref.watch(staffPaginatedProvider(filter));
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
+    final user = ref.read(authProvider);
+    final canCreate = Permissions.can(user?.role, AppAction.staffCreate);
+    final canEdit = Permissions.can(user?.role, AppAction.staffUpdate);
+    final canDelete = Permissions.can(user?.role, AppAction.staffDelete);
+
     return Scaffold(
-      floatingActionButton: FloatingActionButton(
-        onPressed: _showAddStaffDialog,
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: canCreate
+          ? FloatingActionButton(
+              onPressed: _showAddStaffDialog,
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              child: const Icon(Icons.add),
+            )
+          : null,
       body: Column(
         children: [
           const Padding(
@@ -328,7 +349,7 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
           Expanded(
             child: RefreshIndicator(
               onRefresh: _refreshStaff,
-              child: _buildBody(staffState, isDark),
+              child: _buildBody(staffState, isDark, canEdit: canEdit, canDelete: canDelete),
             ),
           )
         ],
@@ -336,7 +357,7 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
     );
   }
 
-  Widget _buildBody(PaginatedListState<UserModel> state, bool isDark) {
+  Widget _buildBody(PaginatedListState<UserModel> state, bool isDark, {bool canEdit = false, bool canDelete = false}) {
     if (state.state == PaginatedState.loading) {
       return const ShimmerList();
     }
@@ -439,19 +460,34 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
                   icon: const Icon(Icons.more_vert),
                   color: isDark ? AppColors.darkCard : Colors.white,
                   onSelected: (val) {
-                    if (val == 'delete') {
+                    if (val == 'edit') {
+                      _showAddStaffDialog(existing: staff);
+                    } else if (val == 'delete') {
                       _deleteStaff(staff);
                     }
                   },
                   itemBuilder: (ctx) => [
-                    const PopupMenuItem(
-                      value: 'delete',
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          Text('حذف الحساب', style: TextStyle(color: AppColors.destructive)),
-                          SizedBox(width: 8),
-                          Icon(Icons.delete_forever, color: AppColors.destructive, size: 18),
+                    if (canEdit)
+                      const PopupMenuItem(
+                        value: 'edit',
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Text('تعديل الحساب'),
+                            SizedBox(width: 8),
+                            Icon(Icons.edit_outlined, size: 18),
+                          ],
+                        ),
+                      ),
+                    if (canDelete)
+                      const PopupMenuItem(
+                        value: 'delete',
+                        child: Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            Text('حذف الحساب', style: TextStyle(color: AppColors.destructive)),
+                            SizedBox(width: 8),
+                            Icon(Icons.delete_forever, color: AppColors.destructive, size: 18),
                         ],
                       ),
                     ),

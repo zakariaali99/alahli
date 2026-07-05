@@ -63,13 +63,62 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> with SingleTi
     }
   }
 
-  Future<void> _rejectRegistration(RegistrationModel reg) async {
+  Future<String?> _showRejectionDialog(String title) async {
+    final controller = TextEditingController();
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: Text(title, textAlign: TextAlign.right),
+        content: TextField(
+          controller: controller,
+          textAlign: TextAlign.right,
+          maxLines: 3,
+          decoration: const InputDecoration(
+            hintText: 'يرجى كتابة سبب الرفض (اختياري)',
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: const Text('إلغاء'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
+            child: const Text('تأكيد الرفض'),
+          ),
+        ],
+      ),
+    );
+    controller.dispose();
+    return result;
+  }
+
+  Future<void> _confirmRejectRegistration(RegistrationModel reg) async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('رفض طلب التسجيل', textAlign: TextAlign.right),
+        content: const Text('سيتم حذف طلب التسجيل والحساب المرتبط به نهائياً. هل أنت متأكد؟', textAlign: TextAlign.right),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx, false),
+            child: const Text('إلغاء'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(ctx, true),
+            style: ElevatedButton.styleFrom(backgroundColor: AppColors.destructive, foregroundColor: Colors.white),
+            child: const Text('تأكيد الرفض والحذف'),
+          ),
+        ],
+      ),
+    );
+    if (confirm != true) return;
     try {
       await ref.read(registrationRepositoryProvider).rejectRegistration(reg.id);
       ref.read(registrationsPaginatedProvider(RegistrationFilter(status: 'pending')).notifier).refresh();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تم رفض طلب التسجيل')),
+          const SnackBar(content: Text('تم رفض طلب التسجيل وحذف الحساب')),
         );
       }
     } catch (e) {
@@ -80,6 +129,10 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> with SingleTi
         );
       }
     }
+  }
+
+  Future<void> _rejectRegistration(RegistrationModel reg) async {
+    await _confirmRejectRegistration(reg);
   }
 
   Future<void> _approveSubscription(SubscriptionModel sub) async {
@@ -103,13 +156,15 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> with SingleTi
   }
 
   Future<void> _rejectSubscription(SubscriptionModel sub) async {
+    final reason = await _showRejectionDialog('رفض طلب الاشتراك');
+    if (reason == null) return;
     try {
-      await ref.read(subscriptionRepositoryProvider).updateSubscriptionStatus(sub.id, 'rejected');
+      await ref.read(subscriptionRepositoryProvider).updateSubscriptionStatus(sub.id, 'rejected', rejectionReason: reason);
       ref.read(subscriptionsPaginatedProvider(SubscriptionFilter(status: 'pending')).notifier).refresh();
       ref.invalidate(dashboardStatsProvider);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('تم رفض طلب الاشتراك بنجاح وسيكون خارج الحسابات المالية')),
+          const SnackBar(content: Text('تم رفض طلب الاشتراك بنجاح')),
         );
       }
     } catch (e) {

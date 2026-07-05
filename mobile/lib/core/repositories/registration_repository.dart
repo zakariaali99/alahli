@@ -59,9 +59,11 @@ class RegistrationRepository {
     }
   }
 
-  Future<void> rejectRegistration(int id) async {
+  Future<void> rejectRegistration(int id, {String? reason}) async {
     try {
-      await apiClient.dio.post(ApiEndpoints.rejectRegistration(id));
+      final data = <String, dynamic>{};
+      if (reason != null && reason.isNotEmpty) data['reason'] = reason;
+      await apiClient.dio.post(ApiEndpoints.rejectRegistration(id), data: data);
     } on DioException catch (e) {
       throw dioToAppApiException(e, fallback: 'فشل رفض طلب التسجيل');
     }

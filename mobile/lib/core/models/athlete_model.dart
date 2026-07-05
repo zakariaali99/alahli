@@ -15,6 +15,8 @@ class AthleteModel {
   final String? notes;
   final bool isActive;
   final String? createdAt;
+  final String? updatedAt;
+  final int? registrationId;
 
   AthleteModel({
     required this.id,
@@ -31,6 +33,8 @@ class AthleteModel {
     this.notes,
     required this.isActive,
     this.createdAt,
+    this.updatedAt,
+    this.registrationId,
   });
 
   factory AthleteModel.fromJson(Map<String, dynamic> json) {
@@ -49,6 +53,8 @@ class AthleteModel {
       notes: asString(json['notes']),
       isActive: asBool(json['is_active']) ?? false,
       createdAt: asString(json['created_at']),
+      updatedAt: asString(json['updated_at']),
+      registrationId: asInt(json['registration']),
     );
   }
 
@@ -68,6 +74,8 @@ class AthleteModel {
       'notes': notes,
       'is_active': isActive,
       'created_at': createdAt,
+      'updated_at': updatedAt,
+      'registration': registrationId,
     };
   }
 }

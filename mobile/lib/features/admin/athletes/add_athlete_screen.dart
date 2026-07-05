@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
+import 'package:dio/dio.dart';
 import '../../../core/providers/providers.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/helpers/phone_validator.dart';
@@ -88,9 +89,10 @@ class _AddAthleteScreenState extends ConsumerState<AddAthleteScreen> {
           _selectedImage = pickedFile;
         });
       }
-    } catch (_) {
+    } catch (e) {
+      final parsed = parseApiError(e);
       setState(() {
-        _errorMessage = 'تعذر الوصول للكاميرا. جرّب اختيار صورة من الجهاز.';
+        _errorMessage = parsed.message;
       });
     }
   }
@@ -142,26 +144,41 @@ class _AddAthleteScreenState extends ConsumerState<AddAthleteScreen> {
     try {
       final apiClient = ref.read(apiClientProvider);
 
-      final photoBase64 = await PhotoUtils.toBase64DataUri(_selectedImage);
-
-      final Map<String, dynamic> payload = {
-        'role': _scenario,
-        'full_name': _nameController.text.trim(),
-        'phone': _phoneController.text.trim().toWesternDigits(),
-        'password': _passwordController.text,
-        'birth_day': _selectedBirthDate!.day,
-        'birth_month': _selectedBirthDate!.month,
-        'birth_year': _selectedBirthDate!.year,
-      };
-
       if (_scenario == 'athlete') {
-        payload['gender'] = _selectedGender;
-        payload['department'] = _selectedDepartmentId;
-        payload['photo'] = photoBase64;
-      }
+        // Direct athlete creation via /athletes/ (FormData)
+        final birthDateStr = '${_selectedBirthDate!.year}-${_selectedBirthDate!.month.toString().padLeft(2, '0')}-${_selectedBirthDate!.day.toString().padLeft(2, '0')}';
 
-      // Hits register view endpoint: POST /auth/register/
-      await apiClient.dio.post('/auth/register/', data: payload);
+        final formData = FormData.fromMap({
+          'full_name': _nameController.text.trim(),
+          'phone': _phoneController.text.trim().toWesternDigits(),
+          'password': _passwordController.text,
+          'gender': _selectedGender,
+          'department': _selectedDepartmentId,
+          'birth_date': birthDateStr,
+          'is_active': 'true',
+        });
+
+        // Attach photo if selected
+        if (_selectedImage != null) {
+          formData.files.add(MapEntry(
+            'photo',
+            await MultipartFile.fromFile(_selectedImage!.path, filename: 'photo.jpg'),
+          ));
+        }
+
+        await apiClient.dio.post('/athletes/', data: formData);
+      } else {
+        // Parent registration via /auth/register/
+        await apiClient.dio.post('/auth/register/', data: {
+          'role': 'parent',
+          'full_name': _nameController.text.trim(),
+          'phone': _phoneController.text.trim().toWesternDigits(),
+          'password': _passwordController.text,
+          'birth_day': _selectedBirthDate!.day,
+          'birth_month': _selectedBirthDate!.month,
+          'birth_year': _selectedBirthDate!.year,
+        });
+      }
 
       ref.invalidate(registrationsProvider);
 
@@ -328,7 +345,7 @@ class _AddAthleteScreenState extends ConsumerState<AddAthleteScreen> {
           ),
           const SizedBox(height: 12),
           const Text(
-            'تم إنشاء طلب التسجيل وحفظ البيانات بنجاح. يمكنك الآن مراجعة واعتماد الطلب من صفحة الطلبات الجديدة لتفعيل الحساب.',
+            'تم إنشاء الحساب بنجاح ويمكن للمستخدم الآن تسجيل الدخول.',
             textAlign: TextAlign.center,
             style: TextStyle(fontSize: 14, color: Colors.grey),
           ),

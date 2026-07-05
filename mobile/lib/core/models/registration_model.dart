@@ -10,6 +10,7 @@ class RegistrationModel {
   final int? reviewedBy;
   final String? reviewedAt;
   final String createdAt;
+  final String? rejectionReason;
   final int? athleteId;
   final String? athleteName;
   final String? athletePhoto;
@@ -29,6 +30,7 @@ class RegistrationModel {
     this.reviewedBy,
     this.reviewedAt,
     required this.createdAt,
+    this.rejectionReason,
     this.athleteId,
     this.athleteName,
     this.athletePhoto,
@@ -50,6 +52,7 @@ class RegistrationModel {
       reviewedBy: asInt(json['reviewed_by']),
       reviewedAt: asString(json['reviewed_at']),
       createdAt: asString(json['created_at']) ?? '',
+      rejectionReason: asString(json['rejection_reason']),
       athleteId: asInt(json['athlete_id']),
       athleteName: asString(json['athlete_name']),
       athletePhoto: asString(json['athlete_photo']),

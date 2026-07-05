@@ -36,6 +36,22 @@ class NotificationRepository {
     return (await fetchNotificationsPaginated()).results;
   }
 
+  Future<void> markAsRead(int id) async {
+    try {
+      await apiClient.dio.post(ApiEndpoints.markRead(id));
+    } on DioException catch (e) {
+      throw dioToAppApiException(e, fallback: 'فشل تحديث التنبيه');
+    }
+  }
+
+  Future<void> markAllAsRead() async {
+    try {
+      await apiClient.dio.post(ApiEndpoints.markAllRead);
+    } on DioException catch (e) {
+      throw dioToAppApiException(e, fallback: 'فشل تحديث التنبيهات');
+    }
+  }
+
   Future<void> registerDeviceToken({
     required String fcmToken,
     required String platform,

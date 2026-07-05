@@ -1,6 +1,7 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:image_picker/image_picker.dart';
+import 'package:file_picker/file_picker.dart';
 import 'package:dio/dio.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/providers/providers.dart';
@@ -29,7 +30,7 @@ class _UserSubscriptionScreenState extends ConsumerState<UserSubscriptionScreen>
   Map<String, dynamic>? _selectedPackage;
   
   String? _paymentMethod; // 'cash' or 'bank_transfer'
-  XFile? _receiptImage;
+  File? _receiptImage;
 
   // Loading and Error states
   bool _loading = false;
@@ -47,7 +48,7 @@ class _UserSubscriptionScreenState extends ConsumerState<UserSubscriptionScreen>
   List<dynamic> _groups = [];
   List<dynamic> _packages = [];
 
-  final ImagePicker _picker = ImagePicker();
+
 
   // Rejected subscription state
   Map<String, dynamic>? _rejectedSubscription;
@@ -219,14 +220,13 @@ class _UserSubscriptionScreenState extends ConsumerState<UserSubscriptionScreen>
 
   Future<void> _pickReceipt() async {
     try {
-      final XFile? image = await _picker.pickImage(
-        source: ImageSource.gallery,
-        maxWidth: 1024,
-        imageQuality: 85,
+      final result = await FilePicker.pickFiles(
+        type: FileType.custom,
+        allowedExtensions: ['pdf'],
       );
-      if (image != null) {
+      if (result != null && result.files.single.path != null) {
         setState(() {
-          _receiptImage = image;
+          _receiptImage = File(result.files.single.path!);
           _error = null;
         });
       }
@@ -260,10 +260,12 @@ class _UserSubscriptionScreenState extends ConsumerState<UserSubscriptionScreen>
 
       if (_receiptImage != null) {
         dataMap['invoice_pdf'] = await MultipartFile.fromFile(
-          _receiptImage!.path,
+                  _receiptImage!.path,
+
           filename: 'receipt.pdf',
         );
       }
+
 
       final formData = FormData.fromMap(dataMap);
 
@@ -745,7 +747,7 @@ class _UserSubscriptionScreenState extends ConsumerState<UserSubscriptionScreen>
                     const Icon(Icons.cloud_upload_outlined, size: 36, color: Colors.grey),
                     const SizedBox(height: 8),
                     Text(
-                      _receiptImage != null ? _receiptImage!.name : 'اضغط لالتقاط أو اختيار صورة الإيصال',
+                      _receiptImage != null ? _receiptImage!.path.split('/').last : 'اضغط لاختيار ملف الإيصال (PDF)',
                       style: const TextStyle(color: AppColors.mutedForeground, fontSize: 13),
                       textAlign: TextAlign.center,
                     ),
