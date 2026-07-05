@@ -14,6 +14,7 @@ import '../../../core/widgets/loading_shimmer.dart';
 import '../../../core/helpers/numeral_converter.dart';
 import '../../../core/models/subscription_model.dart';
 import '../../../core/constants/api_endpoints.dart';
+import '../../../core/helpers/api_error_parser.dart';
 
 class SubscriptionsScreen extends ConsumerStatefulWidget {
   const SubscriptionsScreen({super.key});
@@ -170,13 +171,14 @@ class _SubscriptionsScreenState extends ConsumerState<SubscriptionsScreen> {
             const SnackBar(content: Text('تم تجديد الاشتراك بنجاح وتمديد الصلاحية')),
           );
         }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('خطأ: ${e.toString()}')),
-          );
-        }
+    } catch (e) {
+      if (mounted) {
+        final parsed = parseApiError(e);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(parsed.message)),
+        );
       }
+    }
     }
   }
 

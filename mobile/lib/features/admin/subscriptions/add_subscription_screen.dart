@@ -10,6 +10,7 @@ import '../../../core/helpers/numeral_converter.dart';
 import '../../../core/models/athlete_model.dart';
 import '../../../core/models/package_model.dart';
 import '../../../core/models/group_model.dart';
+import '../../../core/helpers/api_error_parser.dart';
 
 class AddSubscriptionScreen extends ConsumerStatefulWidget {
   const AddSubscriptionScreen({super.key});
@@ -43,8 +44,9 @@ class _AddSubscriptionScreenState extends ConsumerState<AddSubscriptionScreen> {
       }
     } catch (e) {
       if (mounted) {
+        final parsed = parseApiError(e);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('خطأ في اختيار الملف: $e')),
+          SnackBar(content: Text(parsed.message)),
         );
       }
     }
@@ -114,8 +116,9 @@ class _AddSubscriptionScreenState extends ConsumerState<AddSubscriptionScreen> {
       }
     } catch (e) {
       if (mounted) {
+        final parsed = parseApiError(e);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('خطأ: ${e.toString()}')),
+          SnackBar(content: Text(parsed.message)),
         );
       }
     } finally {
@@ -315,13 +318,13 @@ class _AddSubscriptionScreenState extends ConsumerState<AddSubscriptionScreen> {
               ),
             ),
             loading: () => const Center(child: CircularProgressIndicator()),
-            error: (e, st) => Center(child: Text('خطأ: $e')),
+            error: (e, st) => Center(child: Text(parseApiError(e).message)),
           ),
           loading: () => const Center(child: CircularProgressIndicator()),
-          error: (e, st) => Center(child: Text('خطأ: $e')),
+          error: (e, st) => Center(child: Text(parseApiError(e).message)),
         ),
         loading: () => const Center(child: CircularProgressIndicator()),
-        error: (e, st) => Center(child: Text('خطأ: $e')),
+        error: (e, st) => Center(child: Text(parseApiError(e).message)),
       ),
     );
   }

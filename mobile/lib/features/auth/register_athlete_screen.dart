@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
 import '../../core/constants/app_colors.dart';
+import '../../core/helpers/api_error_parser.dart';
 import '../../core/helpers/photo_utils.dart';
 import '../../core/helpers/phone_validator.dart';
 import '../../core/widgets/app_card.dart';
@@ -130,8 +131,9 @@ class _RegisterAthleteScreenState extends ConsumerState<RegisterAthleteScreen> {
         _success = true;
       });
     } catch (err) {
+      final parsed = parseApiError(err);
       setState(() {
-        _error = 'فشل التسجيل. يرجى التأكد من البيانات أو أن الهاتف غير مسجل مسبقاً.';
+        _error = parsed.message;
       });
     } finally {
       setState(() {

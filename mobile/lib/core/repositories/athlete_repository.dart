@@ -4,6 +4,10 @@ import '../models/athlete_model.dart';
 import '../models/paginated_response.dart';
 import '../constants/api_endpoints.dart';
 import '../helpers/safe_json.dart';
+import '../helpers/api_error_parser.dart';
+import '../models/app_api_exception.dart';
+
+AppApiException _appEx(String msg) => AppApiException(message: msg);
 
 class AthleteRepository {
   final ApiClient apiClient;
@@ -37,7 +41,7 @@ class AthleteRepository {
       final list = asList(res.data, (e) => AthleteModel.fromJson(asMap(e) ?? {})) ?? [];
       return PaginatedResponse<AthleteModel>(results: list, count: list.length);
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? 'فشل تحميل اللاعبين');
+      throw dioToAppApiException(e, fallback: 'فشل تحميل اللاعبين');
     }
   }
 
@@ -57,10 +61,10 @@ class AthleteRepository {
     try {
       final res = await apiClient.dio.get('${ApiEndpoints.athletes}$id/');
       final data = asMap(res.data);
-      if (data == null) throw Exception('بيانات اللاعب غير صالحة');
+      if (data == null) throw _appEx('بيانات اللاعب غير صالحة');
       return AthleteModel.fromJson(data);
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? 'فشل تحميل تفاصيل اللاعب');
+      throw dioToAppApiException(e, fallback: 'فشل تحميل تفاصيل اللاعب');
     }
   }
 
@@ -72,10 +76,10 @@ class AthleteRepository {
         options: Options(contentType: 'multipart/form-data'),
       );
       final data = asMap(res.data);
-      if (data == null) throw Exception('فشل إنشاء اللاعب');
+      if (data == null) throw _appEx('فشل إنشاء اللاعب');
       return AthleteModel.fromJson(data);
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? 'فشل إضافة لاعب جديد');
+      throw dioToAppApiException(e, fallback: 'فشل إضافة لاعب جديد');
     }
   }
 
@@ -87,10 +91,10 @@ class AthleteRepository {
         options: Options(contentType: 'multipart/form-data'),
       );
       final data = asMap(res.data);
-      if (data == null) throw Exception('فشل تحديث اللاعب');
+      if (data == null) throw _appEx('فشل تحديث اللاعب');
       return AthleteModel.fromJson(data);
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? 'فشل تعديل بيانات اللاعب');
+      throw dioToAppApiException(e, fallback: 'فشل تعديل بيانات اللاعب');
     }
   }
 
@@ -98,7 +102,7 @@ class AthleteRepository {
     try {
       await apiClient.dio.delete('${ApiEndpoints.athletes}$id/');
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? 'فشل حذف اللاعب');
+      throw dioToAppApiException(e, fallback: 'فشل حذف اللاعب');
     }
   }
 
@@ -107,7 +111,7 @@ class AthleteRepository {
       final res = await apiClient.dio.get(ApiEndpoints.verifyAthlete(membershipNumber));
       return asMap(res.data) ?? {};
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? 'رقم العضوية غير صحيح أو غير منشط');
+      throw dioToAppApiException(e, fallback: 'رقم العضوية غير صحيح أو غير منشط');
     }
   }
 }

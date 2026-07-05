@@ -4,6 +4,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import '../../core/constants/app_colors.dart';
 import '../../core/providers/providers.dart';
+import '../../core/helpers/api_error_parser.dart';
 import '../../core/helpers/numeral_converter.dart';
 import '../../core/helpers/phone_validator.dart';
 import '../../core/widgets/app_card.dart';
@@ -45,8 +46,9 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
       await ref.read(authProvider.notifier).login(phone, password, _rememberMe);
     } catch (e) {
+      final parsed = parseApiError(e);
       setState(() {
-        _errorMessage = e.toString().replaceAll('Exception: ', '');
+        _errorMessage = parsed.message;
       });
     } finally {
       if (mounted) {

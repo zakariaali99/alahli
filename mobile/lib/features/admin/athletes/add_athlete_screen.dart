@@ -3,13 +3,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:dio/dio.dart';
 import '../../../core/providers/providers.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/helpers/phone_validator.dart';
 import '../../../core/helpers/photo_utils.dart';
 import '../../../core/widgets/app_error_widget.dart';
 import '../../../core/helpers/numeral_converter.dart';
+import '../../../core/helpers/api_error_parser.dart';
 
 class AddAthleteScreen extends ConsumerStatefulWidget {
   const AddAthleteScreen({super.key});
@@ -169,18 +169,12 @@ class _AddAthleteScreenState extends ConsumerState<AddAthleteScreen> {
         _scenario = 'success';
       });
     } catch (e) {
-      String err = e.toString().replaceAll('Exception: ', '');
-      if (e is DioException) {
-        final data = e.response?.data;
-        if (data is Map) {
-          err = data.values.map((v) => v.toString()).join('\n');
-        } else {
-          err = e.response?.data?.toString() ?? e.message ?? err;
-        }
+      if (mounted) {
+        final parsed = parseApiError(e);
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text(parsed.message)),
+        );
       }
-      setState(() {
-        _errorMessage = err;
-      });
     } finally {
       if (mounted) {
         setState(() {

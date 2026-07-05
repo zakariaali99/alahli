@@ -1,4 +1,5 @@
 import pytest
+from unittest import mock
 from rest_framework import status
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
@@ -144,3 +145,61 @@ class TestVerify:
     def test_verify_not_found(self, auth_client):
         response = auth_client.get("/api/athletes/verify/NONEXISTENT/")
         assert response.status_code == status.HTTP_404_NOT_FOUND
+
+
+@pytest.mark.django_db
+class TestRegistrationAPI:
+    def test_register_duplicate_phone(self, api_client):
+        UserFactory(phone="0911234567")
+        response = api_client.post("/api/auth/register/", {
+            "role": "athlete",
+            "full_name": "لاعب جديد",
+            "phone": "0911234567",
+            "password": "password123",
+            "photo": "data:image/jpeg;base64,dGVzdA==",
+            "birth_day": 1,
+            "birth_month": 1,
+            "birth_year": 2000,
+        })
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "phone" in response.data["detail"]
+
+    @mock.patch("apps.notifications.services.send_admin_push_sync")
+    def test_register_notifications_parent_vs_athlete(self, mock_send, api_client):
+        # 1. Register Athlete
+        response = api_client.post("/api/auth/register/", {
+            "role": "athlete",
+            "full_name": "لاعب جديد",
+            "phone": "0912222222",
+            "password": "password123",
+            "photo": "data:image/jpeg;base64,dGVzdA==",
+            "birth_day": 1,
+            "birth_month": 1,
+            "birth_year": 2000,
+        })
+        assert response.status_code == status.HTTP_201_CREATED
+        mock_send.assert_called_with(
+            title="تسجيل لاعب جديد",
+            body="طلب تسجيل جديد من لاعب لاعب جديد - 0912222222",
+            notification_type="new_registration",
+            entity_id=response.data["registration_id"]
+        )
+
+        # 2. Register Parent
+        mock_send.reset_mock()
+        response = api_client.post("/api/auth/register/", {
+            "role": "parent",
+            "full_name": "ولي أمر جديد",
+            "phone": "0913333333",
+            "password": "password123",
+            "birth_day": 1,
+            "birth_month": 1,
+            "birth_year": 1980,
+        })
+        assert response.status_code == status.HTTP_201_CREATED
+        mock_send.assert_called_with(
+            title="تسجيل ولي أمر جديد",
+            body="طلب تسجيل جديد من ولي أمر ولي أمر جديد - 0913333333",
+            notification_type="new_registration",
+            entity_id=response.data["registration_id"]
+        )

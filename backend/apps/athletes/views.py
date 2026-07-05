@@ -95,9 +95,11 @@ def register_view(request):
     try:
         from apps.notifications.services import send_admin_push_sync
 
+        role = serializer.validated_data["role"]
+        role_label = "لاعب" if role == "athlete" else "ولي أمر"
         send_admin_push_sync(
-            title="تسجيل لاعب جديد",
-            body=f"طلب تسجيل جديد من {serializer.validated_data['full_name']} - {serializer.validated_data['phone']}",
+            title=f"تسجيل {role_label} جديد",
+            body=f"طلب تسجيل جديد من {role_label} {serializer.validated_data['full_name']} - {serializer.validated_data['phone']}",
             notification_type="new_registration",
             entity_id=registration.id,
         )

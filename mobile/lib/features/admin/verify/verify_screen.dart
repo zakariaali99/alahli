@@ -6,6 +6,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/helpers/numeral_converter.dart';
 import '../../../core/helpers/safe_json.dart';
+import '../../../core/helpers/api_error_parser.dart';
 
 class VerifyScreen extends ConsumerStatefulWidget {
   const VerifyScreen({super.key});
@@ -140,7 +141,7 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen>
       }
     } catch (e) {
       setState(() {
-        _errorMsg = e.toString().replaceAll('Exception: ', '');
+        _errorMsg = parseApiError(e).message;
       });
     } finally {
       setState(() {
@@ -290,6 +291,7 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen>
                     const SizedBox(height: 12),
                     TextField(
                       controller: _manualController,
+                      onChanged: (_) => setState(() {}),
                       textAlign: TextAlign.right,
                       style: TextStyle(
                         color: isDark ? Colors.white : Colors.black87,

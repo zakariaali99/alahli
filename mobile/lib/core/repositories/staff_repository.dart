@@ -4,6 +4,10 @@ import '../models/user_model.dart';
 import '../models/paginated_response.dart';
 import '../constants/api_endpoints.dart';
 import '../helpers/safe_json.dart';
+import '../helpers/api_error_parser.dart';
+import '../models/app_api_exception.dart';
+
+AppApiException _appEx(String msg) => AppApiException(message: msg);
 
 class StaffRepository {
   final ApiClient apiClient;
@@ -38,7 +42,7 @@ class StaffRepository {
       final filtered = list.where((u) => u.role != 'athlete' && u.role != 'parent').toList();
       return PaginatedResponse<UserModel>(results: filtered, count: filtered.length);
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? 'فشل تحميل الموظفين');
+      throw dioToAppApiException(e, fallback: 'فشل تحميل الموظفين');
     }
   }
 
@@ -53,10 +57,10 @@ class StaffRepository {
     try {
       final res = await apiClient.dio.post(ApiEndpoints.users, data: data);
       final resData = asMap(res.data);
-      if (resData == null) throw Exception('فشل إنشاء حساب الموظف');
+      if (resData == null) throw _appEx('فشل إنشاء حساب الموظف');
       return UserModel.fromJson(resData);
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? 'فشل إضافة موظف جديد');
+      throw dioToAppApiException(e, fallback: 'فشل إضافة موظف جديد');
     }
   }
 
@@ -64,10 +68,10 @@ class StaffRepository {
     try {
       final res = await apiClient.dio.patch('${ApiEndpoints.users}$id/', data: data);
       final resData = asMap(res.data);
-      if (resData == null) throw Exception('فشل تعديل حساب الموظف');
+      if (resData == null) throw _appEx('فشل تعديل حساب الموظف');
       return UserModel.fromJson(resData);
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? 'فشل تعديل حساب الموظف');
+      throw dioToAppApiException(e, fallback: 'فشل تعديل حساب الموظف');
     }
   }
 
@@ -75,7 +79,7 @@ class StaffRepository {
     try {
       await apiClient.dio.delete('${ApiEndpoints.users}$id/');
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? 'فشل حذف حساب الموظف');
+      throw dioToAppApiException(e, fallback: 'فشل حذف حساب الموظف');
     }
   }
 }

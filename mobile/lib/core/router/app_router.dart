@@ -15,13 +15,18 @@ import '../../features/admin/approvals/approvals_screen.dart';
 import '../../features/admin/subscriptions/subscriptions_screen.dart';
 import '../../features/admin/subscriptions/add_subscription_screen.dart';
 import '../../features/admin/academies/academies_screen.dart';
+import '../../features/admin/academies/academy_form_screen.dart';
+import '../../features/admin/academies/sport_form_screen.dart';
+import '../../features/admin/academies/group_form_screen.dart';
 import '../../features/admin/coaches/coaches_screen.dart';
+import '../../features/admin/coaches/coach_form_screen.dart';
 import '../../features/admin/staff/staff_screen.dart';
 import '../../features/admin/reports/reports_screen.dart';
 import '../../features/admin/verify/verify_screen.dart';
 import '../../features/admin/notifications/notifications_screen.dart';
 import '../../features/admin/settings/settings_screen.dart';
 import '../../features/admin/packages/packages_screen.dart';
+import '../../features/admin/packages/package_form_screen.dart';
 import '../../features/user/shell/user_shell.dart';
 import '../../features/user/subscriptions/user_subscription_screen.dart';
 import '../../features/user/athletes/user_athlete_screen.dart';
@@ -181,14 +186,117 @@ final goRouterProvider = Provider<GoRouter>((ref) {
           GoRoute(
             path: '/dashboard/academies',
             builder: (context, state) => const AcademiesScreen(),
+            routes: [
+              GoRoute(
+                path: 'add',
+                parentNavigatorKey: _rootNavigatorKey,
+                pageBuilder: (context, state) =>
+                    _slideTransitionPage(child: const AcademyFormScreen(), state: state),
+              ),
+              GoRoute(
+                path: ':id/edit',
+                parentNavigatorKey: _rootNavigatorKey,
+                pageBuilder: (context, state) {
+                  final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
+                  return _slideTransitionPage(
+                    child: AcademyFormScreen(academyId: id),
+                    state: state,
+                  );
+                },
+              ),
+              GoRoute(
+                path: ':academyId/sports/add',
+                parentNavigatorKey: _rootNavigatorKey,
+                pageBuilder: (context, state) {
+                  final academyId = int.tryParse(state.pathParameters['academyId'] ?? '') ?? 0;
+                  return _slideTransitionPage(
+                    child: SportFormScreen(academyId: academyId),
+                    state: state,
+                  );
+                },
+              ),
+              GoRoute(
+                path: ':academyId/sports/:id/edit',
+                parentNavigatorKey: _rootNavigatorKey,
+                pageBuilder: (context, state) {
+                  final academyId = int.tryParse(state.pathParameters['academyId'] ?? '') ?? 0;
+                  final sportId = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
+                  return _slideTransitionPage(
+                    child: SportFormScreen(academyId: academyId, sportId: sportId),
+                    state: state,
+                  );
+                },
+              ),
+              GoRoute(
+                path: ':academyId/sports/:sportId/groups/add',
+                parentNavigatorKey: _rootNavigatorKey,
+                pageBuilder: (context, state) {
+                  final sportId = int.tryParse(state.pathParameters['sportId'] ?? '') ?? 0;
+                  return _slideTransitionPage(
+                    child: GroupFormScreen(sportId: sportId),
+                    state: state,
+                  );
+                },
+              ),
+              GoRoute(
+                path: ':academyId/sports/:sportId/groups/:id/edit',
+                parentNavigatorKey: _rootNavigatorKey,
+                pageBuilder: (context, state) {
+                  final sportId = int.tryParse(state.pathParameters['sportId'] ?? '') ?? 0;
+                  final groupId = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
+                  return _slideTransitionPage(
+                    child: GroupFormScreen(sportId: sportId, groupId: groupId),
+                    state: state,
+                  );
+                },
+              ),
+            ],
           ),
           GoRoute(
             path: '/dashboard/packages',
             builder: (context, state) => const PackagesScreen(),
+            routes: [
+              GoRoute(
+                path: 'add',
+                parentNavigatorKey: _rootNavigatorKey,
+                pageBuilder: (context, state) =>
+                    _slideTransitionPage(child: const PackageFormScreen(), state: state),
+              ),
+              GoRoute(
+                path: ':id/edit',
+                parentNavigatorKey: _rootNavigatorKey,
+                pageBuilder: (context, state) {
+                  final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
+                  return _slideTransitionPage(
+                    child: PackageFormScreen(packageId: id),
+                    state: state,
+                  );
+                },
+              ),
+            ],
           ),
           GoRoute(
             path: '/dashboard/coaches',
             builder: (context, state) => const CoachesScreen(),
+            routes: [
+              GoRoute(
+                path: 'add',
+                parentNavigatorKey: _rootNavigatorKey,
+                pageBuilder: (context, state) =>
+                    _slideTransitionPage(child: const CoachFormScreen(), state: state),
+              ),
+              GoRoute(
+                path: ':id/edit',
+                parentNavigatorKey: _rootNavigatorKey,
+                pageBuilder: (context, state) {
+                  final id = int.tryParse(state.pathParameters['id'] ?? '') ?? 0;
+                  return _slideTransitionPage(
+                    child: CoachFormScreen(trainerId: id),
+                    state: state,
+                  );
+                },
+              ),
+            ],
           ),
           GoRoute(
             path: '/dashboard/staff',

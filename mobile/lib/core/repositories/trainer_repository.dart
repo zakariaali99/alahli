@@ -4,6 +4,8 @@ import '../models/trainer_model.dart';
 import '../models/group_model.dart';
 import '../constants/api_endpoints.dart';
 import '../helpers/safe_json.dart';
+import '../helpers/api_error_parser.dart';
+import '../models/app_api_exception.dart';
 
 class TrainerRepository {
   final ApiClient apiClient;
@@ -31,7 +33,7 @@ class TrainerRepository {
       final resultsList = _extractListPayload(res.data);
       return asList(resultsList, (e) => TrainerModel.fromJson(asMap(e) ?? {})) ?? [];
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? 'فشل تحميل المدربين');
+      throw dioToAppApiException(e, fallback: 'فشل تحميل المدربين');
     }
   }
 
@@ -44,7 +46,7 @@ class TrainerRepository {
       final resultsList = _extractListPayload(res.data);
       return asList(resultsList, (e) => GroupModel.fromJson(asMap(e) ?? {})) ?? [];
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? 'فشل تحميل مجموعات المدرب');
+      throw dioToAppApiException(e, fallback: 'فشل تحميل مجموعات المدرب');
     }
   }
 
@@ -52,10 +54,10 @@ class TrainerRepository {
     try {
       final res = await apiClient.dio.post(ApiEndpoints.users, data: data);
       final resData = asMap(res.data);
-      if (resData == null) throw Exception('فشل إنشاء المدرب');
+      if (resData == null) throw AppApiException(message: 'فشل إنشاء المدرب');
       return TrainerModel.fromJson(resData);
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? e.response?.data?.toString() ?? 'فشل إضافة مدرب جديد');
+      throw dioToAppApiException(e, fallback: 'فشل إضافة مدرب جديد');
     }
   }
 
@@ -63,10 +65,10 @@ class TrainerRepository {
     try {
       final res = await apiClient.dio.patch('${ApiEndpoints.users}$id/', data: data);
       final resData = asMap(res.data);
-      if (resData == null) throw Exception('فشل تعديل المدرب');
+      if (resData == null) throw AppApiException(message: 'فشل تعديل المدرب');
       return TrainerModel.fromJson(resData);
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? e.response?.data?.toString() ?? 'فشل تعديل المدرب');
+      throw dioToAppApiException(e, fallback: 'فشل تعديل المدرب');
     }
   }
 
@@ -74,7 +76,7 @@ class TrainerRepository {
     try {
       await apiClient.dio.delete('${ApiEndpoints.users}$id/');
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? 'فشل حذف المدرب');
+      throw dioToAppApiException(e, fallback: 'فشل حذف المدرب');
     }
   }
 }

@@ -12,6 +12,7 @@ import '../../../core/widgets/loading_shimmer.dart';
 import '../../../core/widgets/staggered_list_item.dart';
 import '../../../core/widgets/confirm_dialog.dart';
 import '../../../core/helpers/numeral_converter.dart';
+import '../../../core/helpers/api_error_parser.dart';
 import '../../../core/models/user_model.dart';
 
 class StaffScreen extends ConsumerStatefulWidget {
@@ -192,8 +193,9 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
         }
       } catch (e) {
         if (mounted) {
+          final parsed = parseApiError(e);
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('خطأ: ${e.toString()}')),
+            SnackBar(content: Text(parsed.message)),
           );
         }
       }
@@ -222,8 +224,9 @@ class _StaffScreenState extends ConsumerState<StaffScreen> {
         }
       } catch (e) {
         if (mounted) {
+          final parsed = parseApiError(e);
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('خطأ: ${e.toString()}')),
+            SnackBar(content: Text(parsed.message)),
           );
         }
       }

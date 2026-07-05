@@ -3,6 +3,10 @@ import '../network/api_client.dart';
 import '../models/dashboard_stats.dart';
 import '../constants/api_endpoints.dart';
 import '../helpers/safe_json.dart';
+import '../helpers/api_error_parser.dart';
+import '../models/app_api_exception.dart';
+
+AppApiException _appEx(String msg) => AppApiException(message: msg);
 
 class AnalyticsRepository {
   final ApiClient apiClient;
@@ -42,10 +46,10 @@ class AnalyticsRepository {
 
       final res = await apiClient.dio.get(ApiEndpoints.analyticsStats, queryParameters: query);
       final data = _extractMapPayload(res.data);
-      if (data == null) throw Exception('بيانات الإحصائيات غير صالحة');
+      if (data == null) throw _appEx('بيانات الإحصائيات غير صالحة');
       return DashboardStats.fromJson(data);
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? 'فشل تحميل إحصائيات لوحة القيادة');
+      throw dioToAppApiException(e, fallback: 'فشل تحميل إحصائيات لوحة القيادة');
     }
   }
 
@@ -54,7 +58,7 @@ class AnalyticsRepository {
       final res = await apiClient.dio.get(ApiEndpoints.analyticsMonthlyGrowth);
       return _extractListPayload(res.data);
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? 'فشل تحميل نمو اللاعبين الشهري');
+      throw dioToAppApiException(e, fallback: 'فشل تحميل نمو اللاعبين الشهري');
     }
   }
 
@@ -63,7 +67,7 @@ class AnalyticsRepository {
       final res = await apiClient.dio.get(ApiEndpoints.analyticsDepartmentDistribution);
       return _extractListPayload(res.data);
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? 'فشل تحميل توزيع اللاعبين على الأكاديميات');
+      throw dioToAppApiException(e, fallback: 'فشل تحميل توزيع اللاعبين على الأكاديميات');
     }
   }
 
@@ -72,7 +76,7 @@ class AnalyticsRepository {
       final res = await apiClient.dio.get(ApiEndpoints.analyticsRevenue);
       return _extractListPayload(res.data);
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? 'فشل تحميل تقرير الإيرادات');
+      throw dioToAppApiException(e, fallback: 'فشل تحميل تقرير الإيرادات');
     }
   }
 }

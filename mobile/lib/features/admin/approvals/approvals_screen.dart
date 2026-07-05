@@ -19,6 +19,7 @@ import '../../../core/helpers/phone_validator.dart';
 import '../../../core/helpers/ui_helpers.dart';
 import '../../../core/models/registration_model.dart';
 import '../../../core/models/subscription_model.dart';
+import '../../../core/helpers/api_error_parser.dart';
 
 class ApprovalsScreen extends ConsumerStatefulWidget {
   const ApprovalsScreen({super.key});
@@ -54,8 +55,9 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> with SingleTi
       }
     } catch (e) {
       if (mounted) {
+        final parsed = parseApiError(e);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('خطأ: ${e.toString()}')),
+          SnackBar(content: Text(parsed.message)),
         );
       }
     }
@@ -72,8 +74,9 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> with SingleTi
       }
     } catch (e) {
       if (mounted) {
+        final parsed = parseApiError(e);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('خطأ: ${e.toString()}')),
+          SnackBar(content: Text(parsed.message)),
         );
       }
     }
@@ -91,8 +94,9 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> with SingleTi
       }
     } catch (e) {
       if (mounted) {
+        final parsed = parseApiError(e);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('خطأ: ${e.toString()}')),
+          SnackBar(content: Text(parsed.message)),
         );
       }
     }
@@ -110,8 +114,9 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> with SingleTi
       }
     } catch (e) {
       if (mounted) {
+        final parsed = parseApiError(e);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('خطأ: ${e.toString()}')),
+          SnackBar(content: Text(parsed.message)),
         );
       }
     }
@@ -249,8 +254,9 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> with SingleTi
                       if (context.mounted) Navigator.pop(context);
                     } catch (e) {
                       if (context.mounted) {
+                        final parsed = parseApiError(e);
                         ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text('خطأ: ${e.toString()}')),
+                          SnackBar(content: Text(parsed.message)),
                         );
                       }
                     }

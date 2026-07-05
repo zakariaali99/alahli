@@ -4,6 +4,10 @@ import '../models/subscription_model.dart';
 import '../models/paginated_response.dart';
 import '../constants/api_endpoints.dart';
 import '../helpers/safe_json.dart';
+import '../helpers/api_error_parser.dart';
+import '../models/app_api_exception.dart';
+
+AppApiException _appEx(String msg) => AppApiException(message: msg);
 
 class SubscriptionRepository {
   final ApiClient apiClient;
@@ -37,7 +41,7 @@ class SubscriptionRepository {
       final list = asList(res.data, (e) => SubscriptionModel.fromJson(asMap(e) ?? {})) ?? [];
       return PaginatedResponse<SubscriptionModel>(results: list, count: list.length);
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? 'فشل تحميل الاشتراكات');
+      throw dioToAppApiException(e, fallback: 'فشل تحميل الاشتراكات');
     }
   }
 
@@ -57,10 +61,10 @@ class SubscriptionRepository {
     try {
       final res = await apiClient.dio.get('${ApiEndpoints.subscriptions}$id/');
       final data = asMap(res.data);
-      if (data == null) throw Exception('بيانات الاشتراك غير صالحة');
+      if (data == null) throw _appEx('بيانات الاشتراك غير صالحة');
       return SubscriptionModel.fromJson(data);
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? 'فشل تحميل تفاصيل الاشتراك');
+      throw dioToAppApiException(e, fallback: 'فشل تحميل تفاصيل الاشتراك');
     }
   }
 
@@ -71,10 +75,10 @@ class SubscriptionRepository {
         data: {'status': status},
       );
       final data = asMap(res.data);
-      if (data == null) throw Exception('فشل تحديث حالة الاشتراك');
+      if (data == null) throw _appEx('فشل تحديث حالة الاشتراك');
       return SubscriptionModel.fromJson(data);
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? 'فشل معالجة الطلب');
+      throw dioToAppApiException(e, fallback: 'فشل معالجة الطلب');
     }
   }
 
@@ -92,10 +96,10 @@ class SubscriptionRepository {
         },
       );
       final data = asMap(res.data);
-      if (data == null) throw Exception('فشل تجديد الاشتراك');
+      if (data == null) throw _appEx('فشل تجديد الاشتراك');
       return SubscriptionModel.fromJson(data);
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? 'فشل تجديد الاشتراك');
+      throw dioToAppApiException(e, fallback: 'فشل تجديد الاشتراك');
     }
   }
 
@@ -103,10 +107,10 @@ class SubscriptionRepository {
     try {
       final res = await apiClient.dio.post(ApiEndpoints.subscriptions, data: data);
       final resData = asMap(res.data);
-      if (resData == null) throw Exception('فشل إنشاء الاشتراك');
+      if (resData == null) throw _appEx('فشل إنشاء الاشتراك');
       return SubscriptionModel.fromJson(resData);
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? e.response?.data?.toString() ?? 'فشل إنشاء الاشتراك');
+      throw dioToAppApiException(e, fallback: 'فشل إنشاء الاشتراك');
     }
   }
 }

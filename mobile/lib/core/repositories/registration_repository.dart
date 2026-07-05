@@ -5,6 +5,10 @@ import '../models/athlete_model.dart';
 import '../models/paginated_response.dart';
 import '../constants/api_endpoints.dart';
 import '../helpers/safe_json.dart';
+import '../helpers/api_error_parser.dart';
+import '../models/app_api_exception.dart';
+
+AppApiException _appEx(String msg) => AppApiException(message: msg);
 
 class RegistrationRepository {
   final ApiClient apiClient;
@@ -36,7 +40,7 @@ class RegistrationRepository {
       final list = asList(res.data, (e) => RegistrationModel.fromJson(asMap(e) ?? {})) ?? [];
       return PaginatedResponse<RegistrationModel>(results: list, count: list.length);
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? 'فشل تحميل طلبات التسجيل');
+      throw dioToAppApiException(e, fallback: 'فشل تحميل طلبات التسجيل');
     }
   }
 
@@ -51,7 +55,7 @@ class RegistrationRepository {
     try {
       await apiClient.dio.post(ApiEndpoints.approveRegistration(id));
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? 'فشل قبول طلب التسجيل');
+      throw dioToAppApiException(e, fallback: 'فشل قبول طلب التسجيل');
     }
   }
 
@@ -59,7 +63,7 @@ class RegistrationRepository {
     try {
       await apiClient.dio.post(ApiEndpoints.rejectRegistration(id));
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? 'فشل رفض طلب التسجيل');
+      throw dioToAppApiException(e, fallback: 'فشل رفض طلب التسجيل');
     }
   }
 
@@ -74,10 +78,10 @@ class RegistrationRepository {
         options: Options(contentType: 'multipart/form-data'),
       );
       final data = asMap(res.data);
-      if (data == null) throw Exception('فشل إنشاء الملف الرياضي');
+      if (data == null) throw _appEx('فشل إنشاء الملف الرياضي');
       return AthleteModel.fromJson(data);
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? 'فشل إنشاء الملف الرياضي');
+      throw dioToAppApiException(e, fallback: 'فشل إنشاء الملف الرياضي');
     }
   }
 }

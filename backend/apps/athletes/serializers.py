@@ -163,6 +163,13 @@ class RegisterSerializer(serializers.Serializer):
         except ValueError as e:
             raise serializers.ValidationError({"birth_date": str(e)})
 
+    def validate_phone(self, value):
+        from django.contrib.auth import get_user_model
+        User = get_user_model()
+        if User.objects.filter(phone=value).exists():
+            raise serializers.ValidationError("رقم الهاتف هذا مسجل بالفعل")
+        return value
+
     def validate(self, attrs):
         if attrs["role"] == "athlete":
             if not attrs.get("photo"):

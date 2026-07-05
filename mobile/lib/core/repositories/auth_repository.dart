@@ -4,6 +4,10 @@ import '../models/user_model.dart';
 import '../helpers/secure_storage.dart';
 import '../constants/api_endpoints.dart';
 import '../helpers/safe_json.dart';
+import '../helpers/api_error_parser.dart';
+import '../models/app_api_exception.dart';
+
+AppApiException _appEx(String msg) => AppApiException(message: msg);
 
 class AuthRepository {
   final ApiClient apiClient;
@@ -25,14 +29,14 @@ class AuthRepository {
         },
       );
       final data = asMap(res.data);
-      if (data == null) throw Exception('بيانات تسجيل الدخول غير صالحة');
+      if (data == null) throw _appEx('بيانات تسجيل الدخول غير صالحة');
 
       final String? access = asString(data['access']);
       final String? refresh = asString(data['refresh']);
       final userJson = asMap(data['user']);
 
       if (access == null || refresh == null || userJson == null) {
-        throw Exception('بيانات تسجيل الدخول غير صالحة');
+        throw _appEx('بيانات تسجيل الدخول غير صالحة');
       }
 
       final user = UserModel.fromJson(userJson);
@@ -44,8 +48,7 @@ class AuthRepository {
 
       return user;
     } on DioException catch (e) {
-      final detail = e.response?.data?['detail'] ?? 'خطأ في الاتصال بالخادم';
-      throw Exception(detail);
+      throw dioToAppApiException(e, fallback: 'خطأ في الاتصال بالخادم');
     }
   }
 
@@ -53,10 +56,10 @@ class AuthRepository {
     try {
       final res = await apiClient.dio.get(ApiEndpoints.me);
       final data = asMap(res.data);
-      if (data == null) throw Exception('فشل جلب بيانات المستخدم');
+      if (data == null) throw _appEx('فشل جلب بيانات المستخدم');
       return UserModel.fromJson(data);
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? 'فشل الاتصال بالخادم');
+      throw dioToAppApiException(e, fallback: 'فشل الاتصال بالخادم');
     }
   }
 
@@ -73,21 +76,7 @@ class AuthRepository {
         },
       );
     } on DioException catch (e) {
-      final data = e.response?.data;
-      String msg = 'حدث خطأ أثناء تغيير كلمة المرور';
-      if (data is Map) {
-        if (data.containsKey('old_password')) {
-          msg = asString(data['old_password']) ?? msg;
-        } else if (data.containsKey('new_password')) {
-          final list = data['new_password'];
-          if (list is List && list.isNotEmpty) {
-            msg = list.first.toString();
-          }
-        } else if (data.containsKey('detail')) {
-          msg = asString(data['detail']) ?? msg;
-        }
-      }
-      throw Exception(msg);
+      throw dioToAppApiException(e, fallback: 'حدث خطأ أثناء تغيير كلمة المرور');
     }
   }
 

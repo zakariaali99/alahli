@@ -4,6 +4,7 @@ import '../models/notification_model.dart';
 import '../models/paginated_response.dart';
 import '../constants/api_endpoints.dart';
 import '../helpers/safe_json.dart';
+import '../helpers/api_error_parser.dart';
 
 class NotificationRepository {
   final ApiClient apiClient;
@@ -27,7 +28,7 @@ class NotificationRepository {
       final list = asList(res.data, (e) => NotificationModel.fromJson(asMap(e) ?? {})) ?? [];
       return PaginatedResponse<NotificationModel>(results: list, count: list.length);
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? 'فشل تحميل التنبيهات');
+      throw dioToAppApiException(e, fallback: 'فشل تحميل التنبيهات');
     }
   }
 

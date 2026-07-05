@@ -5,6 +5,10 @@ import '../models/sport_model.dart';
 import '../models/group_model.dart';
 import '../constants/api_endpoints.dart';
 import '../helpers/safe_json.dart';
+import '../helpers/api_error_parser.dart';
+import '../models/app_api_exception.dart';
+
+AppApiException _appEx(String msg) => AppApiException(message: msg);
 
 class DepartmentRepository {
   final ApiClient apiClient;
@@ -20,7 +24,7 @@ class DepartmentRepository {
       }
       return asList(resultsList, (e) => DepartmentModel.fromJson(asMap(e) ?? {})) ?? [];
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? 'فشل تحميل الأكاديميات');
+      throw dioToAppApiException(e, fallback: 'فشل تحميل الأكاديميات');
     }
   }
 
@@ -32,10 +36,10 @@ class DepartmentRepository {
         options: Options(contentType: 'multipart/form-data'),
       );
       final data = asMap(res.data);
-      if (data == null) throw Exception('فشل إنشاء الأكاديمية');
+      if (data == null) throw _appEx('فشل إنشاء الأكاديمية');
       return DepartmentModel.fromJson(data);
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? 'فشل إضافة أكاديمية جديدة');
+      throw dioToAppApiException(e, fallback: 'فشل إضافة أكاديمية جديدة');
     }
   }
 
@@ -47,10 +51,10 @@ class DepartmentRepository {
         options: Options(contentType: 'multipart/form-data'),
       );
       final data = asMap(res.data);
-      if (data == null) throw Exception('فشل تعديل الأكاديمية');
+      if (data == null) throw _appEx('فشل تعديل الأكاديمية');
       return DepartmentModel.fromJson(data);
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? 'فشل تعديل الأكاديمية');
+      throw dioToAppApiException(e, fallback: 'فشل تعديل الأكاديمية');
     }
   }
 
@@ -58,7 +62,7 @@ class DepartmentRepository {
     try {
       await apiClient.dio.delete('${ApiEndpoints.departments}$id/');
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? 'فشل حذف الأكاديمية');
+      throw dioToAppApiException(e, fallback: 'فشل حذف الأكاديمية');
     }
   }
 
@@ -71,7 +75,7 @@ class DepartmentRepository {
       }
       return asList(resultsList, (e) => SportModel.fromJson(asMap(e) ?? {})) ?? [];
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? 'فشل تحميل الرياضات');
+      throw dioToAppApiException(e, fallback: 'فشل تحميل الرياضات');
     }
   }
 
@@ -84,7 +88,7 @@ class DepartmentRepository {
       }
       return asList(resultsList, (e) => SportModel.fromJson(asMap(e) ?? {})) ?? [];
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? 'فشل تحميل رياضات الأكاديمية');
+      throw dioToAppApiException(e, fallback: 'فشل تحميل رياضات الأكاديمية');
     }
   }
 
@@ -92,10 +96,10 @@ class DepartmentRepository {
     try {
       final res = await apiClient.dio.post(ApiEndpoints.sports, data: data);
       final resData = asMap(res.data);
-      if (resData == null) throw Exception('فشل إنشاء الرياضة');
+      if (resData == null) throw _appEx('فشل إنشاء الرياضة');
       return SportModel.fromJson(resData);
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? 'فشل إضافة رياضة جديدة');
+      throw dioToAppApiException(e, fallback: 'فشل إضافة رياضة جديدة');
     }
   }
 
@@ -103,10 +107,10 @@ class DepartmentRepository {
     try {
       final res = await apiClient.dio.patch('${ApiEndpoints.sports}$id/', data: data);
       final resData = asMap(res.data);
-      if (resData == null) throw Exception('فشل تعديل الرياضة');
+      if (resData == null) throw _appEx('فشل تعديل الرياضة');
       return SportModel.fromJson(resData);
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? 'فشل تعديل الرياضة');
+      throw dioToAppApiException(e, fallback: 'فشل تعديل الرياضة');
     }
   }
 
@@ -114,7 +118,7 @@ class DepartmentRepository {
     try {
       await apiClient.dio.delete('${ApiEndpoints.sports}$id/');
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? 'فشل حذف الرياضة');
+      throw dioToAppApiException(e, fallback: 'فشل حذف الرياضة');
     }
   }
 
@@ -127,7 +131,7 @@ class DepartmentRepository {
       }
       return asList(resultsList, (e) => GroupModel.fromJson(asMap(e) ?? {})) ?? [];
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? 'فشل تحميل المجموعات');
+      throw dioToAppApiException(e, fallback: 'فشل تحميل المجموعات');
     }
   }
 
@@ -140,7 +144,7 @@ class DepartmentRepository {
       }
       return asList(resultsList, (e) => GroupModel.fromJson(asMap(e) ?? {})) ?? [];
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? 'فشل تحميل مجموعات الرياضة');
+      throw dioToAppApiException(e, fallback: 'فشل تحميل مجموعات الرياضة');
     }
   }
 
@@ -148,10 +152,10 @@ class DepartmentRepository {
     try {
       final res = await apiClient.dio.post(ApiEndpoints.groups, data: data);
       final resData = asMap(res.data);
-      if (resData == null) throw Exception('فشل إنشاء المجموعة');
+      if (resData == null) throw _appEx('فشل إنشاء المجموعة');
       return GroupModel.fromJson(resData);
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? 'فشل إضافة مجموعة جديدة');
+      throw dioToAppApiException(e, fallback: 'فشل إضافة مجموعة جديدة');
     }
   }
 
@@ -159,10 +163,10 @@ class DepartmentRepository {
     try {
       final res = await apiClient.dio.patch('${ApiEndpoints.groups}$id/', data: data);
       final resData = asMap(res.data);
-      if (resData == null) throw Exception('فشل تعديل المجموعة');
+      if (resData == null) throw _appEx('فشل تعديل المجموعة');
       return GroupModel.fromJson(resData);
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? 'فشل تعديل المجموعة');
+      throw dioToAppApiException(e, fallback: 'فشل تعديل المجموعة');
     }
   }
 
@@ -170,7 +174,7 @@ class DepartmentRepository {
     try {
       await apiClient.dio.delete('${ApiEndpoints.groups}$id/');
     } on DioException catch (e) {
-      throw Exception(e.response?.data?['detail'] ?? 'فشل حذف المجموعة');
+      throw dioToAppApiException(e, fallback: 'فشل حذف المجموعة');
     }
   }
 }

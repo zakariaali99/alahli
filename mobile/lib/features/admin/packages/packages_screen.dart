@@ -1,13 +1,14 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/providers/providers.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/app_error_widget.dart';
-import '../../../core/widgets/form_bottom_sheet.dart';
 import '../../../core/widgets/loading_shimmer.dart';
 import '../../../core/helpers/numeral_converter.dart';
 import '../../../core/helpers/permissions.dart';
+import '../../../core/helpers/api_error_parser.dart';
 import '../../../core/models/package_model.dart';
 import '../../../core/models/department_model.dart';
 
@@ -19,279 +20,15 @@ class PackagesScreen extends ConsumerStatefulWidget {
 }
 
 class _PackagesScreenState extends ConsumerState<PackagesScreen> {
-  void _showAddEditPackageDialog([PackageModel? package]) async {
-    final nameController = TextEditingController(text: package?.name ?? '');
-    final descriptionController = TextEditingController(text: package?.description ?? '');
-    final priceController = TextEditingController(text: package?.price.toString() ?? '');
-    final typeController = TextEditingController(text: package?.durationType ?? 'months');
-    final valueController = TextEditingController(text: package?.durationValue.toString() ?? '1');
-    final athletesController = TextEditingController(text: package?.maxAthletes.toString() ?? '1');
-    final tagController = TextEditingController(text: package?.tag ?? 'normal');
-    final iconNameController = TextEditingController(text: package?.iconName ?? 'award');
-    final colorClassController = TextEditingController(text: package?.colorClass ?? 'blue');
-    final orderController = TextEditingController(text: package?.order.toString() ?? '0');
-    final featuresController = TextEditingController(text: package?.features.join('\n') ?? '');
-    
-    int? selectedDeptId = package?.department;
-    bool isActive = package?.isActive ?? true;
-    final formKey = GlobalKey<FormState>();
-
-    final confirm = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Theme.of(context).brightness == Brightness.dark ? AppColors.darkCard : Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) {
-        final departmentsAsync = ref.watch(departmentsProvider);
-        return SafeArea(
-          top: false,
-          child: Padding(
-            padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-            child: Container(
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(ctx).size.height * 0.85,
-              ),
-              child: PinnedBottomSheet(
-            title: package == null ? 'إضافة باقة جديدة' : 'تعديل الباقة',
-            submitLabel: package == null ? 'إضافة' : 'تعديل',
-            onSubmit: () {
-              if (formKey.currentState!.validate()) {
-                Navigator.pop(ctx, true);
-              }
-            },
-            body: StatefulBuilder(
-              builder: (context, setDlgState) => Form(
-                key: formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    TextFormField(
-                      controller: nameController,
-                      textAlign: TextAlign.right,
-                      decoration: InputDecoration(
-                        labelText: 'اسم الباقة',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: descriptionController,
-                      textAlign: TextAlign.right,
-                      maxLines: 2,
-                      decoration: InputDecoration(
-                        labelText: 'الوصف',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: priceController,
-                      keyboardType: const TextInputType.numberWithOptions(decimal: true),
-                      textAlign: TextAlign.right,
-                      decoration: InputDecoration(
-                        labelText: 'السعر (د.ل)',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
-                    ),
-                    const SizedBox(height: 12),
-                    departmentsAsync.when(
-                      data: (list) {
-                        return DropdownButtonFormField<int?>(
-                          value: selectedDeptId,
-                          decoration: InputDecoration(
-                            labelText: 'القسم / الأكاديمية (اختياري)',
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                          dropdownColor: Theme.of(context).brightness == Brightness.dark ? AppColors.darkCard : Colors.white,
-                          items: [
-                            const DropdownMenuItem(value: null, child: Text('باقة عامة')),
-                            ...list.map((d) => DropdownMenuItem(value: d.id, child: Text(d.nameAr))),
-                          ],
-                          onChanged: (v) => setDlgState(() => selectedDeptId = v),
-                        );
-                      },
-                      loading: () => const SizedBox.shrink(),
-                      error: (e, s) => TextButton.icon(
-                        icon: const Icon(Icons.refresh, size: 16),
-                        label: const Text('فشل التحميل، اضغط لإعادة المحاولة', style: TextStyle(fontSize: 12)),
-                        onPressed: () => ref.invalidate(departmentsProvider),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: DropdownButtonFormField<String>(
-                            value: typeController.text,
-                            decoration: InputDecoration(
-                              labelText: 'نوع المدة',
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                            ),
-                            dropdownColor: Theme.of(context).brightness == Brightness.dark ? AppColors.darkCard : Colors.white,
-                            items: const [
-                              DropdownMenuItem(value: 'months', child: Text('أشهر')),
-                              DropdownMenuItem(value: 'weeks', child: Text('أسابيع')),
-                            ],
-                            onChanged: (val) {
-                              if (val != null) setDlgState(() => typeController.text = val);
-                            },
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: TextFormField(
-                            controller: valueController,
-                            keyboardType: TextInputType.number,
-                            textAlign: TextAlign.right,
-                            decoration: InputDecoration(
-                              labelText: 'قيمة المدة',
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                            ),
-                            validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: athletesController,
-                      keyboardType: TextInputType.number,
-                      textAlign: TextAlign.right,
-                      decoration: InputDecoration(
-                        labelText: 'أقصى عدد لاعبين',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
-                    ),
-                    const SizedBox(height: 12),
-                    DropdownButtonFormField<String>(
-                      value: tagController.text,
-                      decoration: InputDecoration(
-                        labelText: 'علامة الباقة المميزة',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      dropdownColor: Theme.of(context).brightness == Brightness.dark ? AppColors.darkCard : Colors.white,
-                      items: const [
-                        DropdownMenuItem(value: 'normal', child: Text('عادية')),
-                        DropdownMenuItem(value: 'discount', child: Text('خصم')),
-                        DropdownMenuItem(value: 'special', child: Text('خاصة')),
-                      ],
-                      onChanged: (val) {
-                        if (val != null) setDlgState(() => tagController.text = val);
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            controller: iconNameController,
-                            textAlign: TextAlign.right,
-                            decoration: InputDecoration(
-                              labelText: 'اسم الأيقونة',
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                            ),
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: TextFormField(
-                            controller: colorClassController,
-                            textAlign: TextAlign.right,
-                            decoration: InputDecoration(
-                              labelText: 'فئة اللون (كلاس)',
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: orderController,
-                      keyboardType: TextInputType.number,
-                      textAlign: TextAlign.right,
-                      decoration: InputDecoration(
-                        labelText: 'الترتيب',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: featuresController,
-                      textAlign: TextAlign.right,
-                      maxLines: 3,
-                      decoration: InputDecoration(
-                        labelText: 'الميزات (كل ميزة في سطر منفصل)',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    SwitchListTile(
-                      title: const Text('نشط ومتاح للجميع', textAlign: TextAlign.right),
-                      value: isActive,
-                      onChanged: (val) => setDlgState(() => isActive = val),
-                      activeColor: AppColors.secondary,
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          ),
-          ),
-        );
-      },
-    );
-
-    if (confirm == true) {
-      try {
-        final parsedFeatures = featuresController.text
-            .split('\n')
-            .map((line) => line.trim())
-            .where((e) => e.isNotEmpty)
-            .toList();
-
-        final data = {
-          'name': nameController.text.trim(),
-          'description': descriptionController.text.trim(),
-          'price': double.parse(priceController.text.trim().toWesternDigits()),
-          'duration_type': typeController.text,
-          'duration_value': int.parse(valueController.text.trim().toWesternDigits()),
-          'max_athletes': int.parse(athletesController.text.trim().toWesternDigits()),
-          'tag': tagController.text,
-          'icon_name': iconNameController.text.trim(),
-          'color_class': colorClassController.text.trim(),
-          'order': int.parse(orderController.text.trim().toWesternDigits()),
-          'is_active': isActive,
-          'features': parsedFeatures,
-          'department': selectedDeptId,
-        };
-
-        if (package == null) {
-          await ref.read(packageRepositoryProvider).createPackage(data);
-        } else {
-          await ref.read(packageRepositoryProvider).updatePackage(package.id, data);
-        }
-        
-        ref.invalidate(packagesProvider);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(package == null ? 'تمت إضافة الباقة' : 'تم تعديل الباقة')),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('خطأ: ${e.toString()}')),
-          );
-        }
-      }
+  Future<void> _navigateToAddEdit([PackageModel? package]) async {
+    late final String path;
+    if (package == null) {
+      path = '/dashboard/packages/add';
+    } else {
+      path = '/dashboard/packages/${package.id}/edit';
     }
+    final result = await context.push<bool>(path);
+    if (result == true) ref.invalidate(packagesProvider);
   }
 
   void _confirmDelete(PackageModel package) async {
@@ -325,8 +62,9 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
         }
       } catch (e) {
         if (mounted) {
+          final parsed = parseApiError(e);
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('خطأ: ${e.toString()}')),
+            SnackBar(content: Text(parsed.message)),
           );
         }
       }
@@ -342,7 +80,7 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
     return Scaffold(
       floatingActionButton: Permissions.can(user?.role, AppAction.packagesCreate)
           ? FloatingActionButton(
-              onPressed: () => _showAddEditPackageDialog(),
+              onPressed: () => _navigateToAddEdit(),
               backgroundColor: AppColors.primary,
               foregroundColor: Colors.white,
               child: const Icon(Icons.add),
@@ -486,7 +224,7 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
                                   if (Permissions.can(user?.role, AppAction.packagesUpdate))
                                     IconButton(
                                       icon: const Icon(Icons.edit, color: AppColors.primary),
-                                      onPressed: () => _showAddEditPackageDialog(pkg),
+                                      onPressed: () => _navigateToAddEdit(pkg),
                                     ),
                                   if (Permissions.can(user?.role, AppAction.packagesDelete))
                                     IconButton(

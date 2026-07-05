@@ -4,6 +4,7 @@ import '../../../core/providers/providers.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/confirm_dialog.dart';
+import '../../../core/helpers/api_error_parser.dart';
 import '../../../core/helpers/numeral_converter.dart';
 import '../../../core/helpers/ui_helpers.dart';
 
@@ -63,7 +64,7 @@ class _SettingsScreenState extends ConsumerState<SettingsScreen> with SingleTick
       });
     } catch (e) {
       setState(() {
-        _passwordError = e.toString().replaceAll('Exception: ', '');
+        _passwordError = parseApiError(e).message;
       });
     } finally {
       setState(() {

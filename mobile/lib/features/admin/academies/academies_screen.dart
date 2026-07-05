@@ -1,16 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:dio/dio.dart';
+import 'package:go_router/go_router.dart';
 import '../../../core/providers/providers.dart';
 import '../../../core/constants/app_colors.dart';
 import '../../../core/widgets/app_card.dart';
 import '../../../core/widgets/app_error_widget.dart';
 import '../../../core/widgets/empty_state.dart';
 import '../../../core/widgets/loading_shimmer.dart';
-import '../../../core/widgets/form_bottom_sheet.dart';
 import '../../../core/helpers/numeral_converter.dart';
 import '../../../core/helpers/ui_helpers.dart';
 import '../../../core/helpers/permissions.dart';
+import '../../../core/helpers/api_error_parser.dart';
 import '../../../core/models/department_model.dart';
 import '../../../core/models/sport_model.dart';
 import '../../../core/models/group_model.dart';
@@ -82,425 +82,35 @@ class _AcademiesScreenState extends ConsumerState<AcademiesScreen> {
     }
   }
 
-  // --- ACADEMY CRUD ---
-  Future<void> _showAddEditAcademyDialog([DepartmentModel? academy]) async {
-    final nameController = TextEditingController(text: academy?.name ?? '');
-    final nameArController = TextEditingController(text: academy?.nameAr ?? '');
-    final bankController = TextEditingController(text: academy?.bankAccountNumber ?? '');
-    final ibanController = TextEditingController(text: academy?.iban ?? '');
-    final colorController = TextEditingController(text: academy?.color ?? '#1570EF');
-    final formKey = GlobalKey<FormState>();
-
-    final confirm = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Theme.of(context).brightness == Brightness.dark ? AppColors.darkCard : Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => SafeArea(
-        top: false,
-        child: Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-          child: Container(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(ctx).size.height * 0.85,
-            ),
-            child: PinnedBottomSheet(
-          title: academy == null ? 'إضافة أكاديمية جديدة' : 'تعديل الأكاديمية',
-          submitLabel: academy == null ? 'إضافة' : 'حفظ',
-          onSubmit: () {
-            if (formKey.currentState!.validate()) {
-              Navigator.pop(ctx, true);
-            }
-          },
-          body: Form(
-            key: formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                TextFormField(
-                  controller: nameArController,
-                  textAlign: TextAlign.right,
-                  decoration: InputDecoration(
-                    labelText: 'الاسم بالعربية',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: nameController,
-                  textAlign: TextAlign.right,
-                  decoration: InputDecoration(
-                    labelText: 'الاسم بالإنجليزية',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: bankController,
-                  textAlign: TextAlign.right,
-                  decoration: InputDecoration(
-                    labelText: 'رقم الحساب البنكي',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: ibanController,
-                  textAlign: TextAlign.right,
-                  decoration: InputDecoration(
-                    labelText: 'رقم الآيبان (IBAN)',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: colorController,
-                  textAlign: TextAlign.right,
-                  decoration: InputDecoration(
-                    labelText: 'اللون (Hex)',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
-                ),
-              ],
-            ),
-          ),
-          ),
-        ),
-        ),
-      ),
+  // --- NAVIGATION HELPERS ---
+  Future<void> _navigateToAddEditAcademy([DepartmentModel? academy]) async {
+    final result = await context.push<bool>(
+      academy == null
+          ? '/dashboard/academies/add'
+          : '/dashboard/academies/${academy.id}/edit',
     );
-
-    if (confirm == true) {
-      try {
-        final formData = FormData.fromMap({
-          'name': nameController.text.trim(),
-          'name_ar': nameArController.text.trim(),
-          'bank_account_number': bankController.text.trim(),
-          'iban': ibanController.text.trim(),
-          'color': colorController.text.trim(),
-        });
-
-        if (academy == null) {
-          await ref.read(departmentRepositoryProvider).createDepartment(formData);
-        } else {
-          await ref.read(departmentRepositoryProvider).updateDepartment(academy.id, formData);
-        }
-        ref.invalidate(departmentsProvider);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(academy == null ? 'تم إضافة الأكاديمية بنجاح' : 'تم تحديث الأكاديمية')),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('خطأ: ${e.toString()}')),
-          );
-        }
-      }
-    }
+    if (result == true) ref.invalidate(departmentsProvider);
   }
 
-  // --- SPORT CRUD ---
-  Future<void> _showAddEditSportDialog([SportModel? sport]) async {
-    final nameController = TextEditingController(text: sport?.name ?? '');
-    final nameArController = TextEditingController(text: sport?.nameAr ?? '');
-    final formKey = GlobalKey<FormState>();
-
-    final confirm = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Theme.of(context).brightness == Brightness.dark ? AppColors.darkCard : Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) => SafeArea(
-        top: false,
-        child: Padding(
-          padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-          child: Container(
-            constraints: BoxConstraints(
-              maxHeight: MediaQuery.of(ctx).size.height * 0.85,
-            ),
-            child: PinnedBottomSheet(
-          title: sport == null ? 'إضافة رياضة جديدة' : 'تعديل الرياضة',
-          submitLabel: sport == null ? 'إضافة' : 'حفظ',
-          onSubmit: () {
-            if (formKey.currentState!.validate()) {
-              Navigator.pop(ctx, true);
-            }
-          },
-          body: Form(
-            key: formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                TextFormField(
-                  controller: nameArController,
-                  textAlign: TextAlign.right,
-                  decoration: InputDecoration(
-                    labelText: 'الاسم بالعربية',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
-                ),
-                const SizedBox(height: 12),
-                TextFormField(
-                  controller: nameController,
-                  textAlign: TextAlign.right,
-                  decoration: InputDecoration(
-                    labelText: 'الاسم بالإنجليزية',
-                    border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
-                ),
-              ],
-            ),
-          ),
-          ),
-        ),
-        ),
-      ),
+  Future<void> _navigateToAddEditSport([SportModel? sport]) async {
+    final academyId = _selectedAcademy!.id;
+    final result = await context.push<bool>(
+      sport == null
+          ? '/dashboard/academies/$academyId/sports/add'
+          : '/dashboard/academies/$academyId/sports/${sport.id}/edit',
     );
-
-    if (confirm == true) {
-      try {
-        final data = {
-          'name': nameController.text.trim(),
-          'name_ar': nameArController.text.trim(),
-          'department': _selectedAcademy!.id,
-          'is_active': true,
-        };
-
-        if (sport == null) {
-          await ref.read(departmentRepositoryProvider).createSport(data);
-        } else {
-          await ref.read(departmentRepositoryProvider).updateSport(sport.id, data);
-        }
-        await _fetchSports(_selectedAcademy!.id);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(sport == null ? 'تم إضافة الرياضة بنجاح' : 'تم تحديث الرياضة')),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('خطأ: ${e.toString()}')),
-          );
-        }
-      }
-    }
+    if (result == true) _fetchSports(academyId);
   }
 
-  // --- GROUP CRUD ---
-  Future<void> _showAddEditGroupDialog([GroupModel? group]) async {
-    final nameController = TextEditingController(text: group?.name ?? '');
-    final nameArController = TextEditingController(text: group?.nameAr ?? '');
-    final startTimeController = TextEditingController(text: group?.startTime ?? '16:00');
-    final endTimeController = TextEditingController(text: group?.endTime ?? '17:00');
-    int? selectedCoachId = group?.coachId;
-    List<String> selectedDays = List<String>.from(group?.days ?? []);
-    final formKey = GlobalKey<FormState>();
-
-    final confirm = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Theme.of(context).brightness == Brightness.dark ? AppColors.darkCard : Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (ctx) {
-        final trainersAsync = ref.watch(trainersProvider);
-        return SafeArea(
-          top: false,
-          child: Padding(
-            padding: EdgeInsets.only(bottom: MediaQuery.of(ctx).viewInsets.bottom),
-            child: Container(
-              constraints: BoxConstraints(
-                maxHeight: MediaQuery.of(ctx).size.height * 0.85,
-              ),
-              child: PinnedBottomSheet(
-            title: group == null ? 'إضافة مجموعة جديدة' : 'تعديل المجموعة',
-            submitLabel: group == null ? 'إضافة' : 'حفظ',
-            onSubmit: () {
-              if (formKey.currentState!.validate()) {
-                if (selectedDays.isEmpty) {
-                  ScaffoldMessenger.of(context).showSnackBar(
-                    const SnackBar(content: Text('يرجى اختيار يوم واحد على الأقل')),
-                  );
-                  return;
-                }
-                Navigator.pop(ctx, true);
-              }
-            },
-            body: StatefulBuilder(
-              builder: (context, setDlgState) => Form(
-                key: formKey,
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    TextFormField(
-                      controller: nameArController,
-                      textAlign: TextAlign.right,
-                      decoration: InputDecoration(
-                        labelText: 'الاسم بالعربية',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
-                    ),
-                    const SizedBox(height: 12),
-                    TextFormField(
-                      controller: nameController,
-                      textAlign: TextAlign.right,
-                      decoration: InputDecoration(
-                        labelText: 'الاسم بالإنجليزية',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                      ),
-                      validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
-                    ),
-                    const SizedBox(height: 12),
-                    trainersAsync.when(
-                      data: (list) {
-                        return DropdownButtonFormField<int?>(
-                          value: selectedCoachId,
-                          decoration: InputDecoration(
-                            labelText: 'المدرب',
-                            border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                          ),
-                          dropdownColor: Theme.of(context).brightness == Brightness.dark ? AppColors.darkCard : Colors.white,
-                          items: [
-                            const DropdownMenuItem(value: null, child: Text('بدون مدرب')),
-                            ...list.map((c) => DropdownMenuItem(value: c.id, child: Text(c.fullNameAr))),
-                          ],
-                          onChanged: (v) => setDlgState(() => selectedCoachId = v),
-                        );
-                      },
-                      loading: () => DropdownButtonFormField<int?>(
-                        value: null,
-                        decoration: InputDecoration(
-                          labelText: 'جاري تحميل المدربين...',
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                        items: const [],
-                        onChanged: null,
-                      ),
-                      error: (e, s) => TextButton.icon(
-                        icon: const Icon(Icons.refresh, size: 16),
-                        label: const Text('فشل التحميل، اضغط لإعادة المحاولة', style: TextStyle(fontSize: 12)),
-                        onPressed: () => ref.invalidate(trainersProvider),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: TextFormField(
-                            controller: startTimeController,
-                            textAlign: TextAlign.right,
-                            decoration: InputDecoration(
-                              labelText: 'وقت البداية',
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                            ),
-                            validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
-                          ),
-                        ),
-                        const SizedBox(width: 8),
-                        Expanded(
-                          child: TextFormField(
-                            controller: endTimeController,
-                            textAlign: TextAlign.right,
-                            decoration: InputDecoration(
-                              labelText: 'وقت النهاية',
-                              border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                            ),
-                            validator: (v) => v == null || v.trim().isEmpty ? 'مطلوب' : null,
-                          ),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 12),
-                    const Text(
-                      'أيام التدريب',
-                      style: TextStyle(fontSize: 12, color: Colors.grey),
-                      textAlign: TextAlign.right,
-                    ),
-                    const SizedBox(height: 8),
-                    Wrap(
-                      spacing: 8,
-                      children: _weekDays.map((day) {
-                        final isChecked = selectedDays.contains(day['value']);
-                        return FilterChip(
-                          label: Text(day['label']!),
-                          selected: isChecked,
-                          selectedColor: AppColors.secondary.withValues(alpha: 0.2),
-                          checkmarkColor: AppColors.secondary,
-                          labelStyle: TextStyle(
-                            color: isChecked
-                                ? AppColors.secondary
-                                : (Theme.of(context).brightness == Brightness.dark ? Colors.white70 : Colors.black87),
-                            fontWeight: isChecked ? FontWeight.bold : FontWeight.normal,
-                          ),
-                          onSelected: (val) {
-                            setDlgState(() {
-                              if (val) {
-                                selectedDays.add(day['value']!);
-                              } else {
-                                selectedDays.remove(day['value']!);
-                              }
-                            });
-                          },
-                        );
-                      }).toList(),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-          ),
-          ),
-        );
-      },
+  Future<void> _navigateToAddEditGroup([GroupModel? group]) async {
+    final academyId = _selectedAcademy!.id;
+    final sportId = _selectedSport!.id;
+    final result = await context.push<bool>(
+      group == null
+          ? '/dashboard/academies/$academyId/sports/$sportId/groups/add'
+          : '/dashboard/academies/$academyId/sports/$sportId/groups/${group.id}/edit',
     );
-
-    if (confirm == true) {
-      try {
-        final data = {
-          'name': nameController.text.trim(),
-          'name_ar': nameArController.text.trim(),
-          'sport': _selectedSport!.id,
-          'coach': selectedCoachId,
-          'start_time': startTimeController.text.trim(),
-          'end_time': endTimeController.text.trim(),
-          'days': selectedDays,
-          'is_active': true,
-        };
-
-        if (group == null) {
-          await ref.read(departmentRepositoryProvider).createGroup(data);
-        } else {
-          await ref.read(departmentRepositoryProvider).updateGroup(group.id, data);
-        }
-        await _fetchGroups(_selectedSport!.id);
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text(group == null ? 'تم إضافة المجموعة بنجاح' : 'تم تحديث المجموعة')),
-          );
-        }
-      } catch (e) {
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('خطأ: ${e.toString()}')),
-          );
-        }
-      }
-    }
+    if (result == true) _fetchGroups(sportId);
   }
 
   // --- DELETE CONFIRMATION ---
@@ -618,11 +228,11 @@ class _AcademiesScreenState extends ConsumerState<AcademiesScreen> {
           ? FloatingActionButton(
               onPressed: () {
                 if (_stage == AcademyStage.academies) {
-                  _showAddEditAcademyDialog();
+                  _navigateToAddEditAcademy();
                 } else if (_stage == AcademyStage.sports) {
-                  _showAddEditSportDialog();
+                  _navigateToAddEditSport();
                 } else {
-                  _showAddEditGroupDialog();
+                  _navigateToAddEditGroup();
                 }
               },
               backgroundColor: AppColors.primary,
@@ -703,7 +313,7 @@ class _AcademiesScreenState extends ConsumerState<AcademiesScreen> {
                                   if (Permissions.can(user?.role, AppAction.departmentsUpdate)) ...[
                                     IconButton(
                                       icon: const Icon(Icons.edit, color: AppColors.primary, size: 20),
-                                      onPressed: () => _showAddEditAcademyDialog(dept),
+                                      onPressed: () => _navigateToAddEditAcademy(dept),
                                     ),
                                     IconButton(
                                       icon: const Icon(Icons.delete, color: Colors.red, size: 20),
@@ -716,8 +326,9 @@ class _AcademiesScreenState extends ConsumerState<AcademiesScreen> {
                                             ref.invalidate(departmentsProvider);
                                           } catch (e) {
                                             if (context.mounted) {
+                                              final parsed = parseApiError(e);
                                               ScaffoldMessenger.of(context).showSnackBar(
-                                                SnackBar(content: Text('خطأ: ${e.toString()}')),
+                                                SnackBar(content: Text(parsed.message)),
                                               );
                                             }
                                           }
@@ -800,7 +411,7 @@ class _AcademiesScreenState extends ConsumerState<AcademiesScreen> {
                                                 if (Permissions.can(user?.role, AppAction.departmentsUpdate)) ...[
                                                   IconButton(
                                                     icon: const Icon(Icons.edit, color: AppColors.primary, size: 20),
-                                                    onPressed: () => _showAddEditSportDialog(sport),
+                                                    onPressed: () => _navigateToAddEditSport(sport),
                                                   ),
                                                   IconButton(
                                                     icon: const Icon(Icons.delete, color: Colors.red, size: 20),
@@ -812,11 +423,12 @@ class _AcademiesScreenState extends ConsumerState<AcademiesScreen> {
                                                           await ref.read(departmentRepositoryProvider).deleteSport(sport.id);
                                                           _fetchSports(_selectedAcademy!.id);
                                                         } catch (e) {
-                                                           if (context.mounted) {
-                                                             ScaffoldMessenger.of(context).showSnackBar(
-                                                               SnackBar(content: Text('خطأ: ${e.toString()}')),
-                                                             );
-                                                           }
+                                                          if (context.mounted) {
+                                                            final parsed = parseApiError(e);
+                                                            ScaffoldMessenger.of(context).showSnackBar(
+                                                              SnackBar(content: Text(parsed.message)),
+                                                            );
+                                                          }
                                                         }
                                                       },
                                                     ),
@@ -845,7 +457,7 @@ class _AcademiesScreenState extends ConsumerState<AcademiesScreen> {
                                           if (index == _groups.length) return const SizedBox(height: 100);
                                           final group = _groups[index];
                                           return AppCard(
-                                            onTap: Permissions.can(user?.role, AppAction.departmentsUpdate) ? () => _showAddEditGroupDialog(group) : null,
+                                            onTap: Permissions.can(user?.role, AppAction.departmentsUpdate) ? () => _navigateToAddEditGroup(group) : null,
                                             border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.border, width: 1.2),
                                             child: Column(
                                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -859,7 +471,7 @@ class _AcademiesScreenState extends ConsumerState<AcademiesScreen> {
                                                         children: [
                                                           IconButton(
                                                             icon: const Icon(Icons.edit, color: AppColors.primary, size: 20),
-                                                            onPressed: () => _showAddEditGroupDialog(group),
+                                                            onPressed: () => _navigateToAddEditGroup(group),
                                                           ),
                                                           IconButton(
                                                             icon: const Icon(Icons.delete, color: Colors.red, size: 20),
@@ -871,19 +483,20 @@ class _AcademiesScreenState extends ConsumerState<AcademiesScreen> {
                                                                   await ref.read(departmentRepositoryProvider).deleteGroup(group.id);
                                                                   _fetchGroups(_selectedSport!.id);
                                                                 } catch (e) {
-                                                                   if (context.mounted) {
-                                                                     ScaffoldMessenger.of(context).showSnackBar(
-                                                                       SnackBar(content: Text('خطأ: ${e.toString()}')),
-                                                                     );
-                                                                   }
+                                                                  if (context.mounted) {
+                                                                    final parsed = parseApiError(e);
+                                                                    ScaffoldMessenger.of(context).showSnackBar(
+                                                                      SnackBar(content: Text(parsed.message)),
+                                                                    );
+                                                                  }
                                                                 }
                                                               },
                                                             ),
                                                           ),
                                                         ],
                                                       ),
-                                                  ],
-                                                ),
+                                                    ],
+                                                  ),
                                                 const SizedBox(height: 4),
                                                 Text('المدرب: ${group.coachName.isEmpty ? "بدون مدرب" : group.coachName}', style: const TextStyle(fontSize: 13, color: Colors.grey)),
                                                 const SizedBox(height: 4),

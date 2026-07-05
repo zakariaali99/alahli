@@ -15,6 +15,7 @@ import '../../../core/widgets/loading_shimmer.dart';
 import '../../../core/widgets/confirm_dialog.dart';
 import '../../../core/helpers/numeral_converter.dart';
 import '../../../core/models/athlete_model.dart';
+import '../../../core/helpers/api_error_parser.dart';
 
 class AthletesListScreen extends ConsumerStatefulWidget {
   const AthletesListScreen({super.key});
@@ -75,8 +76,9 @@ class _AthletesListScreenState extends ConsumerState<AthletesListScreen> {
       }
     } catch (e) {
       if (mounted) {
+        final parsed = parseApiError(e);
         ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('خطأ: ${e.toString()}')),
+          SnackBar(content: Text(parsed.message)),
         );
       }
     }
@@ -104,8 +106,9 @@ class _AthletesListScreenState extends ConsumerState<AthletesListScreen> {
         }
       } catch (e) {
         if (mounted) {
+          final parsed = parseApiError(e);
           ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(content: Text('خطأ: ${e.toString()}')),
+            SnackBar(content: Text(parsed.message)),
           );
         }
       }
