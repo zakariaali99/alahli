@@ -20,6 +20,8 @@ class DepartmentViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action in ["create", "update", "partial_update", "destroy"]:
             return [IsSuperAdmin()]
+        if self.action in ["list", "retrieve"]:
+            return []
         return [IsStaffOrAbove()]
 
 

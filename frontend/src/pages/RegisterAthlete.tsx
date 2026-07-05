@@ -4,14 +4,10 @@ import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { api } from "@/lib/api"
 import CameraCapture from "@/components/ui/camera-capture"
-import { extractResults } from "@/lib/response"
 import { validateLibyanPhone } from "@/lib/utils"
+import { extractResults } from "@/lib/response"
 import { Dumbbell, ArrowRight, CheckCircle } from "lucide-react"
-
-interface Department {
-  id: number
-  name_ar: string
-}
+import type { Department } from "@/lib/types"
 
 export default function RegisterAthlete() {
   const navigate = useNavigate()
@@ -19,23 +15,21 @@ export default function RegisterAthlete() {
     full_name: "",
     phone: "",
     password: "",
-    department: "",
-    weight: "",
-    height: "",
     birth_day: "",
     birth_month: "",
     birth_year: "",
+    department: "",
   })
-  const [photo, setPhoto] = useState<string | null>(null)
   const [departments, setDepartments] = useState<Department[]>([])
+  const [photo, setPhoto] = useState<string | null>(null)
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
 
   useEffect(() => {
-    api.get<{ results: Department[] } | Department[]>("/departments/")
-      .then((res) => setDepartments(extractResults(res)))
-      .catch((err) => console.warn("Failed to load departments:", err))
+    api.get<Department[]>("/departments/").then((res) => {
+      setDepartments(extractResults(res))
+    }).catch(() => {})
   }, [])
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -50,19 +44,18 @@ export default function RegisterAthlete() {
 
     setLoading(true)
     try {
-      await api.post("/auth/register/", {
+      const body: Record<string, any> = {
         role: "athlete",
         full_name: form.full_name,
         phone: form.phone.trim(),
         password: form.password,
         photo,
-        department: form.department ? parseInt(form.department) : null,
-        weight: parseFloat(form.weight),
-        height: parseFloat(form.height),
         birth_day: parseInt(form.birth_day),
         birth_month: parseInt(form.birth_month),
         birth_year: parseInt(form.birth_year),
-      })
+      }
+      if (form.department) body.department = parseInt(form.department)
+      await api.post("/auth/register/", body)
       setSuccess(true)
     } catch (err: any) {
       setError(err.message || "حدث خطأ أثناء التسجيل")
@@ -98,6 +91,22 @@ export default function RegisterAthlete() {
         <form onSubmit={handleSubmit} className="space-y-4 bg-card border border-border rounded-2xl p-6">
           <CameraCapture onCapture={setPhoto} preview={photo || undefined} />
 
+          {departments.length > 0 && (
+            <div>
+              <label className="block text-sm font-medium mb-1">الأكاديمية</label>
+              <select
+                className="w-full appearance-none cursor-pointer bg-surface-container-low border border-border rounded-xl px-4 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
+                value={form.department}
+                onChange={(e) => setForm({ ...form, department: e.target.value })}
+              >
+                <option value="">اختر الأكاديمية</option>
+                {departments.map((d) => (
+                  <option key={d.id} value={d.id}>{d.name_ar}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
           <div>
             <label className="block text-sm font-medium mb-1">الاسم الكامل</label>
             <input
@@ -117,20 +126,6 @@ export default function RegisterAthlete() {
               onChange={(e) => setForm({ ...form, phone: e.target.value })}
               required
             />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium mb-1">الأكاديمية / القسم</label>
-            <select
-              className="w-full bg-surface-container-low border border-border rounded-xl px-4 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
-              value={form.department}
-              onChange={(e) => setForm({ ...form, department: e.target.value })}
-            >
-              <option value="">اختر الأكاديمية (اختياري)</option>
-              {departments.map((dept) => (
-                <option key={dept.id} value={String(dept.id)}>{dept.name_ar}</option>
-              ))}
-            </select>
           </div>
 
           <div>
@@ -177,28 +172,7 @@ export default function RegisterAthlete() {
             </div>
           </div>
 
-          <div className="grid grid-cols-2 gap-3">
-            <div>
-              <label className="block text-sm font-medium mb-1">الوزن (كجم)</label>
-              <input
-                type="number" step="0.1"
-                className="w-full bg-surface-container-low border border-border rounded-xl px-4 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
-                value={form.weight}
-                onChange={(e) => setForm({ ...form, weight: e.target.value })}
-                required
-              />
-            </div>
-            <div>
-              <label className="block text-sm font-medium mb-1">الطول (سم)</label>
-              <input
-                type="number" step="0.1"
-                className="w-full bg-surface-container-low border border-border rounded-xl px-4 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
-                value={form.height}
-                onChange={(e) => setForm({ ...form, height: e.target.value })}
-                required
-              />
-            </div>
-          </div>
+
 
           {error && <p className="text-destructive text-sm">{error}</p>}
 

@@ -3,8 +3,9 @@ from rest_framework import status
 from rest_framework.test import APIClient
 from rest_framework_simplejwt.tokens import RefreshToken
 
+from apps.accounts.models import User
 from apps.accounts.tests.factories import AthleteFactory, DepartmentFactory, UserFactory
-from apps.athletes.models import Athlete
+from apps.athletes.models import Athlete, RegistrationRequest
 from apps.trainers.models import Trainer
 
 
@@ -24,6 +25,21 @@ def reception_user():
 
 
 @pytest.fixture
+def trainer_user():
+    return UserFactory(role=User.Role.TRAINER, is_staff=False)
+
+
+@pytest.fixture
+def manager_user():
+    return UserFactory(role=User.Role.ACADEMY_MANAGER)
+
+
+@pytest.fixture
+def admin_user():
+    return UserFactory(role="super_admin")
+
+
+@pytest.fixture
 def viewer_client(api_client, viewer_user):
     refresh = RefreshToken.for_user(viewer_user)
     api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
@@ -33,6 +49,27 @@ def viewer_client(api_client, viewer_user):
 @pytest.fixture
 def reception_client(api_client, reception_user):
     refresh = RefreshToken.for_user(reception_user)
+    api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
+    return api_client
+
+
+@pytest.fixture
+def trainer_client(api_client, trainer_user):
+    refresh = RefreshToken.for_user(trainer_user)
+    api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
+    return api_client
+
+
+@pytest.fixture
+def manager_client(api_client, manager_user):
+    refresh = RefreshToken.for_user(manager_user)
+    api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
+    return api_client
+
+
+@pytest.fixture
+def admin_client(api_client, admin_user):
+    refresh = RefreshToken.for_user(admin_user)
     api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
     return api_client
 
@@ -234,3 +271,78 @@ class TestTrainerReviewPermissions:
             "rating": 5,
         })
         assert response.status_code == status.HTTP_201_CREATED
+
+
+@pytest.mark.django_db
+class TestDeleteRestrictions:
+    def test_viewer_cannot_delete_athlete(self, viewer_client, athlete):
+        response = viewer_client.delete(f"/api/athletes/{athlete.id}/")
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert Athlete.objects.filter(id=athlete.id).exists()
+
+    def test_reception_cannot_delete_athlete(self, reception_client, athlete):
+        response = reception_client.delete(f"/api/athletes/{athlete.id}/")
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert Athlete.objects.filter(id=athlete.id).exists()
+
+    def test_trainer_cannot_delete_athlete(self, trainer_client, athlete):
+        response = trainer_client.delete(f"/api/athletes/{athlete.id}/")
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+        assert Athlete.objects.filter(id=athlete.id).exists()
+
+    def test_admin_can_delete_athlete(self, admin_client, athlete):
+        response = admin_client.delete(f"/api/athletes/{athlete.id}/")
+        assert response.status_code == status.HTTP_204_NO_CONTENT
+        assert not Athlete.objects.filter(id=athlete.id).exists()
+
+
+@pytest.mark.django_db
+class TestAcademyScoping:
+    @pytest.fixture
+    def academy_a(self):
+        return DepartmentFactory(name_ar="الأكاديمية أ")
+
+    @pytest.fixture
+    def academy_b(self):
+        return DepartmentFactory(name_ar="الأكاديمية ب")
+
+    def test_user_sees_only_own_academy_athletes(self, api_client, academy_a, academy_b):
+        AthleteFactory(department=academy_a, full_name="لاعب أ")
+        AthleteFactory(department=academy_b, full_name="لاعب ب")
+        user = UserFactory(role=User.Role.ACADEMY_MANAGER, academy=academy_a)
+        refresh = RefreshToken.for_user(user)
+        api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
+        response = api_client.get("/api/athletes/")
+        assert response.status_code == status.HTTP_200_OK
+        ids = [a["id"] for a in response.data["results"]]
+        athlete_a = Athlete.objects.get(full_name="لاعب أ")
+        athlete_b = Athlete.objects.get(full_name="لاعب ب")
+        assert athlete_a.id in ids
+        assert athlete_b.id not in ids
+
+
+@pytest.mark.django_db
+class TestRegistrationRequestPermissions:
+    @pytest.fixture
+    def registration(self, dept):
+        reg_user = UserFactory()
+        return RegistrationRequest.objects.create(
+            user=reg_user, role_choice="athlete",
+        )
+
+    def test_viewer_cannot_approve_registration(self, viewer_client, registration):
+        response = viewer_client.post(f"/api/athletes/registrations/{registration.id}/approve/")
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_viewer_cannot_reject_registration(self, viewer_client, registration):
+        response = viewer_client.post(f"/api/athletes/registrations/{registration.id}/reject/", {"reason": "مرفوض"})
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_reception_can_approve_registration(self, reception_client, registration):
+        response = reception_client.post(f"/api/athletes/registrations/{registration.id}/approve/")
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        assert "profile first" in response.data["detail"]
+
+    def test_reception_can_reject_registration(self, reception_client, registration):
+        response = reception_client.post(f"/api/athletes/registrations/{registration.id}/reject/", {"reason": "مرفوض"})
+        assert response.status_code == status.HTTP_200_OK

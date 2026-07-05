@@ -34,7 +34,7 @@ export default function AthletePage() {
   const [renewingId, setRenewingId] = useState<number | null>(null)
 
   const [showAddForm, setShowAddForm] = useState(false)
-  const [addForm, setAddForm] = useState({ full_name: "", phone: "", password: "Athlete@123", birth_day: "", birth_month: "", birth_year: "", weight: "", height: "" })
+  const [addForm, setAddForm] = useState({ full_name: "", phone: "", password: "Athlete@123", birth_day: "", birth_month: "", birth_year: "" })
   const [photo, setPhoto] = useState<string | null>(null)
   const [addError, setAddError] = useState("")
   const [pageError, setPageError] = useState("")
@@ -111,12 +111,11 @@ export default function AthletePage() {
         birth_day: parseInt(addForm.birth_day),
         birth_month: parseInt(addForm.birth_month),
         birth_year: parseInt(addForm.birth_year),
-        weight: parseFloat(addForm.weight),
-        height: parseFloat(addForm.height),
+
         photo,
       })
       setShowAddForm(false)
-      setAddForm({ full_name: "", phone: "", password: "Athlete@123", birth_day: "", birth_month: "", birth_year: "", weight: "", height: "" })
+      setAddForm({ full_name: "", phone: "", password: "Athlete@123", birth_day: "", birth_month: "", birth_year: "" })
       setPhoto(null)
       fetchParentData()
     } catch (err: any) {
@@ -167,14 +166,7 @@ export default function AthletePage() {
                 className="bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
                 value={addForm.birth_year} onChange={(e) => setAddForm({ ...addForm, birth_year: e.target.value })} required />
             </div>
-            <div className="grid grid-cols-2 gap-2">
-              <input type="number" step="0.1" placeholder="الوزن"
-                className="bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
-                value={addForm.weight} onChange={(e) => setAddForm({ ...addForm, weight: e.target.value })} />
-              <input type="number" step="0.1" placeholder="الطول"
-                className="bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
-                value={addForm.height} onChange={(e) => setAddForm({ ...addForm, height: e.target.value })} />
-            </div>
+
             {addError && <p className="text-destructive text-sm">{addError}</p>}
             <div className="flex flex-col gap-2 sm:flex-row">
               <Button type="submit" size="sm" className="w-full sm:w-auto">حفظ</Button>

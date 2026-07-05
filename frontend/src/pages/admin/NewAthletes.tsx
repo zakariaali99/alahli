@@ -201,14 +201,16 @@ export default function NewAthletes() {
 
                   <div className="flex items-center gap-2 md:flex-col md:justify-center">
                     {registration.role_choice === "athlete" && !registration.athlete_id && (
-                      <Button
-                        className="min-w-24"
-                        onClick={() => navigate(`/dashboard/athletes/add?registration=${registration.id}`)}
-                        size="sm"
-                        variant="secondary"
-                      >
-                        إنشاء رياضي
-                      </Button>
+                      <Can action="athletes:create">
+                        <Button
+                          className="min-w-24"
+                          onClick={() => navigate(`/dashboard/athletes/add?registration=${registration.id}`)}
+                          size="sm"
+                          variant="secondary"
+                        >
+                          إنشاء رياضي
+                        </Button>
+                      </Can>
                     )}
                     {registration.athlete_id && (
                       <Button

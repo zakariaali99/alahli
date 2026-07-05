@@ -10,6 +10,8 @@ import type { Department, RegistrationRequest } from "@/lib/types"
 import { validateLibyanPhone } from "@/lib/utils"
 import CameraCapture from "@/components/ui/camera-capture"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
+import { Can } from "@/components/ui/can"
+import { useCan } from "@/lib/hooks/useCan"
 
 type Scenario = "choose" | "athlete" | "parent"
 
@@ -22,8 +24,6 @@ type AthleteForm = {
   birth_day: string
   birth_month: string
   birth_year: string
-  weight: string
-  height: string
 }
 
 type ParentForm = {
@@ -39,7 +39,6 @@ const defaultAthleteForm: AthleteForm = {
   full_name: "", phone: "", password: "",
   gender: "male", department: "",
   birth_day: "", birth_month: "", birth_year: "",
-  weight: "", height: "",
 }
 
 const defaultParentForm: ParentForm = {
@@ -116,8 +115,6 @@ export default function AddAthletePage() {
           birth_day: bd[2] || "",
           birth_month: bd[1] || "",
           birth_year: bd[0] || "",
-          weight: "",
-          height: "",
         })
         if (data.photo) setPhoto(data.photo)
         setScenario("athlete")
@@ -266,6 +263,8 @@ export default function AddAthletePage() {
     )
   }
 
+  const canAction = useCan()
+
   if (loadingEdit) {
     return (
       <div className="flex items-center justify-center py-20">
@@ -295,7 +294,7 @@ export default function AddAthletePage() {
       )}
 
       <AnimatePresence mode="wait">
-        {scenario === "choose" && (
+          {scenario === "choose" && (
           <motion.div
             key="choose"
             initial={{ opacity: 0, y: 8 }}
@@ -303,27 +302,31 @@ export default function AddAthletePage() {
             exit={{ opacity: 0, y: -8 }}
             className="grid gap-4 sm:grid-cols-2"
           >
-            <button
-              onClick={() => setScenario("athlete")}
-              className="group rounded-2xl border-2 border-border bg-card p-8 text-center transition hover:border-primary hover:bg-primary/5"
-            >
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 transition group-hover:scale-110">
-                <Dumbbell className="h-8 w-8 text-primary" />
-              </div>
-              <h3 className="text-lg font-bold">تسجيل رياضي</h3>
-              <p className="mt-1 text-xs text-muted-foreground">أنشئ حساب رياضي مع صورة وبيانات بدنية</p>
-            </button>
+            <Can action="athletes:create">
+              <button
+                onClick={() => setScenario("athlete")}
+                className="group rounded-2xl border-2 border-border bg-card p-8 text-center transition hover:border-primary hover:bg-primary/5"
+              >
+                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 transition group-hover:scale-110">
+                  <Dumbbell className="h-8 w-8 text-primary" />
+                </div>
+                <h3 className="text-lg font-bold">تسجيل رياضي</h3>
+                <p className="mt-1 text-xs text-muted-foreground">أنشئ حساب رياضي مع صورة وبيانات بدنية</p>
+              </button>
+            </Can>
 
-            <button
-              onClick={() => setScenario("parent")}
-              className="group rounded-2xl border-2 border-border bg-card p-8 text-center transition hover:border-primary hover:bg-primary/5"
-            >
-              <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-secondary/10 transition group-hover:scale-110">
-                <Users className="h-8 w-8 text-secondary" />
-              </div>
-              <h3 className="text-lg font-bold">تسجيل ولي أمر</h3>
-              <p className="mt-1 text-xs text-muted-foreground">أنشئ حساب ولي أمر لإدارة الرياضيين</p>
-            </button>
+            <Can action="athletes:create">
+              <button
+                onClick={() => setScenario("parent")}
+                className="group rounded-2xl border-2 border-border bg-card p-8 text-center transition hover:border-primary hover:bg-primary/5"
+              >
+                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-secondary/10 transition group-hover:scale-110">
+                  <Users className="h-8 w-8 text-secondary" />
+                </div>
+                <h3 className="text-lg font-bold">تسجيل ولي أمر</h3>
+                <p className="mt-1 text-xs text-muted-foreground">أنشئ حساب ولي أمر لإدارة الرياضيين</p>
+              </button>
+            </Can>
           </motion.div>
         )}
 
@@ -349,12 +352,12 @@ export default function AddAthletePage() {
               </FormField>
 
               <FormField label="رقم الهاتف" required>
-                <input className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors" dir="ltr" value={athleteForm.phone} onChange={(e) => setAthleteForm((p) => ({ ...p, phone: e.target.value }))} required />
+                <input readOnly onFocus={(e) => e.target.removeAttribute("readonly")} autoComplete="off" className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors" dir="ltr" value={athleteForm.phone} onChange={(e) => setAthleteForm((p) => ({ ...p, phone: e.target.value }))} required />
               </FormField>
 
               {!registrationId && !isEditing && (
                 <FormField label="كلمة المرور" required>
-                  <input className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors" type="password" value={athleteForm.password} onChange={(e) => setAthleteForm((p) => ({ ...p, password: e.target.value }))} required />
+                  <input readOnly onFocus={(e) => e.target.removeAttribute("readonly")} autoComplete="new-password" className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors" type="password" value={athleteForm.password} onChange={(e) => setAthleteForm((p) => ({ ...p, password: e.target.value }))} required />
                 </FormField>
               )}
 
@@ -413,9 +416,11 @@ export default function AddAthletePage() {
 
               <div className="flex justify-between gap-2 pt-2">
                 <Button type="button" variant="ghost" onClick={() => isEditing ? navigate(`/dashboard/athletes/${editId}`) : setScenario("choose")}>رجوع</Button>
-                <Button type="submit" disabled={submitting || loadingRegistration}>
-                  {submitting ? <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> جاري...</span> : <>{registrationId ? "إنشاء الملف الرياضي" : isEditing ? "حفظ التعديلات" : "إنشاء الرياضي"} <ArrowRight className="mr-1 h-4 w-4" /></>}
-                </Button>
+                {canAction(isEditing ? "athletes:update" : "athletes:create") && (
+                  <Button type="submit" disabled={submitting || loadingRegistration}>
+                    {submitting ? <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> جاري...</span> : <>{registrationId ? "إنشاء الملف الرياضي" : isEditing ? "حفظ التعديلات" : "إنشاء الرياضي"} <ArrowRight className="mr-1 h-4 w-4" /></>}
+                  </Button>
+                )}
               </div>
             </form>
           </motion.div>
@@ -441,11 +446,11 @@ export default function AddAthletePage() {
               </FormField>
 
               <FormField label="رقم الهاتف" required>
-                <input className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors" dir="ltr" value={parentForm.phone} onChange={(e) => setParentForm((p) => ({ ...p, phone: e.target.value }))} required />
+                <input readOnly onFocus={(e) => e.target.removeAttribute("readonly")} autoComplete="off" className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors" dir="ltr" value={parentForm.phone} onChange={(e) => setParentForm((p) => ({ ...p, phone: e.target.value }))} required />
               </FormField>
 
               <FormField label="كلمة المرور" required>
-                <input className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors" type="password" value={parentForm.password} onChange={(e) => setParentForm((p) => ({ ...p, password: e.target.value }))} required />
+                <input readOnly onFocus={(e) => e.target.removeAttribute("readonly")} autoComplete="new-password" className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors" type="password" value={parentForm.password} onChange={(e) => setParentForm((p) => ({ ...p, password: e.target.value }))} required />
               </FormField>
 
               <FormField label="تاريخ الميلاد" required>
@@ -458,9 +463,11 @@ export default function AddAthletePage() {
 
               <div className="flex justify-between gap-2 pt-2">
                 <Button type="button" variant="ghost" onClick={() => setScenario("choose")}>رجوع</Button>
-                <Button type="submit" disabled={submitting}>
-                  {submitting ? <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> جاري...</span> : <>تسجيل <ArrowRight className="mr-1 h-4 w-4" /></>}
-                </Button>
+                {canAction("athletes:create") && (
+                  <Button type="submit" disabled={submitting}>
+                    {submitting ? <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> جاري...</span> : <>تسجيل <ArrowRight className="mr-1 h-4 w-4" /></>}
+                  </Button>
+                )}
               </div>
             </form>
           </motion.div>

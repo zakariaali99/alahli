@@ -171,6 +171,7 @@ export default function Landing() {
                     <label className="mb-1.5 block text-xs font-bold text-[#102033]" htmlFor="phone">رقم الهاتف</label>
                     <Input
                       id="phone"
+                      autoComplete="username"
                       dir="ltr"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
@@ -185,6 +186,7 @@ export default function Landing() {
                     <div className="relative">
                       <Input
                         id="password"
+                        autoComplete="current-password"
                         type={showPassword ? "text" : "password"}
                         value={password}
                         onChange={(e) => setPassword(e.target.value)}

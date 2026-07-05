@@ -319,7 +319,7 @@ export default function AthletesPage() {
                             </motion.button>
                           </Link>
                           <Can action="athletes:update">
-                            <Link to={`/dashboard/athletes/${athlete.id}`}>
+                            <Link to={`/dashboard/athletes/${athlete.id}/edit`}>
                               <motion.button
                                 whileHover={{ scale: 1.1 }}
                                 whileTap={{ scale: 0.9 }}

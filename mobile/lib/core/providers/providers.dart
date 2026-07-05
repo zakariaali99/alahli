@@ -127,7 +127,7 @@ class PreferencesNotifier extends StateNotifier<UserPreferenceModel?> {
 
 final authInitializedProvider = StateProvider<bool>((ref) => false);
 
-const adminRoles = {'super_admin', 'reception', 'academy_manager'};
+const adminRoles = {'super_admin', 'reception', 'academy_manager', 'trainer', 'viewer'};
 
 class AuthNotifier extends StateNotifier<UserModel?> {
   final AuthRepository authRepository;

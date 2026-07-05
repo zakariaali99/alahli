@@ -5,6 +5,7 @@ import '../../../core/constants/app_colors.dart';
 import '../../../core/providers/providers.dart';
 import '../../../core/providers/paginated_providers.dart';
 import '../../../core/helpers/ui_helpers.dart';
+import '../../../core/helpers/permissions.dart';
 
 class AdminShell extends ConsumerWidget {
   final Widget child;
@@ -85,12 +86,7 @@ class AdminShell extends ConsumerWidget {
     registrationsAsync.whenData((list) => pendingCount += list.length);
     subscriptionsAsync.whenData((list) => pendingCount += list.length);
 
-    String getRoleLabel(String? role) {
-      if (role == 'super_admin') return 'مدير النظام';
-      if (role == 'reception') return 'موظف استقبال';
-      if (role == 'academy_manager') return 'مدير الأكاديمية';
-      return 'مشاهد';
-    }
+    String roleLabel(String? role) => Permissions.roleLabel(role);
 
     return Scaffold(
       drawer: Drawer(
@@ -175,73 +171,84 @@ class AdminShell extends ConsumerWidget {
                 child: ListView(
                   padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   children: [
-                    _SidebarItem(
-                      icon: Icons.dashboard_outlined,
-                      label: 'لوحة القيادة',
-                      isSelected: selectedIndex == 0,
-                      onTap: () => _onItemTapped(0, context),
-                    ),
-                    _SidebarItem(
-                      icon: Icons.people_outline,
-                      label: 'اللاعبين',
-                      isSelected: selectedIndex == 1,
-                      onTap: () => _onItemTapped(1, context),
-                    ),
-                    _SidebarItem(
-                      icon: Icons.credit_card_outlined,
-                      label: 'الاشتراكات',
-                      isSelected: selectedIndex == 3,
-                      onTap: () => _onItemTapped(3, context),
-                    ),
-                    _SidebarItem(
-                      icon: Icons.qr_code_scanner_outlined,
-                      label: 'الفحص السريع',
-                      isSelected: selectedIndex == 8,
-                      onTap: () => _onItemTapped(8, context),
-                    ),
-                    _SidebarItem(
-                      icon: Icons.assignment_outlined,
-                      label: 'الطلبات الجديدة',
-                      isSelected: selectedIndex == 2,
-                      badgeCount: pendingCount > 0 ? pendingCount : null,
-                      onTap: () => _onItemTapped(2, context),
-                    ),
-                    _SidebarItem(
-                      icon: Icons.business_outlined,
-                      label: 'الأكاديميات',
-                      isSelected: selectedIndex == 4,
-                      onTap: () => _onItemTapped(4, context),
-                    ),
-                    _SidebarItem(
-                      icon: Icons.sports_outlined,
-                      label: 'المدربون',
-                      isSelected: selectedIndex == 5,
-                      onTap: () => _onItemTapped(5, context),
-                    ),
-                    _SidebarItem(
-                      icon: Icons.card_membership_outlined,
-                      label: 'الباقات',
-                      isSelected: selectedIndex == 6,
-                      onTap: () => _onItemTapped(6, context),
-                    ),
-                    _SidebarItem(
-                      icon: Icons.admin_panel_settings_outlined,
-                      label: 'الإدارة',
-                      isSelected: selectedIndex == 7,
-                      onTap: () => _onItemTapped(7, context),
-                    ),
-                    _SidebarItem(
-                      icon: Icons.notifications_none_outlined,
-                      label: 'التنبيهات',
-                      isSelected: selectedIndex == 10,
-                      onTap: () => _onItemTapped(10, context),
-                    ),
-                    _SidebarItem(
-                      icon: Icons.bar_chart_outlined,
-                      label: 'التقارير',
-                      isSelected: selectedIndex == 9,
-                      onTap: () => _onItemTapped(9, context),
-                    ),
+                    if (Permissions.can(user?.role, AppAction.analyticsRead))
+                      _SidebarItem(
+                        icon: Icons.dashboard_outlined,
+                        label: 'لوحة القيادة',
+                        isSelected: selectedIndex == 0,
+                        onTap: () => _onItemTapped(0, context),
+                      ),
+                    if (Permissions.can(user?.role, AppAction.athletesRead))
+                      _SidebarItem(
+                        icon: Icons.people_outline,
+                        label: 'اللاعبين',
+                        isSelected: selectedIndex == 1,
+                        onTap: () => _onItemTapped(1, context),
+                      ),
+                    if (Permissions.can(user?.role, AppAction.subscriptionsRead))
+                      _SidebarItem(
+                        icon: Icons.credit_card_outlined,
+                        label: 'الاشتراكات',
+                        isSelected: selectedIndex == 3,
+                        onTap: () => _onItemTapped(3, context),
+                      ),
+                    if (Permissions.can(user?.role, AppAction.verifyRead))
+                      _SidebarItem(
+                        icon: Icons.qr_code_scanner_outlined,
+                        label: 'الفحص السريع',
+                        isSelected: selectedIndex == 8,
+                        onTap: () => _onItemTapped(8, context),
+                      ),
+                    if (Permissions.can(user?.role, AppAction.registrationsRead))
+                      _SidebarItem(
+                        icon: Icons.assignment_outlined,
+                        label: 'الطلبات الجديدة',
+                        isSelected: selectedIndex == 2,
+                        badgeCount: pendingCount > 0 ? pendingCount : null,
+                        onTap: () => _onItemTapped(2, context),
+                      ),
+                    if (Permissions.can(user?.role, AppAction.departmentsUpdate))
+                      _SidebarItem(
+                        icon: Icons.business_outlined,
+                        label: 'الأكاديميات',
+                        isSelected: selectedIndex == 4,
+                        onTap: () => _onItemTapped(4, context),
+                      ),
+                    if (Permissions.can(user?.role, AppAction.coachesRead))
+                      _SidebarItem(
+                        icon: Icons.sports_outlined,
+                        label: 'المدربون',
+                        isSelected: selectedIndex == 5,
+                        onTap: () => _onItemTapped(5, context),
+                      ),
+                    if (Permissions.can(user?.role, AppAction.packagesCreate))
+                      _SidebarItem(
+                        icon: Icons.card_membership_outlined,
+                        label: 'الباقات',
+                        isSelected: selectedIndex == 6,
+                        onTap: () => _onItemTapped(6, context),
+                      ),
+                    if (Permissions.can(user?.role, AppAction.staffRead))
+                      _SidebarItem(
+                        icon: Icons.admin_panel_settings_outlined,
+                        label: 'الإدارة',
+                        isSelected: selectedIndex == 7,
+                        onTap: () => _onItemTapped(7, context),
+                      ),
+                    if (Permissions.can(user?.role, AppAction.notificationsRead))
+                      _SidebarItem(
+                        icon: Icons.notifications_none_outlined,
+                        label: 'التنبيهات',
+                        isSelected: selectedIndex == 10,
+                        onTap: () => _onItemTapped(10, context),
+                      ),
+                    if (Permissions.can(user?.role, AppAction.reportsRead))
+                      _SidebarItem(
+                        icon: Icons.bar_chart_outlined,
+                        label: 'التقارير',
+                        isSelected: selectedIndex == 9,
+                        onTap: () => _onItemTapped(9, context),
+                      ),
                   ],
                 ),
               ),
@@ -296,7 +303,7 @@ class AdminShell extends ConsumerWidget {
                   ),
                 ),
                 Text(
-                  getRoleLabel(user?.role),
+                  roleLabel(user?.role),
                   style: const TextStyle(
                     fontSize: 10,
                     color: AppColors.mutedForeground,

@@ -246,7 +246,7 @@ export default function DashboardLayout() {
           <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 md:h-16 md:px-6 md:py-0">
             {/* Left: Breadcrumb / Page title area */}
             <div className="flex w-full items-center gap-3 md:w-auto">
-              {!sidebarOpen && (
+              {!sidebarOpen && !isMobile && (
                 <Button
                   onClick={() => setSidebarOpen(true)}
                   variant="ghost"

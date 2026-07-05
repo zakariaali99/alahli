@@ -14,6 +14,7 @@ import { useAthlete } from "@/lib/hooks/useAthletes"
 import { useSubscriptions } from "@/lib/hooks/useSubscriptions"
 import { useToast } from "@/lib/toast"
 import { toAbsoluteMediaUrl } from "@/lib/media"
+import { Can } from "@/components/ui/can"
 
 const containerVariants: Variants = {
   hidden: { opacity: 0 },
@@ -108,18 +109,22 @@ export default function AthleteProfilePage() {
           <span className="text-primary font-bold">ملف اللاعب</span>
         </div>
         <div className="flex items-center gap-3 w-full md:w-auto">
-          <Link to={`/dashboard/athletes/${id}/edit`}>
-            <Button variant="outline" size="lg">
-              <Edit className="w-4 h-4" />
-              تعديل البيانات
-            </Button>
-          </Link>
-          <Link to="/dashboard/memberships">
-            <Button size="lg" className="bg-gradient-to-l from-primary to-primary/80 shadow-lg shadow-primary/20">
-              <RefreshCw className="w-4 h-4" />
-              تجديد الاشتراك
-            </Button>
-          </Link>
+          <Can action="athletes:update">
+            <Link to={`/dashboard/athletes/${id}/edit`}>
+              <Button variant="outline" size="lg">
+                <Edit className="w-4 h-4" />
+                تعديل البيانات
+              </Button>
+            </Link>
+          </Can>
+          <Can action="subscriptions:renew">
+            <Link to={`/dashboard/memberships?athlete_id=${id}`}>
+              <Button size="lg" className="bg-gradient-to-l from-primary to-primary/80 shadow-lg shadow-primary/20">
+                <RefreshCw className="w-4 h-4" />
+                تجديد الاشتراك
+              </Button>
+            </Link>
+          </Can>
         </div>
       </div>
 

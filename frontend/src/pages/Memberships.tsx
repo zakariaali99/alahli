@@ -24,7 +24,7 @@ import { Button } from "@/components/ui/button"
 import { Input, Select } from "@/components/ui/input"
 import { Card } from "@/components/ui/card"
 import { Badge } from "@/components/ui/badge"
-import { Link } from "react-router-dom"
+import { Link, useSearchParams } from "react-router-dom"
 import { api } from "@/lib/api"
 import { useAuth } from "@/lib/auth"
 import { toAbsoluteMediaUrl } from "@/lib/media"
@@ -170,6 +170,34 @@ export default function MembershipsPage() {
       })
       .catch((err) => console.warn("Failed to load departments:", err))
   }, [])
+
+  const [searchParams] = useSearchParams()
+
+  useEffect(() => {
+    const athleteId = searchParams.get("athlete_id")
+    if (!athleteId || isNaN(Number(athleteId))) return
+    const init = async () => {
+      setCreateSubError(null)
+      await loadAthletes()
+      const today = new Date()
+      const nextMonth = new Date(today)
+      nextMonth.setMonth(nextMonth.getMonth() + 1)
+      setManualSubForm({
+        athlete: athleteId,
+        start_date: today.toISOString().slice(0, 10),
+        end_date: nextMonth.toISOString().slice(0, 10),
+        amount: "",
+        package_name: "",
+        package_id: "",
+        payment_method: "cash",
+        status: "active",
+      })
+      setManualInvoice(null)
+      setShowCreateSubModal(true)
+    }
+    init()
+  }, [searchParams])
+
   const { data, isLoading } = useSubscriptions({
     page,
     page_size: 20,
@@ -629,22 +657,24 @@ export default function MembershipsPage() {
                     </div>
                   </Can>
 
-                  <button
-                    onClick={() => openQuickRenew({
-                      id: pkg.id,
-                      title: pkg.title,
-                      amount: Number(pkg.raw.price),
-                      durationType: pkg.raw.duration_type,
-                      durationValue: pkg.raw.duration_value,
-                    })}
-                    className={`w-full py-2.5 rounded-xl text-sm font-bold transition-all active:scale-[0.97] ${
-                      pkg.featured
-                        ? "bg-primary text-primary-foreground shadow-md shadow-primary/30 hover:shadow-lg hover:shadow-primary/40 hover:bg-primary/90"
-                        : "bg-surface-container-highest text-primary border border-primary/20 hover:bg-primary hover:text-primary-foreground hover:border-primary"
-                    }`}
-                  >
-                    تجديد سريع
-                  </button>
+                  <Can action="subscriptions:renew">
+                    <button
+                      onClick={() => openQuickRenew({
+                        id: pkg.id,
+                        title: pkg.title,
+                        amount: Number(pkg.raw.price),
+                        durationType: pkg.raw.duration_type,
+                        durationValue: pkg.raw.duration_value,
+                      })}
+                      className={`w-full py-2.5 rounded-xl text-sm font-bold transition-all active:scale-[0.97] ${
+                        pkg.featured
+                          ? "bg-primary text-primary-foreground shadow-md shadow-primary/30 hover:shadow-lg hover:shadow-primary/40 hover:bg-primary/90"
+                          : "bg-surface-container-highest text-primary border border-primary/20 hover:bg-primary hover:text-primary-foreground hover:border-primary"
+                      }`}
+                    >
+                      تجديد سريع
+                    </button>
+                  </Can>
                 </div>
               </motion.div>
             )
@@ -1237,10 +1267,12 @@ export default function MembershipsPage() {
                   ))}
                 </select>
               </div>
-              <div>
-                <label className="mb-1 block text-xs text-muted-foreground">اسم الباقة</label>
-                <input className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2 text-sm" value={manualSubForm.package_name} onChange={(e) => setManualSubForm((p) => ({ ...p, package_name: e.target.value }))} placeholder={manualSubForm.package_id ? "" : "أدخل اسم الباقة يدوياً"} />
-              </div>
+              {!manualSubForm.package_id && (
+                <div>
+                  <label className="mb-1 block text-xs text-muted-foreground">اسم الباقة</label>
+                  <input className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2 text-sm" value={manualSubForm.package_name} onChange={(e) => setManualSubForm((p) => ({ ...p, package_name: e.target.value }))} placeholder="أدخل اسم الباقة" />
+                </div>
+              )}
               <div>
                 <label className="mb-1 block text-xs text-muted-foreground">تاريخ البداية</label>
                 <input type="date" className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2 text-sm" value={manualSubForm.start_date} onChange={(e) => {
