@@ -104,7 +104,7 @@ export default function ReportsPage() {
 
   const distributionData = departmentDistribution && departmentDistribution.length > 0 
     ? departmentDistribution.map((d) => ({
-        name: d.department__name_ar || "أخرى",
+        name: d.department_name || "أخرى",
         value: d.count
       }))
     : []
