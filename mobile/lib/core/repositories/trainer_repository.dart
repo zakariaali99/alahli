@@ -10,16 +10,25 @@ class TrainerRepository {
 
   TrainerRepository({required this.apiClient});
 
+  List<dynamic> _extractListPayload(dynamic raw) {
+    if (raw is List) return raw;
+    if (raw is Map) {
+      if (raw['results'] is List) return raw['results'] as List<dynamic>;
+      if (raw['data'] is List) return raw['data'] as List<dynamic>;
+      if (raw['data'] is Map && raw['data']['results'] is List) {
+        return raw['data']['results'] as List<dynamic>;
+      }
+    }
+    return const [];
+  }
+
   Future<List<TrainerModel>> fetchTrainers() async {
     try {
       final res = await apiClient.dio.get(
         ApiEndpoints.users,
         queryParameters: {'role': 'trainer'},
       );
-      dynamic resultsList = res.data;
-      if (res.data is Map && res.data['results'] != null) {
-        resultsList = res.data['results'];
-      }
+      final resultsList = _extractListPayload(res.data);
       return asList(resultsList, (e) => TrainerModel.fromJson(asMap(e) ?? {})) ?? [];
     } on DioException catch (e) {
       throw Exception(e.response?.data?['detail'] ?? 'فشل تحميل المدربين');
@@ -32,10 +41,7 @@ class TrainerRepository {
         ApiEndpoints.groups,
         queryParameters: {'coach': coachId},
       );
-      dynamic resultsList = res.data;
-      if (res.data is Map && res.data['results'] != null) {
-        resultsList = res.data['results'];
-      }
+      final resultsList = _extractListPayload(res.data);
       return asList(resultsList, (e) => GroupModel.fromJson(asMap(e) ?? {})) ?? [];
     } on DioException catch (e) {
       throw Exception(e.response?.data?['detail'] ?? 'فشل تحميل مجموعات المدرب');
@@ -72,4 +78,3 @@ class TrainerRepository {
     }
   }
 }
-

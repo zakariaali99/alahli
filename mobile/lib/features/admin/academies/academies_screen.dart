@@ -10,6 +10,7 @@ import '../../../core/widgets/loading_shimmer.dart';
 import '../../../core/widgets/form_bottom_sheet.dart';
 import '../../../core/helpers/numeral_converter.dart';
 import '../../../core/helpers/ui_helpers.dart';
+import '../../../core/helpers/permissions.dart';
 import '../../../core/models/department_model.dart';
 import '../../../core/models/sport_model.dart';
 import '../../../core/models/group_model.dart';
@@ -573,7 +574,7 @@ class _AcademiesScreenState extends ConsumerState<AcademiesScreen> {
     final isDark = Theme.of(context).brightness == Brightness.dark;
 
     return Scaffold(
-      floatingActionButton: user?.role == 'super_admin'
+      floatingActionButton: Permissions.can(user?.role, AppAction.departmentsCreate)
           ? FloatingActionButton(
               onPressed: () {
                 if (_stage == AcademyStage.academies) {
@@ -659,7 +660,7 @@ class _AcademiesScreenState extends ConsumerState<AcademiesScreen> {
                                       ],
                                     ),
                                   ),
-                                  if (user?.role == 'super_admin') ...[
+                                  if (Permissions.can(user?.role, AppAction.departmentsUpdate)) ...[
                                     IconButton(
                                       icon: const Icon(Icons.edit, color: AppColors.primary, size: 20),
                                       onPressed: () => _showAddEditAcademyDialog(dept),
@@ -756,7 +757,7 @@ class _AcademiesScreenState extends ConsumerState<AcademiesScreen> {
                                                     ],
                                                   ),
                                                 ),
-                                                if (user?.role == 'super_admin') ...[
+                                                if (Permissions.can(user?.role, AppAction.departmentsUpdate)) ...[
                                                   IconButton(
                                                     icon: const Icon(Icons.edit, color: AppColors.primary, size: 20),
                                                     onPressed: () => _showAddEditSportDialog(sport),
@@ -804,7 +805,7 @@ class _AcademiesScreenState extends ConsumerState<AcademiesScreen> {
                                           if (index == _groups.length) return const SizedBox(height: 100);
                                           final group = _groups[index];
                                           return AppCard(
-                                            onTap: user?.role == 'super_admin' ? () => _showAddEditGroupDialog(group) : null,
+                                            onTap: Permissions.can(user?.role, AppAction.departmentsUpdate) ? () => _showAddEditGroupDialog(group) : null,
                                             border: Border.all(color: isDark ? AppColors.darkBorder : AppColors.border, width: 1.2),
                                             child: Column(
                                               crossAxisAlignment: CrossAxisAlignment.start,
@@ -813,7 +814,7 @@ class _AcademiesScreenState extends ConsumerState<AcademiesScreen> {
                                                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                                   children: [
                                                     Text(group.nameAr, style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-                                                    if (user?.role == 'super_admin')
+                                                    if (Permissions.can(user?.role, AppAction.departmentsUpdate))
                                                       Row(
                                                         children: [
                                                           IconButton(

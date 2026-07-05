@@ -17,7 +17,8 @@ class VerifyScreen extends ConsumerStatefulWidget {
 class _VerifyScreenState extends ConsumerState<VerifyScreen> {
   final _manualController = TextEditingController();
   final _scannerController = MobileScannerController();
-  bool _isScanning = true;
+  bool _isScanning = false;
+  bool _cameraError = false;
   bool _isProcessing = false;
   Map<String, dynamic>? _scanResult;
   String? _errorMsg;
@@ -117,26 +118,51 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen> {
               const SizedBox(height: 20),
               // Scanner container
               if (_isScanning) ...[
-                Container(
-                  height: 240,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: AppColors.primary, width: 2),
-                  ),
-                  clipBehavior: Clip.antiAlias,
-                  child: MobileScanner(
-                    controller: _scannerController,
-                    onDetect: (capture) {
-                      final List<Barcode> barcodes = capture.barcodes;
-                      if (barcodes.isNotEmpty && !_isProcessing) {
-                        final String? code = barcodes.first.rawValue;
-                        if (code != null) {
-                          _processVerification(code);
-                        }
-                      }
-                    },
-                  ),
-                ),
+                _cameraError
+                    ? Container(
+                        height: 240,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: AppColors.destructive, width: 2),
+                          color: AppColors.destructive.withValues(alpha: 0.05),
+                        ),
+                        child: const Center(
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Icon(Icons.videocam_off, size: 40, color: AppColors.destructive),
+                              SizedBox(height: 8),
+                              Text('\u062A\u0639\u0630\u0631 \u062A\u0634\u063A\u064A\u0644 \u0627\u0644\u0643\u0627\u0645\u064A\u0631\u0627', style: TextStyle(color: AppColors.destructive)),
+                            ],
+                          ),
+                        ),
+                      )
+                    : Container(
+                        height: 240,
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(16),
+                          border: Border.all(color: AppColors.primary, width: 2),
+                        ),
+                        clipBehavior: Clip.antiAlias,
+                        child: MobileScanner(
+                          controller: _scannerController,
+                          onDetect: (capture) {
+                            final List<Barcode> barcodes = capture.barcodes;
+                            if (barcodes.isNotEmpty && !_isProcessing) {
+                              final String? code = barcodes.first.rawValue;
+                              if (code != null) {
+                                _processVerification(code);
+                              }
+                            }
+                          },
+                          errorBuilder: (context, error, child) {
+                            WidgetsBinding.instance.addPostFrameCallback((_) {
+                              if (!_cameraError) setState(() => _cameraError = true);
+                            });
+                            return child ?? const SizedBox.shrink();
+                          },
+                        ),
+                      ),
                 const SizedBox(height: 16),
               ],
 

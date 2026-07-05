@@ -7,6 +7,7 @@ import '../../../core/widgets/app_error_widget.dart';
 import '../../../core/widgets/form_bottom_sheet.dart';
 import '../../../core/widgets/loading_shimmer.dart';
 import '../../../core/helpers/numeral_converter.dart';
+import '../../../core/helpers/permissions.dart';
 import '../../../core/models/package_model.dart';
 import '../../../core/models/department_model.dart';
 
@@ -328,14 +329,17 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
   Widget build(BuildContext context) {
     final packagesAsync = ref.watch(packagesProvider);
     final departmentsAsync = ref.watch(departmentsProvider);
+    final user = ref.watch(authProvider);
 
     return Scaffold(
-      floatingActionButton: FloatingActionButton(
-        onPressed: () => _showAddEditPackageDialog(),
-        backgroundColor: AppColors.primary,
-        foregroundColor: Colors.white,
-        child: const Icon(Icons.add),
-      ),
+      floatingActionButton: Permissions.can(user?.role, AppAction.packagesCreate)
+          ? FloatingActionButton(
+              onPressed: () => _showAddEditPackageDialog(),
+              backgroundColor: AppColors.primary,
+              foregroundColor: Colors.white,
+              child: const Icon(Icons.add),
+            )
+          : null,
       body: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -471,14 +475,16 @@ class _PackagesScreenState extends ConsumerState<PackagesScreen> {
                               trailing: Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  IconButton(
-                                    icon: const Icon(Icons.edit, color: AppColors.primary),
-                                    onPressed: () => _showAddEditPackageDialog(pkg),
-                                  ),
-                                  IconButton(
-                                    icon: const Icon(Icons.delete, color: Colors.red),
-                                    onPressed: () => _confirmDelete(pkg),
-                                  ),
+                                  if (Permissions.can(user?.role, AppAction.packagesUpdate))
+                                    IconButton(
+                                      icon: const Icon(Icons.edit, color: AppColors.primary),
+                                      onPressed: () => _showAddEditPackageDialog(pkg),
+                                    ),
+                                  if (Permissions.can(user?.role, AppAction.packagesDelete))
+                                    IconButton(
+                                      icon: const Icon(Icons.delete, color: Colors.red),
+                                      onPressed: () => _confirmDelete(pkg),
+                                    ),
                                 ],
                               ),
                             ),

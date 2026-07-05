@@ -13,6 +13,7 @@ import '../../../core/widgets/loading_shimmer.dart';
 import '../../../core/widgets/staggered_list_item.dart';
 import '../../../core/models/trainer_model.dart';
 import '../../../core/models/group_model.dart';
+import '../../../core/helpers/permissions.dart';
 import '../../../core/helpers/ui_helpers.dart';
 import '../../../core/helpers/numeral_converter.dart';
 
@@ -278,7 +279,7 @@ class _CoachesScreenState extends ConsumerState<CoachesScreen> {
     final isDark = theme.brightness == Brightness.dark;
 
     return Scaffold(
-      floatingActionButton: (user?.role == 'super_admin' && !_showingDetails)
+      floatingActionButton: (Permissions.can(user?.role, AppAction.coachesCreate) && !_showingDetails)
           ? FloatingActionButton(
               onPressed: () => _showAddEditCoachDialog(),
               backgroundColor: AppColors.primary,
@@ -320,7 +321,7 @@ class _CoachesScreenState extends ConsumerState<CoachesScreen> {
                   fontWeight: FontWeight.bold,
                 ),
               ),
-              if (role == 'super_admin')
+              if (Permissions.can(role, AppAction.coachesCreate))
                 OutlinedButton.icon(
                   onPressed: () => _showAddEditCoachDialog(),
                   icon: const Icon(Icons.add, size: 16),
