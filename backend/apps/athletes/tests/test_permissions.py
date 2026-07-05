@@ -346,3 +346,31 @@ class TestRegistrationRequestPermissions:
     def test_reception_can_reject_registration(self, reception_client, registration):
         response = reception_client.post(f"/api/athletes/registrations/{registration.id}/reject/", {"reason": "مرفوض"})
         assert response.status_code == status.HTTP_200_OK
+
+    def test_approve_registration_activates_user_and_athlete(self, reception_client, dept):
+        reg_user = UserFactory(role=User.Role.ATHLETE, is_active=False, is_staff=False)
+        registration = RegistrationRequest.objects.create(
+            user=reg_user,
+            role_choice=RegistrationRequest.RoleChoice.ATHLETE,
+        )
+        athlete = Athlete.objects.create(
+            full_name="لاعب قيد التسجيل",
+            phone="0929999999",
+            birth_date="2010-01-01",
+            gender=Athlete.Gender.MALE,
+            department=dept,
+            is_active=False,
+            registration=registration,
+        )
+        reg_user.athlete = athlete
+        reg_user.save(update_fields=["athlete"])
+
+        response = reception_client.post(f"/api/athletes/registrations/{registration.id}/approve/")
+
+        assert response.status_code == status.HTTP_200_OK
+        reg_user.refresh_from_db()
+        athlete.refresh_from_db()
+        registration.refresh_from_db()
+        assert reg_user.is_active is True
+        assert athlete.is_active is True
+        assert registration.status == RegistrationRequest.Status.APPROVED

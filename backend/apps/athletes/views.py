@@ -5,6 +5,7 @@ import uuid
 
 from django.core.files.base import ContentFile
 from django.db import transaction
+from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
 from rest_framework.permissions import AllowAny, IsAuthenticated
@@ -61,7 +62,7 @@ def register_view(request):
                 ext = img_format.split("/")[-1] if "/" in img_format else "jpg"
                 photo_file = ContentFile(base64.b64decode(imgstr), name=f"{uuid.uuid4().hex}.{ext}")
             except (ValueError, IndexError, TypeError):
-                return Response({"photo": "Invalid photo format"}, status=status.HTTP_400_BAD_REQUEST)
+                return Response({"photo": "تنسيق الصورة غير صالح"}, status=status.HTTP_400_BAD_REQUEST)
 
     with transaction.atomic():
         user = User.objects.create_user(
@@ -198,7 +199,7 @@ class AthleteViewSet(viewsets.ModelViewSet):
             )
         except Athlete.DoesNotExist:
             return Response(
-                {"active": False, "detail": "Membership not found"},
+                {"active": False, "detail": "رقم العضوية غير موجود"},
                 status=status.HTTP_404_NOT_FOUND,
             )
 
@@ -266,8 +267,13 @@ class RegistrationRequestViewSet(viewsets.ReadOnlyModelViewSet):
 
         registration.status = RegistrationRequest.Status.APPROVED
         registration.reviewed_by = request.user
-        registration.reviewed_at = datetime.datetime.now()
+        registration.reviewed_at = timezone.now()
         registration.save()
+
+        user = registration.user
+        if user and not user.is_active:
+            user.is_active = True
+            user.save(update_fields=["is_active"])
 
         athlete = getattr(registration, "athlete", None)
         if athlete:
@@ -275,7 +281,7 @@ class RegistrationRequestViewSet(viewsets.ReadOnlyModelViewSet):
             if subscription:
                 subscription.status = Subscription.Status.ACTIVE
                 subscription.approved_by = request.user
-                subscription.approved_at = datetime.datetime.now()
+                subscription.approved_at = timezone.now()
                 subscription.save()
             athlete.is_active = True
             athlete.save(update_fields=["is_active"])
@@ -330,26 +336,26 @@ class ParentAthleteViewSet(viewsets.ModelViewSet):
         birth_year = request.data.get("birth_year")
 
         if not full_name or not phone:
-            return Response({"detail": "full_name and phone are required"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "الاسم الكامل ورقم الهاتف مطلوبان"}, status=status.HTTP_400_BAD_REQUEST)
 
         phone = validate_libyan_phone(phone)
         if not photo_data:
-            return Response({"detail": "photo is required"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "الصورة مطلوبة"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             birth_date = datetime.date(int(birth_year), int(birth_month), int(birth_day))
         except (ValueError, TypeError, OverflowError):
-            return Response({"detail": "Invalid birth date"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "تاريخ الميلاد غير صالح"}, status=status.HTTP_400_BAD_REQUEST)
 
         if User.objects.filter(phone=phone).exists() or Athlete.objects.filter(phone=phone).exists():
-            return Response({"detail": "Phone already exists"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "رقم الهاتف مسجل بالفعل"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             img_format, imgstr = photo_data.split(";base64,")
             ext = img_format.split("/")[-1] if "/" in img_format else "jpg"
             photo_file = ContentFile(base64.b64decode(imgstr), name=f"{uuid.uuid4().hex}.{ext}")
         except (ValueError, IndexError, TypeError):
-            return Response({"detail": "Invalid photo format"}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"detail": "تنسيق الصورة غير صالح"}, status=status.HTTP_400_BAD_REQUEST)
 
         user = User.objects.create_user(
             phone=phone,

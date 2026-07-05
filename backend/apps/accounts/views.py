@@ -125,7 +125,7 @@ def change_password_view(request):
 
     if not request.user.check_password(serializer.validated_data["old_password"]):
         return Response(
-            {"old_password": "Wrong password"},
+            {"old_password": "كلمة المرور الحالية غير صحيحة"},
             status=status.HTTP_400_BAD_REQUEST,
         )
 

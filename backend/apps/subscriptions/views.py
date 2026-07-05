@@ -2,6 +2,7 @@ import datetime
 
 from dateutil.relativedelta import relativedelta
 from django.db import transaction
+from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
@@ -52,7 +53,7 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
         updated_instance = serializer.save()
         if old_status != updated_instance.status and updated_instance.status == Subscription.Status.ACTIVE:
             updated_instance.approved_by = self.request.user
-            updated_instance.approved_at = datetime.datetime.now()
+            updated_instance.approved_at = timezone.now()
             updated_instance.save(update_fields=["approved_by", "approved_at"])
         elif old_status != updated_instance.status and updated_instance.status == Subscription.Status.REJECTED:
             from apps.notifications.models import Notification
