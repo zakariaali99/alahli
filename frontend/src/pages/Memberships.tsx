@@ -65,8 +65,6 @@ type PackageFormState = {
   duration_value: number
   max_athletes: number
   tag: "discount" | "special" | "normal"
-  icon_name: string
-  color_class: string
   order: number
   is_active: boolean
   featuresText: string
@@ -86,18 +84,6 @@ type QuickRenewPackage = {
   durationValue: number
 }
 
-const ICON_OPTIONS = [
-  { value: "CalendarDays", label: "تقويم يومي" },
-  { value: "CalendarRange", label: "تقويم زمني" },
-  { value: "Crown", label: "باقة مميزة" },
-]
-
-const STYLE_OPTIONS = [
-  { value: "", label: "افتراضي" },
-  { value: "featured", label: "مميز" },
-  { value: "promo", label: "ترويجي" },
-]
-
 const DEFAULT_PACKAGE_FORM: PackageFormState = {
   name: "",
   description: "",
@@ -106,8 +92,6 @@ const DEFAULT_PACKAGE_FORM: PackageFormState = {
   duration_value: 1,
   max_athletes: 1,
   tag: "normal",
-  icon_name: "CalendarDays",
-  color_class: "",
   order: 0,
   is_active: true,
   featuresText: "",
@@ -398,7 +382,7 @@ export default function MembershipsPage() {
   }
 
   const pkgList = (packages || []).map((pkg) => {
-    const Icon = iconMap[pkg.icon_name] || CalendarDays
+    const Icon = iconMap[pkg.icon_name || "CalendarDays"] || CalendarDays
     const priceNum = Number(pkg.price)
     const durationDays = pkg.duration_type === "weeks" ? pkg.duration_value * 7 : pkg.duration_value * 30
     const monthly = Math.round(priceNum / (durationDays / 30))
@@ -455,8 +439,6 @@ export default function MembershipsPage() {
       duration_value: pkg.duration_value,
       max_athletes: pkg.max_athletes,
       tag: pkg.tag,
-      icon_name: pkg.icon_name || "CalendarDays",
-      color_class: pkg.color_class || "",
       order: pkg.order,
       is_active: pkg.is_active,
       featuresText: (pkg.features || []).join("\n"),
@@ -485,8 +467,6 @@ export default function MembershipsPage() {
       duration_value: packageForm.duration_value,
       max_athletes: packageForm.max_athletes,
       tag: packageForm.tag,
-      icon_name: packageForm.icon_name.trim(),
-      color_class: packageForm.color_class.trim(),
       order: packageForm.order,
       is_active: packageForm.is_active,
       features,
@@ -1084,34 +1064,6 @@ export default function MembershipsPage() {
                 <option value="special">مميز</option>
                 <option value="discount">خصم</option>
               </select>
-              </div>
-
-              <div>
-                <label htmlFor="package-icon" className="mb-1 block text-xs text-muted-foreground">أيقونة العرض</label>
-                <select
-                  id="package-icon"
-                  value={packageForm.icon_name}
-                  onChange={(e) => setPackageForm((prev) => ({ ...prev, icon_name: e.target.value }))}
-                  className="bg-surface-container-low border border-border rounded-xl px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
-                >
-                  {ICON_OPTIONS.map((option) => (
-                    <option key={option.value} value={option.value}>{option.label}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label htmlFor="package-style" className="mb-1 block text-xs text-muted-foreground">نمط العرض</label>
-                <select
-                  id="package-style"
-                  value={packageForm.color_class}
-                  onChange={(e) => setPackageForm((prev) => ({ ...prev, color_class: e.target.value }))}
-                  className="bg-surface-container-low border border-border rounded-xl px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
-                >
-                  {STYLE_OPTIONS.map((option) => (
-                    <option key={option.value || "default"} value={option.value}>{option.label}</option>
-                  ))}
-                </select>
               </div>
             </div>
 

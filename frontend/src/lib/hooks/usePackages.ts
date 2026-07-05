@@ -11,8 +11,8 @@ export interface SubscriptionPackage {
   max_athletes: number
   tag: "discount" | "special" | "normal"
   features: string[]
-  icon_name: string
-  color_class: string
+  icon_name?: string
+  color_class?: string
   is_active: boolean
   order: number
   department: number | null
