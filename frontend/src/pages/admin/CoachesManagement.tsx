@@ -181,7 +181,7 @@ export default function CoachesManagement() {
                   >
                     <Can action="coaches:update">
                       <button
-                        className="absolute left-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary opacity-0 transition hover:bg-primary/20 group-hover:opacity-100"
+                        className="absolute left-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary transition hover:bg-primary/20"
                         onClick={(e) => {
                           e.stopPropagation()
                           openEditModal(coach)
