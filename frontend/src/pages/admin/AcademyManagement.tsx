@@ -18,7 +18,7 @@ const WEEK_DAYS = [
   { value: "friday", label: "الجمعة" },
 ]
 
-type Stage = "academies" | "sports" | "groups"
+type Stage = "academies" | "sports" | "groups" | "group_detail"
 
 type AcademyForm = { nameAr: string; name: string; color: string; bankAccountNumber: string; iban: string }
 type SportForm = { nameAr: string; name: string }
@@ -33,6 +33,7 @@ export default function AcademyManagement() {
 
   const [selectedAcademyId, setSelectedAcademyId] = useState<number | null>(null)
   const [selectedSportId, setSelectedSportId] = useState<number | null>(null)
+  const [selectedGroupId, setSelectedGroupId] = useState<number | null>(null)
 
   const [loading, setLoading] = useState(true)
   const [pageError, setPageError] = useState<string | null>(null)
@@ -58,6 +59,7 @@ export default function AcademyManagement() {
   const academySports = selectedAcademyId ? sportsByAcademy[selectedAcademyId] || [] : []
   const selectedSport = academySports.find((s) => s.id === selectedSportId) ?? null
   const sportGroups = selectedSportId ? groupsBySport[selectedSportId] || [] : []
+  const selectedGroup = sportGroups.find((g) => g.id === selectedGroupId) ?? null
 
   const totalSports = useMemo(() => Object.values(sportsByAcademy).reduce((a, l) => a + l.length, 0), [sportsByAcademy])
   const totalGroups = useMemo(() => Object.values(groupsBySport).reduce((a, l) => a + l.length, 0), [groupsBySport])
@@ -104,6 +106,11 @@ export default function AcademyManagement() {
     setSelectedSportId(sport.id)
     setStage("groups")
     if (!groupsBySport[sport.id]) await fetchGroups(sport.id)
+  }
+
+  const openGroupCard = (group: Group) => {
+    setSelectedGroupId(group.id)
+    setStage("group_detail")
   }
 
   const openEditGroupModal = async (group: Group) => {
@@ -229,10 +236,11 @@ export default function AcademyManagement() {
       }
       await api.delete(endpoints[deleteTarget.type])
       setFlash(`تم حذف ${deleteTarget.name} بنجاح`)
+      const targetType = deleteTarget.type
       setDeleteTarget(null)
-      if (deleteTarget.type === "academy") await fetchAcademies()
-      if (deleteTarget.type === "sport" && selectedAcademyId) await fetchSports(selectedAcademyId)
-      if (deleteTarget.type === "group" && selectedSportId) await fetchGroups(selectedSportId)
+      if (targetType === "academy") { setStage("academies"); setSelectedAcademyId(null); setSelectedSportId(null); setSelectedGroupId(null); await fetchAcademies() }
+      if (targetType === "sport" && selectedAcademyId) { setStage("sports"); setSelectedSportId(null); setSelectedGroupId(null); await fetchSports(selectedAcademyId) }
+      if (targetType === "group" && selectedSportId) { setStage("groups"); setSelectedGroupId(null); await fetchGroups(selectedSportId) }
     } catch (err: any) {
       setPageError(err?.message || "فشل الحذف")
     } finally {
@@ -264,9 +272,11 @@ export default function AcademyManagement() {
       {/* Breadcrumb */}
       {stage !== "academies" && (
         <div className="flex flex-wrap items-center gap-1 text-sm">
-          <button className="font-semibold text-primary hover:underline" onClick={() => setStage("academies")}>الأكاديميات</button>
-          {selectedAcademy && (<><ChevronLeft className="h-4 w-4" /><button className="font-semibold text-primary hover:underline" onClick={() => setStage("sports")}>{selectedAcademy.name_ar}</button></>)}
+          <button className="font-semibold text-primary hover:underline" onClick={() => { setStage("academies"); setSelectedSportId(null); setSelectedGroupId(null) }}>الأكاديميات</button>
+          {selectedAcademy && (<><ChevronLeft className="h-4 w-4" /><button className="font-semibold text-primary hover:underline" onClick={() => { setStage("sports"); setSelectedSportId(null); setSelectedGroupId(null) }}>{selectedAcademy.name_ar}</button></>)}
           {stage === "groups" && selectedSport && (<><ChevronLeft className="h-4 w-4" /><span className="font-bold">{selectedSport.name_ar}</span></>)}
+          {stage === "group_detail" && selectedSport && (<><ChevronLeft className="h-4 w-4" /><button className="font-semibold text-primary hover:underline" onClick={() => { setStage("groups"); setSelectedGroupId(null) }}>{selectedSport.name_ar}</button></>)}
+          {stage === "group_detail" && selectedGroup && (<><ChevronLeft className="h-4 w-4" /><span className="font-bold">{selectedGroup.name_ar}</span></>)}
         </div>
       )}
 
@@ -309,7 +319,11 @@ export default function AcademyManagement() {
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="inline-flex items-center gap-2 text-sm font-bold"><Layers3 className="h-4 w-4" /> رياضات {selectedAcademy.name_ar}</h3>
-            <Can action="departments:update"><Button size="sm" variant="outline" onClick={() => void openModal("sport")}><Plus className="h-4 w-4" /> إضافة رياضة</Button></Can>
+            <div className="flex items-center gap-2">
+              <Can action="departments:update"><button className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary hover:bg-primary/20" onClick={() => openEditAcademyModal(selectedAcademy)}><Pencil className="h-3.5 w-3.5" /></button></Can>
+              <Can action="departments:delete"><button className="flex h-7 w-7 items-center justify-center rounded-lg bg-error/10 text-error hover:bg-error/20" onClick={() => setDeleteTarget({ type: "academy", id: selectedAcademy.id, name: selectedAcademy.name_ar })}><Trash2 className="h-3.5 w-3.5" /></button></Can>
+              <Can action="departments:update"><Button size="sm" variant="outline" onClick={() => void openModal("sport")}><Plus className="h-4 w-4" /> إضافة رياضة</Button></Can>
+            </div>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {academySports.length === 0 && <EmptyState message="لا توجد رياضات في هذه الأكاديمية." />}
@@ -343,14 +357,18 @@ export default function AcademyManagement() {
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="inline-flex items-center gap-2 text-sm font-bold"><Users className="h-4 w-4" /> مجموعات {selectedSport.name_ar}</h3>
-            <Can action="departments:update"><Button size="sm" variant="outline" onClick={() => void openModal("group")}><Plus className="h-4 w-4" /> إضافة مجموعة</Button></Can>
+            <div className="flex items-center gap-2">
+              <Can action="departments:update"><button className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary hover:bg-primary/20" onClick={() => openEditSportModal(selectedSport)}><Pencil className="h-3.5 w-3.5" /></button></Can>
+              <Can action="departments:delete"><button className="flex h-7 w-7 items-center justify-center rounded-lg bg-error/10 text-error hover:bg-error/20" onClick={() => setDeleteTarget({ type: "sport", id: selectedSport.id, name: selectedSport.name_ar })}><Trash2 className="h-3.5 w-3.5" /></button></Can>
+              <Can action="departments:update"><Button size="sm" variant="outline" onClick={() => void openModal("group")}><Plus className="h-4 w-4" /> إضافة مجموعة</Button></Can>
+            </div>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {sportGroups.length === 0 && <EmptyState message="لا توجد مجموعات في هذه الرياضة." />}
             {sportGroups.map((group) => {
               const coach = coaches.find((c) => c.id === group.coach)
               return (
-                <motion.div key={group.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} whileHover={{ y: -4 }} className="group relative cursor-pointer rounded-2xl border-2 border-border bg-card p-5 transition hover:border-primary" onClick={() => void openEditGroupModal(group)}>
+                <motion.div key={group.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} whileHover={{ y: -4 }} className="group relative cursor-pointer rounded-2xl border-2 border-border bg-card p-5 transition hover:border-primary" onClick={() => openGroupCard(group)}>
 <div className="absolute left-2 top-2 z-10 flex gap-1 transition">
                      <Can action="departments:update"><button className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary hover:bg-primary/20" onClick={(e) => { e.stopPropagation(); void openEditGroupModal(group) }}><Pencil className="h-3.5 w-3.5" /></button></Can>
                      <Can action="departments:delete"><button className="flex h-7 w-7 items-center justify-center rounded-lg bg-error/10 text-error hover:bg-error/20" onClick={(e) => { e.stopPropagation(); setDeleteTarget({ type: "group", id: group.id, name: group.name_ar }) }}><Trash2 className="h-3.5 w-3.5" /></button></Can>
@@ -374,6 +392,57 @@ export default function AcademyManagement() {
                 </motion.div>
               )
             })}
+          </div>
+        </div>
+      )}
+
+      {/* Stage: Group Detail */}
+      {stage === "group_detail" && selectedGroup && (
+        <div className="space-y-3">
+          <div className="flex items-center justify-between">
+            <h3 className="inline-flex items-center gap-2 text-sm font-bold"><Users className="h-4 w-4" /> {selectedGroup.name_ar}</h3>
+            <div className="flex items-center gap-2">
+              <Can action="departments:update"><button className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary hover:bg-primary/20" onClick={() => void openEditGroupModal(selectedGroup)}><Pencil className="h-3.5 w-3.5" /></button></Can>
+              <Can action="departments:delete"><button className="flex h-7 w-7 items-center justify-center rounded-lg bg-error/10 text-error hover:bg-error/20" onClick={() => setDeleteTarget({ type: "group", id: selectedGroup.id, name: selectedGroup.name_ar })}><Trash2 className="h-3.5 w-3.5" /></button></Can>
+            </div>
+          </div>
+          <div className="rounded-2xl border-2 border-border bg-card p-6">
+            <div className="flex items-start gap-4">
+              <div className="flex h-16 w-16 shrink-0 items-center justify-center rounded-xl bg-primary/10 text-2xl font-bold text-primary">
+                {(selectedGroup.name_ar || "?").charAt(0)}
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xl font-bold">{selectedGroup.name_ar}</p>
+                <p className="text-sm text-muted-foreground" dir="ltr">{selectedGroup.name}</p>
+              </div>
+            </div>
+            <div className="mt-5 grid grid-cols-1 gap-4 sm:grid-cols-3">
+              <div>
+                <p className="text-xs text-muted-foreground">المدرب</p>
+                <div className="mt-1 flex items-center gap-2">
+                  {(() => {
+                    const coach = coaches.find((c) => c.id === selectedGroup.coach)
+                    return <>
+                      {coach?.photo ? <img src={coach.photo} alt={coach.full_name_ar} className="h-8 w-8 rounded-full object-cover" /> : <div className="flex h-8 w-8 items-center justify-center rounded-full bg-muted"><Users className="h-4 w-4" /></div>}
+                      <span className="text-sm font-semibold">{selectedGroup.coach_name || "بدون مدرب"}</span>
+                    </>
+                  })()}
+                </div>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">أيام التدريب</p>
+                <div className="mt-1 flex flex-wrap gap-1">
+                  {(Array.isArray(selectedGroup.days) ? selectedGroup.days : []).map((d) => {
+                    const label = WEEK_DAYS.find((w) => w.value === d)?.label || d
+                    return <span key={d} className="rounded-full bg-primary/10 px-2 py-0.5 text-xs text-primary">{label}</span>
+                  })}
+                </div>
+              </div>
+              <div>
+                <p className="text-xs text-muted-foreground">الوقت</p>
+                <p className="mt-1 text-sm font-semibold" dir="ltr">{selectedGroup.start_time} - {selectedGroup.end_time}</p>
+              </div>
+            </div>
           </div>
         </div>
       )}
