@@ -31,6 +31,7 @@ class _RegisterAthleteScreenState extends ConsumerState<RegisterAthleteScreen> {
   bool _loading = false;
   String? _error;
   bool _success = false;
+  bool _obscurePassword = true;
   int? _selectedDepartmentId;
 
   final ImagePicker _picker = ImagePicker();
@@ -294,10 +295,17 @@ class _RegisterAthleteScreenState extends ConsumerState<RegisterAthleteScreen> {
               // Password
               TextFormField(
                 controller: _passwordController,
-                obscureText: true,
+                obscureText: _obscurePassword,
                 textAlign: TextAlign.right,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   labelText: 'كلمة المرور',
+                  suffixIcon: IconButton(
+                    icon: Icon(
+                      _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                      size: 20,
+                    ),
+                    onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                  ),
                 ),
                 validator: (val) => val == null || val.isEmpty ? 'يرجى إدخال كلمة المرور' : null,
               ),

@@ -6,7 +6,7 @@ import { api } from "@/lib/api"
 import CameraCapture from "@/components/ui/camera-capture"
 import { validateLibyanPhone } from "@/lib/utils"
 import { extractResults } from "@/lib/response"
-import { Dumbbell, ArrowRight, CheckCircle } from "lucide-react"
+import { Dumbbell, ArrowRight, CheckCircle, Eye, EyeOff } from "lucide-react"
 import type { Department } from "@/lib/types"
 
 export default function RegisterAthlete() {
@@ -25,6 +25,7 @@ export default function RegisterAthlete() {
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
+  const [showPassword, setShowPassword] = useState(false)
 
   useEffect(() => {
     api.get<Department[]>("/departments/").then((res) => {
@@ -130,13 +131,22 @@ export default function RegisterAthlete() {
 
           <div>
             <label className="block text-sm font-medium mb-1">كلمة المرور</label>
-            <input
-              type="password"
-              className="w-full bg-surface-container-low border border-border rounded-xl px-4 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
-              value={form.password}
-              onChange={(e) => setForm({ ...form, password: e.target.value })}
-              required
-            />
+            <div className="relative">
+              <input
+                type={showPassword ? "text" : "password"}
+                className="w-full bg-surface-container-low border border-border rounded-xl px-4 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
+                value={form.password}
+                onChange={(e) => setForm({ ...form, password: e.target.value })}
+                required
+              />
+              <button
+                type="button"
+                className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                onClick={() => setShowPassword((v) => !v)}
+              >
+                {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+              </button>
+            </div>
           </div>
 
           <div className="grid grid-cols-3 gap-3">
