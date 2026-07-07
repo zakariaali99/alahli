@@ -285,7 +285,15 @@ export default function AcademyManagement() {
         <div className="space-y-3">
           <div className="flex items-center justify-between">
             <h3 className="inline-flex items-center gap-2 text-sm font-bold"><Building2 className="h-4 w-4" /> الأكاديميات</h3>
-            <Can action="departments:create"><Button size="sm" variant="outline" onClick={() => void openModal("academy")}><Plus className="h-4 w-4" /> إضافة أكاديمية</Button></Can>
+            <Can action="departments:create">
+              {academies.length >= 3 ? (
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span className="rounded-lg border border-border px-3 py-1.5">الحد الأقصى 3 أكاديميات</span>
+                </div>
+              ) : (
+                <Button size="sm" variant="outline" onClick={() => void openModal("academy")}><Plus className="h-4 w-4" /> إضافة أكاديمية</Button>
+              )}
+            </Can>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
             {academies.length === 0 && <EmptyState message="لا توجد أكاديميات. ابدأ بإضافة واحدة جديدة." />}
