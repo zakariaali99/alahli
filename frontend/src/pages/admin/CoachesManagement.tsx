@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState, type FormEvent } from "react"
 import { AnimatePresence, motion } from "framer-motion"
-import { Plus, Pencil, X, Users, Dumbbell, ChevronLeft } from "lucide-react"
+import { Plus, Pencil, Trash2, X, Users, Dumbbell, ChevronLeft } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { api } from "@/lib/api"
@@ -30,6 +30,8 @@ export default function CoachesManagement() {
   const [submitting, setSubmitting] = useState(false)
   const [showModal, setShowModal] = useState(false)
   const [editingCoach, setEditingCoach] = useState<Coach | null>(null)
+  const [deleteTarget, setDeleteTarget] = useState<Coach | null>(null)
+  const [deleting, setDeleting] = useState(false)
   const [selectedCoachId, setSelectedCoachId] = useState<number | null>(null)
   const [stage, setStage] = useState<"coaches" | "details">("coaches")
   const [modalError, setModalError] = useState<string | null>(null)
@@ -126,6 +128,21 @@ export default function CoachesManagement() {
     }
   }
 
+  const confirmDelete = async () => {
+    if (!deleteTarget) return
+    setDeleting(true)
+    try {
+      await api.delete(`/auth/users/${deleteTarget.id}/`)
+      toast.success(`تم حذف ${deleteTarget.full_name_ar}`)
+      setDeleteTarget(null)
+      await fetchCoaches()
+    } catch (err: any) {
+      setPageError(err?.message || "فشل الحذف")
+    } finally {
+      setDeleting(false)
+    }
+  }
+
   if (loading) return <LoadingSpinner />
 
   const selectedCoach = coaches.find((c) => c.id === selectedCoachId) ?? null
@@ -179,17 +196,30 @@ export default function CoachesManagement() {
                     className="group relative cursor-pointer rounded-2xl border-2 border-border bg-card p-5 transition hover:border-primary"
                     onClick={() => openCoachDetails(coach.id)}
                   >
-                    <Can action="coaches:update">
-                      <button
-                        className="absolute left-2 top-2 z-10 flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary transition hover:bg-primary/20"
-                        onClick={(e) => {
-                          e.stopPropagation()
-                          openEditModal(coach)
-                        }}
-                      >
-                        <Pencil className="h-3.5 w-3.5" />
-                      </button>
-                    </Can>
+                    <div className="absolute left-2 top-2 z-10 flex gap-1">
+                      <Can action="coaches:update">
+                        <button
+                          className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary hover:bg-primary/20"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            openEditModal(coach)
+                          }}
+                        >
+                          <Pencil className="h-3.5 w-3.5" />
+                        </button>
+                      </Can>
+                      <Can action="coaches:delete">
+                        <button
+                          className="flex h-7 w-7 items-center justify-center rounded-lg bg-error/10 text-error hover:bg-error/20"
+                          onClick={(e) => {
+                            e.stopPropagation()
+                            setDeleteTarget(coach)
+                          }}
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </Can>
+                    </div>
                     <div className="flex items-start gap-3">
                       {coach.photo ? (
                         <img src={coach.photo} alt={coach.full_name_ar} className="h-12 w-12 rounded-xl object-cover shadow" />
@@ -315,6 +345,23 @@ export default function CoachesManagement() {
           </motion.div>
         )}
       </AnimatePresence>
+
+      {deleteTarget && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4" onClick={() => { if (!deleting) setDeleteTarget(null) }}>
+          <div className="w-full max-w-md rounded-2xl border border-border bg-card p-5 space-y-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-bold">تأكيد الحذف</h3>
+            <p className="text-sm text-muted-foreground">
+              هل أنت متأكد من حذف <span className="font-semibold text-foreground">{deleteTarget.full_name_ar}</span>؟ لا يمكن التراجع عن هذا الإجراء.
+            </p>
+            <div className="flex justify-end gap-2">
+              <Button type="button" variant="ghost" disabled={deleting} onClick={() => setDeleteTarget(null)}>إلغاء</Button>
+              <Button type="button" variant="destructive" disabled={deleting} onClick={confirmDelete}>
+                {deleting ? "جارٍ الحذف..." : "حذف"}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
