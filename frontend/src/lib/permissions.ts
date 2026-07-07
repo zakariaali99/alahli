@@ -19,6 +19,12 @@ export type Action =
   | "departments:create"
   | "departments:update"
   | "departments:delete"
+  | "sports:create"
+  | "sports:update"
+  | "sports:delete"
+  | "groups:create"
+  | "groups:update"
+  | "groups:delete"
   | "staff:read"
   | "staff:create"
   | "staff:update"
@@ -61,9 +67,17 @@ const PERMISSIONS: Record<Action, Role[]> = {
   "packages:delete": ["super_admin"],
 
   "departments:read": ["super_admin", "academy_manager", "reception", "trainer", "viewer"],
-  "departments:create": ["super_admin", "academy_manager"],
+  "departments:create": ["super_admin"],
   "departments:update": ["super_admin"],
   "departments:delete": ["super_admin"],
+
+  "sports:create": ["super_admin", "academy_manager"],
+  "sports:update": ["super_admin", "academy_manager"],
+  "sports:delete": ["super_admin"],
+
+  "groups:create": ["super_admin", "academy_manager"],
+  "groups:update": ["super_admin", "academy_manager"],
+  "groups:delete": ["super_admin"],
 
   "staff:read": ["super_admin", "academy_manager"],
   "staff:create": ["super_admin"],

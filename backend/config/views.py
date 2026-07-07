@@ -3,7 +3,7 @@ from pathlib import Path
 from django.conf import settings
 from django.http import FileResponse, Http404, HttpResponseNotModified
 
-FRONTEND_DIR = settings.BASE_DIR / "backend_static" / "frontend"
+FRONTEND_DIR = settings.BASE_DIR.parent / "backend_static"
 
 MIME_TYPES = {
     ".js": "application/javascript",
