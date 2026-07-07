@@ -129,7 +129,7 @@ class RegistrationApproveSerializer(serializers.Serializer):
 
 
 class RegistrationRejectSerializer(serializers.Serializer):
-    reason = serializers.CharField(required=False, allow_blank=True)
+    reason = serializers.CharField(required=True, allow_blank=False)
 
 
 class ParentAthleteSerializer(serializers.ModelSerializer):
@@ -168,16 +168,11 @@ class RegisterSerializer(serializers.Serializer):
         User = get_user_model()
         user = User.objects.filter(phone=value).first()
         if user:
-            # Allow if user has no active athlete (rejected/pending registration)
-            athlete = getattr(user, "athlete", None)
-            if athlete and athlete.is_active:
-                raise serializers.ValidationError("رقم الهاتف هذا مسجل بالفعل")
-            # Also check if there are any active/pending subscriptions
-            if athlete and athlete.subscriptions.filter(status__in=["active", "pending"]).exists():
-                raise serializers.ValidationError("رقم الهاتف هذا مسجل بالفعل")
-            # If the user has staff roles, don't allow reuse
-            if user.role not in ["athlete", "parent"]:
-                raise serializers.ValidationError("رقم الهاتف هذا مسجل بالفعل")
+            if user.registration_requests.filter(status="rejected").exists():
+                raise serializers.ValidationError(
+                    "هذا الرقم مسجل لحساب مرفوض. يرجى تسجيل الدخول إلى حسابك المرفوض وحذفه أولاً."
+                )
+            raise serializers.ValidationError("رقم الهاتف هذا مسجل بالفعل")
         return value
 
     def validate(self, attrs):

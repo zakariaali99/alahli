@@ -6,6 +6,8 @@ import '../../features/auth/splash_screen.dart';
 import '../../features/auth/login_screen.dart';
 import '../../features/auth/register_athlete_screen.dart';
 import '../../features/auth/register_parent_screen.dart';
+import '../../features/auth/rejected_account_screen.dart';
+
 import '../../features/admin/shell/admin_shell.dart';
 import '../../features/admin/dashboard/dashboard_screen.dart';
 import '../../features/admin/athletes/athletes_list_screen.dart';
@@ -81,7 +83,13 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         return '/';
       }
 
-      // If logged in
+      // Rejected registration users can only see /rejected
+      if (authState.isRejectedRegistration) {
+        if (state.matchedLocation == '/rejected') return null;
+        return '/rejected';
+      }
+
+      // If logged in on public pages
       if (isOnSplash || isLoggingIn || isRegistering || isLanding) {
         final role = authState.role;
         if (role == 'athlete' || role == 'parent') {
@@ -130,6 +138,11 @@ final goRouterProvider = Provider<GoRouter>((ref) {
         path: '/register/parent',
         parentNavigatorKey: _rootNavigatorKey,
         builder: (context, state) => const RegisterParentScreen(),
+      ),
+      GoRoute(
+        path: '/rejected',
+        parentNavigatorKey: _rootNavigatorKey,
+        builder: (context, state) => const RejectedAccountScreen(),
       ),
       
       // Admin Shell Route

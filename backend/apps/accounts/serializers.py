@@ -17,10 +17,12 @@ def _build_photo_url(self, data):
 class UserSerializer(serializers.ModelSerializer):
     athlete_detail = serializers.SerializerMethodField()
     academy_name = serializers.CharField(source="academy.name_ar", read_only=True, default="")
+    registration_status = serializers.SerializerMethodField()
+    registration_rejection_reason = serializers.SerializerMethodField()
 
     class Meta:
         model = User
-        fields = ["id", "phone", "first_name_ar", "last_name_ar", "full_name_ar", "role", "is_superuser", "is_active", "photo", "athlete_detail", "academy", "academy_name"]
+        fields = ["id", "phone", "first_name_ar", "last_name_ar", "full_name_ar", "role", "is_superuser", "is_active", "photo", "athlete_detail", "academy", "academy_name", "registration_status", "registration_rejection_reason"]
         read_only_fields = ["id"]
 
     def get_athlete_detail(self, obj):
@@ -28,6 +30,18 @@ class UserSerializer(serializers.ModelSerializer):
         if athlete is not None:
             return AthleteDetailSerializer(athlete, context=self.context).data
         return None
+
+    def get_registration_status(self, obj):
+        if obj.role not in ["athlete", "parent"]:
+            return None
+        latest = obj.registration_requests.order_by("-created_at").first()
+        return latest.status if latest else None
+
+    def get_registration_rejection_reason(self, obj):
+        if obj.role not in ["athlete", "parent"]:
+            return None
+        latest = obj.registration_requests.filter(status="rejected").order_by("-created_at").first()
+        return latest.rejection_reason if latest else None
 
     def to_representation(self, instance):
         return _build_photo_url(self, super().to_representation(instance))

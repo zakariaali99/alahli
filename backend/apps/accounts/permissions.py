@@ -62,3 +62,27 @@ class IsManagementOrStaffReadOnly(BasePermission):
         if request.method in SAFE_METHODS:
             return is_staff_user(request.user)
         return is_management_staff(request.user)
+
+
+class IsNotRejectedAccount(BasePermission):
+    def has_permission(self, request, view):
+        user = request.user
+        if not user.is_authenticated:
+            return True
+        if user.role not in ["athlete", "parent"]:
+            return True
+        if user.is_active:
+            return True
+        return False
+
+
+class IsRejectedAccount(BasePermission):
+    def has_permission(self, request, view):
+        user = request.user
+        if not user.is_authenticated:
+            return False
+        if user.role not in ["athlete", "parent"]:
+            return False
+        if user.is_active:
+            return False
+        return user.registration_requests.filter(status="rejected").exists()

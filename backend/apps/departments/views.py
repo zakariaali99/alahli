@@ -40,6 +40,8 @@ class SportViewSet(viewsets.ModelViewSet):
             return [IsSuperAdmin()]
         if self.action in ["create", "update", "partial_update"]:
             return [IsManagementOrAbove()]
+        if self.action in ["list", "retrieve"]:
+            return [IsAuthenticated()]
         return [IsStaffOrAbove()]
 
 
@@ -58,4 +60,6 @@ class GroupViewSet(viewsets.ModelViewSet):
             return [IsSuperAdmin()]
         if self.action in ["create", "update", "partial_update"]:
             return [IsManagementOrAbove()]
+        if self.action in ["list", "retrieve"]:
+            return [IsAuthenticated()]
         return [IsStaffOrAbove()]

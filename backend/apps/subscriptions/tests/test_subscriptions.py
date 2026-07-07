@@ -11,6 +11,7 @@ from apps.accounts.tests.factories import (
     UserFactory,
 )
 from apps.departments.models import Group, Sport
+from apps.notifications.models import Notification
 from apps.packages.models import SubscriptionPackage
 from apps.subscriptions.models import Subscription
 
@@ -220,3 +221,35 @@ class TestSubscriptionCheckoutAthleteFallback:
 
         assert response.status_code == status.HTTP_201_CREATED
         assert response.data["status"] == "pending"
+
+
+@pytest.mark.django_db
+class TestSubscriptionRejection:
+    def test_reject_without_reason_returns_400(self, auth_client):
+        sub = SubscriptionFactory(status=Subscription.Status.PENDING)
+        response = auth_client.patch(f"/api/subscriptions/{sub.id}/", {"status": "rejected"})
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+        detail = response.data.get("detail", response.data)
+        assert "rejection_reason" in detail
+
+    def test_reject_with_reason_succeeds_and_creates_notification(self, auth_client):
+        sub = SubscriptionFactory(status=Subscription.Status.PENDING)
+        response = auth_client.patch(
+            f"/api/subscriptions/{sub.id}/",
+            {"status": "rejected", "rejection_reason": "المستندات غير مكتملة"},
+        )
+        assert response.status_code == status.HTTP_200_OK
+        sub.refresh_from_db()
+        assert sub.status == Subscription.Status.REJECTED
+        assert sub.rejection_reason == "المستندات غير مكتملة"
+        notification = Notification.objects.filter(athlete=sub.athlete).first()
+        assert notification is not None
+        assert "المستندات غير مكتملة" in notification.body
+
+    def test_reject_with_empty_reason_returns_400(self, auth_client):
+        sub = SubscriptionFactory(status=Subscription.Status.PENDING)
+        response = auth_client.patch(
+            f"/api/subscriptions/{sub.id}/",
+            {"status": "rejected", "rejection_reason": ""},
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST

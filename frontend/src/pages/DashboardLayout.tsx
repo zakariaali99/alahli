@@ -20,7 +20,7 @@ import {
   Dumbbell,
   UserCog,
 } from "lucide-react"
-import { useAuth } from "@/lib/auth"
+import { useAuth, isRejectedUser } from "@/lib/auth"
 import { ErrorBoundary } from "@/components/ui/error-boundary"
 import { cn } from "@/lib/utils"
 import { can, roleLabel, type Role, type Action } from "@/lib/permissions"
@@ -62,6 +62,11 @@ export default function DashboardLayout() {
 
     if (!user) {
       navigate("/login", { replace: true })
+      return
+    }
+
+    if (isRejectedUser(user)) {
+      navigate("/rejected", { replace: true })
       return
     }
 

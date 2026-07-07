@@ -4,7 +4,7 @@ import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { CreditCard, User, LogOut, Bell } from "lucide-react"
-import { useAuth } from "@/lib/auth"
+import { useAuth, isRejectedUser } from "@/lib/auth"
 import { ErrorBoundary } from "@/components/ui/error-boundary"
 
 const tabs = [
@@ -26,6 +26,11 @@ export default function UserDashboardLayout() {
 
     if (!user) {
       navigate("/login", { replace: true })
+      return
+    }
+
+    if (isRejectedUser(user)) {
+      navigate("/rejected", { replace: true })
       return
     }
 

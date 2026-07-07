@@ -4,7 +4,7 @@ import secrets
 import uuid
 
 from django.core.files.base import ContentFile
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.utils import timezone
 from rest_framework import status, viewsets
 from rest_framework.decorators import action, api_view, permission_classes
@@ -64,8 +64,9 @@ def register_view(request):
             except (ValueError, IndexError, TypeError):
                 return Response({"photo": "تنسيق الصورة غير صالح"}, status=status.HTTP_400_BAD_REQUEST)
 
-    with transaction.atomic():
-        user = User.objects.create_user(
+    try:
+        with transaction.atomic():
+            user = User.objects.create_user(
             phone=serializer.validated_data["phone"],
             first_name_ar=serializer.validated_data["full_name"],
             last_name_ar="",
@@ -93,6 +94,12 @@ def register_view(request):
             )
             user.athlete = athlete
             user.save(update_fields=["athlete"])
+
+    except IntegrityError:
+        return Response(
+            {"detail": {"phone": "رقم الهاتف هذا مسجل بالفعل"}},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
     try:
         from apps.notifications.services import send_admin_push_sync
@@ -288,6 +295,7 @@ class RegistrationRequestViewSet(viewsets.ReadOnlyModelViewSet):
 
         return Response({"detail": "تم قبول طلب التسجيل", "registration_id": registration.id})
 
+    @transaction.atomic
     @action(detail=True, methods=["post"])
     def reject(self, request, pk=None):
         registration = self.get_object()
@@ -296,17 +304,32 @@ class RegistrationRequestViewSet(viewsets.ReadOnlyModelViewSet):
 
         serializer = RegistrationRejectSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        reason = serializer.validated_data.get("reason", "")
+        reason = serializer.validated_data["reason"]
 
-        # Delete registration and linked athlete (cascade)
-        registration.delete()
+        import logging
+        logging.getLogger(__name__).info(
+            "Account rejection: registration ID=%s, user=%s, reason=%s",
+            registration.id, registration.user_id, reason,
+        )
 
-        # Delete the user if it was a public registration (athlete/parent role)
-        user = registration.user
-        if user and user.role in ['athlete', 'parent']:
-            user.delete()
+        registration.status = RegistrationRequest.Status.REJECTED
+        registration.rejection_reason = reason
+        registration.reviewed_by = request.user
+        registration.reviewed_at = timezone.now()
+        registration.save()
 
-        return Response({"detail": "تم رفض طلب التسجيل وحذف الحساب"})
+        try:
+            from apps.notifications.services import send_admin_push_sync
+            send_admin_push_sync(
+                title="تم رفض طلب التسجيل",
+                body=reason,
+                notification_type="registration_rejected",
+                entity_id=registration.id,
+            )
+        except Exception:
+            logging.getLogger(__name__).exception("Failed to send push notification for registration rejection")
+
+        return Response({"detail": "تم رفض طلب التسجيل", "registration_id": registration.id})
 
 
 class ParentAthleteViewSet(viewsets.ModelViewSet):

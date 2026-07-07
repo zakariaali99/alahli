@@ -24,6 +24,12 @@ export interface User {
     department_name: string | null
     photo: string | null
   } | null
+  registration_status?: "pending" | "approved" | "rejected" | null
+  registration_rejection_reason?: string | null
+}
+
+export function isRejectedUser(user: User): boolean {
+  return user.registration_status === "rejected" && !user.is_active
 }
 
 interface AuthContextType {

@@ -199,6 +199,13 @@ class AuthNotifier extends StateNotifier<UserModel?> {
     state = null;
   }
 
+  Future<void> deleteRejectedAccount() async {
+    await authRepository.deleteRejectedAccount();
+    authRepository.apiClient.clearTokens();
+    await SecureStorage.clearAll();
+    state = null;
+  }
+
   void clearSession() {
     authRepository.apiClient.clearTokens();
     SecureStorage.clearAll();

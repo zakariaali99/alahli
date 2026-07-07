@@ -215,6 +215,9 @@ export default function AthletePage() {
                           <p className="text-xs text-muted-foreground">
                             {formatDate(sub.start_date)} - {formatDate(sub.end_date)}
                           </p>
+                          {sub.status === "rejected" && sub.rejection_reason && (
+                            <p className="text-xs text-red-600 mt-1 font-medium">{sub.rejection_reason}</p>
+                          )}
                           {sub.status === "active" && (
                             <p className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
                               <Clock className="w-3 h-3" />
@@ -296,6 +299,12 @@ export default function AthletePage() {
                       <span className="block">إلى {formatDate(sub.end_date)}</span>
                     </div>
                   </div>
+                  {sub.status === "rejected" && sub.rejection_reason && (
+                    <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs">
+                      <p className="text-muted-foreground mb-0.5">سبب الرفض</p>
+                      <p className="font-semibold text-red-700">{sub.rejection_reason}</p>
+                    </div>
+                  )}
                   <div className="flex items-center justify-between pt-1">
                     <span className="text-sm font-bold">{Number(sub.amount).toLocaleString("ar-SA-u-nu-latn")} د.ل</span>
                     {(sub.status === "active" || sub.status === "expired") && (

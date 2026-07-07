@@ -68,10 +68,11 @@ class LandingScreen extends StatelessWidget {
                           color: const Color(0xFF0F4C81),
                           borderRadius: BorderRadius.circular(10),
                         ),
-                        child: const Icon(
-                          Icons.fitness_center,
+                        child: Image.asset(
+                          'assets/logo.png',
+                          width: 18,
+                          height: 18,
                           color: Colors.white,
-                          size: 18,
                         ),
                       ),
                       const SizedBox(width: 10),
@@ -240,7 +241,7 @@ class LandingScreen extends StatelessWidget {
 
                       // Tracks section (Center of Fitness & Academy)
                       _buildTrackCard(
-                        icon: Icons.fitness_center,
+                        icon: Icons.sports,
                         title: 'مركز الاهلي الرياضي',
                         subtitle: 'تدريب بدني متكامل',
                         points: ['برامج قوة وتحمل', 'خطط متابعة شهرية', 'إشراف مدربين متخصصين'],

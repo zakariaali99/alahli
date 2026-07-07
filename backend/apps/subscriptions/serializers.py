@@ -26,6 +26,12 @@ class SubscriptionSerializer(serializers.ModelSerializer):
         fields = "__all__"
         read_only_fields = ["approved_by", "approved_at"]
 
+    def validate(self, attrs):
+        checking_status = not self.partial or "status" in attrs
+        if checking_status and attrs.get("status") == Subscription.Status.REJECTED and not (attrs.get("rejection_reason") or "").strip():
+            raise serializers.ValidationError({"rejection_reason": "سبب الرفض مطلوب عند رفض الاشتراك"})
+        return attrs
+
     def get_invoice_pdf_url(self, obj):
         if obj.invoice_pdf:
             request = self.context.get("request")

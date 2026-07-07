@@ -15,12 +15,14 @@ import Memberships from "@/pages/Memberships"
 import Verify from "@/pages/Verify"
 import Notifications from "@/pages/Notifications"
 import Reports from "@/pages/Reports"
+
 import Settings from "@/pages/Settings"
 import UserDashboardLayout from "@/pages/UserDashboardLayout"
 import SubscriptionPage from "@/pages/SubscriptionPage"
 import UserSubscriptions from "@/pages/UserSubscriptions"
 import AthletePage from "@/pages/AthletePage"
 import NewAthletes from "@/pages/admin/NewAthletes"
+import RejectedAccount from "@/pages/RejectedAccount"
 import AcademyManagement from "@/pages/admin/AcademyManagement"
 import AdminNotifications from "@/pages/admin/AdminNotifications"
 import StaffManagement from "@/pages/admin/StaffManagement"
@@ -47,9 +49,11 @@ export default function App() {
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Landing />} />
+
                 <Route path="/login" element={<Login />} />
                 <Route path="/register/athlete" element={<RegisterAthlete />} />
                 <Route path="/register/parent" element={<RegisterParent />} />
+                <Route path="/rejected" element={<RejectedAccount />} />
 
                 <Route path="/dashboard" element={<DashboardLayout />}>
                   <Route index element={<DashboardHome />} />

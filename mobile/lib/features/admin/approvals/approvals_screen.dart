@@ -63,30 +63,53 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> with SingleTi
     }
   }
 
-  Future<String?> _showRejectionDialog(String title) async {
+  Future<String?> _showRejectionDialog(String title, {bool isRequired = false}) async {
     final controller = TextEditingController();
+    String? errorText;
+    final formKey = GlobalKey<FormState>();
     final result = await showDialog<String>(
       context: context,
-      builder: (ctx) => AlertDialog(
-        title: Text(title, textAlign: TextAlign.right),
-        content: TextField(
-          controller: controller,
-          textAlign: TextAlign.right,
-          maxLines: 3,
-          decoration: const InputDecoration(
-            hintText: 'يرجى كتابة سبب الرفض (اختياري)',
+      builder: (ctx) => StatefulBuilder(
+        builder: (context, setDlgState) => AlertDialog(
+          title: Text(title, textAlign: TextAlign.right),
+          content: Form(
+            key: formKey,
+            child: TextFormField(
+              controller: controller,
+              textAlign: TextAlign.right,
+              maxLines: 3,
+              decoration: InputDecoration(
+                hintText: isRequired ? 'يرجى كتابة سبب الرفض' : 'يرجى كتابة سبب الرفض (اختياري)',
+                errorText: errorText,
+              ),
+              validator: isRequired
+                  ? (v) => v == null || v.trim().isEmpty ? 'سبب الرفض مطلوب' : null
+                  : null,
+              onChanged: (_) {
+                if (errorText != null) setDlgState(() => errorText = null);
+              },
+            ),
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('إلغاء'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                if (isRequired) {
+                  final text = controller.text.trim();
+                  if (text.isEmpty) {
+                    setDlgState(() => errorText = 'سبب الرفض مطلوب');
+                    return;
+                  }
+                }
+                Navigator.pop(ctx, controller.text.trim());
+              },
+              child: const Text('تأكيد الرفض'),
+            ),
+          ],
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('إلغاء'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, controller.text.trim()),
-            child: const Text('تأكيد الرفض'),
-          ),
-        ],
       ),
     );
     controller.dispose();
@@ -94,27 +117,10 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> with SingleTi
   }
 
   Future<void> _confirmRejectRegistration(RegistrationModel reg) async {
-    final confirm = await showDialog<bool>(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title: const Text('رفض طلب التسجيل', textAlign: TextAlign.right),
-        content: const Text('سيتم حذف طلب التسجيل والحساب المرتبط به نهائياً. هل أنت متأكد؟', textAlign: TextAlign.right),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx, false),
-            child: const Text('إلغاء'),
-          ),
-          ElevatedButton(
-            onPressed: () => Navigator.pop(ctx, true),
-            style: ElevatedButton.styleFrom(backgroundColor: AppColors.destructive, foregroundColor: Colors.white),
-            child: const Text('تأكيد الرفض والحذف'),
-          ),
-        ],
-      ),
-    );
-    if (confirm != true) return;
+    final reason = await _showRejectionDialog('رفض طلب التسجيل', isRequired: false);
+    if (reason == null) return;
     try {
-      await ref.read(registrationRepositoryProvider).rejectRegistration(reg.id);
+      await ref.read(registrationRepositoryProvider).rejectRegistration(reg.id, reason: reason.isNotEmpty ? reason : null);
       ref.read(registrationsPaginatedProvider(RegistrationFilter(status: 'pending')).notifier).refresh();
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -156,7 +162,7 @@ class _ApprovalsScreenState extends ConsumerState<ApprovalsScreen> with SingleTi
   }
 
   Future<void> _rejectSubscription(SubscriptionModel sub) async {
-    final reason = await _showRejectionDialog('رفض طلب الاشتراك');
+    final reason = await _showRejectionDialog('رفض طلب الاشتراك', isRequired: true);
     if (reason == null) return;
     try {
       await ref.read(subscriptionRepositoryProvider).updateSubscriptionStatus(sub.id, 'rejected', rejectionReason: reason);

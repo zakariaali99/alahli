@@ -117,10 +117,11 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                           color: AppColors.primary.withValues(alpha: 0.1),
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(
-                          Icons.fitness_center,
+                        child: Image.asset(
+                          'assets/logo.png',
+                          width: 32,
+                          height: 32,
                           color: AppColors.primary,
-                          size: 32,
                         ),
                       ),
                     ),

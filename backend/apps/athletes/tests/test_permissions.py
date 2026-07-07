@@ -374,3 +374,46 @@ class TestRegistrationRequestPermissions:
         assert reg_user.is_active is True
         assert athlete.is_active is True
         assert registration.status == RegistrationRequest.Status.APPROVED
+
+    def test_reject_registration_stores_rejected_state(self, reception_client):
+        reg_user = UserFactory(role=User.Role.ATHLETE, is_active=False, is_staff=False)
+        registration = RegistrationRequest.objects.create(
+            user=reg_user,
+            role_choice=RegistrationRequest.RoleChoice.ATHLETE,
+        )
+
+        response = reception_client.post(
+            f"/api/athletes/registrations/{registration.id}/reject/",
+            {"reason": "بيانات غير صحيحة"},
+        )
+        assert response.status_code == status.HTTP_200_OK
+        registration.refresh_from_db()
+        assert registration.status == RegistrationRequest.Status.REJECTED
+        assert registration.rejection_reason == "بيانات غير صحيحة"
+        assert reg_user.is_active is False
+
+    def test_reject_registration_without_reason_fails(self, reception_client):
+        reg_user = UserFactory(role=User.Role.ATHLETE, is_active=False, is_staff=False)
+        registration = RegistrationRequest.objects.create(
+            user=reg_user,
+            role_choice=RegistrationRequest.RoleChoice.ATHLETE,
+        )
+
+        response = reception_client.post(
+            f"/api/athletes/registrations/{registration.id}/reject/",
+            {"reason": ""},
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_reject_registration_without_optional_reason_fails(self, reception_client):
+        reg_user = UserFactory(role=User.Role.ATHLETE, is_active=False, is_staff=False)
+        registration = RegistrationRequest.objects.create(
+            user=reg_user,
+            role_choice=RegistrationRequest.RoleChoice.ATHLETE,
+        )
+
+        response = reception_client.post(
+            f"/api/athletes/registrations/{registration.id}/reject/",
+            {},
+        )
+        assert response.status_code == status.HTTP_400_BAD_REQUEST

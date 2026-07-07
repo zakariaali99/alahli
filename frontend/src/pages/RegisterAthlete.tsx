@@ -69,9 +69,9 @@ export default function RegisterAthlete() {
       <div className="min-h-screen bg-background flex items-center justify-center p-4">
         <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center max-w-sm">
           <CheckCircle className="w-16 h-16 text-primary mx-auto mb-4" />
-          <h1 className="text-2xl font-bold mb-2">تم التسجيل بنجاح</h1>
-          <p className="text-muted-foreground mb-6">تم إرسال طلب التسجيل. يرجى انتظار الموافقة بعد الاشتراك.</p>
-          <Button onClick={() => navigate("/login")}>تسجيل الدخول</Button>
+          <h1 className="text-2xl font-bold mb-2">تم إرسال طلب التسجيل</h1>
+          <p className="text-muted-foreground mb-6">حسابك قيد المراجعة من قبل الإدارة. سيتمكن المستخدم من تسجيل الدخول بعد اعتماد الطلب.</p>
+          <Button onClick={() => navigate("/")}>العودة إلى الرئيسية</Button>
         </motion.div>
       </div>
     )

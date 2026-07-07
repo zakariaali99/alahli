@@ -3,7 +3,7 @@ from datetime import timedelta
 from django.contrib.auth import authenticate
 from rest_framework import status, viewsets
 from rest_framework.decorators import api_view, permission_classes, throttle_classes
-from rest_framework.permissions import AllowAny
+from rest_framework.permissions import AllowAny, IsAuthenticated
 from rest_framework.response import Response
 from rest_framework.throttling import AnonRateThrottle
 from rest_framework_simplejwt.exceptions import TokenError
@@ -18,7 +18,7 @@ from .serializers import (
     UserCreateSerializer,
     UserUpdateSerializer,
 )
-from .permissions import IsStaffOrAbove, IsSuperAdmin, scope_by_academy
+from .permissions import IsRejectedAccount, IsStaffOrAbove, IsSuperAdmin, scope_by_academy
 
 
 class LoginRateThrottle(AnonRateThrottle):
@@ -70,8 +70,19 @@ def login_view(request):
     serializer = LoginSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
 
+    phone = serializer.validated_data["phone"]
+
+    existing_user = User.objects.filter(phone=phone).first()
+    if existing_user and not existing_user.is_active:
+        has_rejected = existing_user.registration_requests.filter(status="rejected").exists()
+        if not has_rejected:
+            return Response(
+                {"detail": "حسابك قيد المراجعة حالياً ولا يمكن تسجيل الدخول حتى تتم الموافقة على طلب التسجيل"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
     user = authenticate(
-        username=serializer.validated_data["phone"],
+        username=phone,
         password=serializer.validated_data["password"],
     )
 
@@ -94,6 +105,7 @@ def login_view(request):
 
 
 @api_view(["POST"])
+@permission_classes([IsAuthenticated])
 def logout_view(request):
     refresh_token = request.data.get("refresh")
     if refresh_token:
@@ -113,6 +125,7 @@ def logout_view(request):
 
 
 @api_view(["GET"])
+@permission_classes([IsAuthenticated])
 def me_view(request):
     user = User.objects.select_related("athlete__department").get(pk=request.user.pk)
     return Response(UserSerializer(user, context={"request": request}).data)
@@ -136,3 +149,33 @@ def change_password_view(request):
         BlacklistedToken.objects.get_or_create(token=token)
 
     return Response({"detail": "تم تغيير كلمة المرور بنجاح. يرجى تسجيل الدخول مرة أخرى."})
+
+
+@api_view(["POST"])
+@permission_classes([IsAuthenticated, IsRejectedAccount])
+def delete_rejected_account_view(request):
+    from django.db import transaction
+
+    user = request.user
+    latest_registration = user.registration_requests.filter(status="rejected").order_by("-created_at").first()
+
+    if not latest_registration:
+        return Response(
+            {"detail": "لم يتم العثور على طلب تسجيل مرفوض"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    from apps.athletes.models import Athlete, ParentAthlete
+
+    with transaction.atomic():
+        athlete = getattr(latest_registration, "athlete", None)
+        if athlete and not athlete.is_active:
+            athlete.delete()
+
+        if user.role == "parent":
+            ParentAthlete.objects.filter(parent=user).delete()
+
+        latest_registration.delete()
+        user.delete()
+
+    return Response({"detail": "تم حذف الحساب بنجاح. يمكنك التسجيل من جديد."})

@@ -69,6 +69,22 @@ class TestPackageRead:
         response = auth_client.get("/api/packages/?search=ذهبية")
         assert response.status_code == status.HTTP_200_OK
 
+    def test_athlete_can_read_packages(self, api_client, package):
+        athlete = UserFactory(role="athlete", is_active=True)
+        refresh = RefreshToken.for_user(athlete)
+        api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
+        response = api_client.get("/api/packages/")
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["count"] == 1
+
+    def test_parent_can_read_packages(self, api_client, package):
+        parent = UserFactory(role="parent", is_active=True)
+        refresh = RefreshToken.for_user(parent)
+        api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
+        response = api_client.get("/api/packages/")
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["count"] == 1
+
 
 @pytest.mark.django_db
 class TestPackageWrite:
@@ -96,3 +112,27 @@ class TestPackageWrite:
         admin_user.save()
         response = admin_auth_client.delete(f"/api/packages/{package.id}/")
         assert response.status_code == status.HTTP_204_NO_CONTENT
+
+    def test_athlete_cannot_create_package(self, api_client, package):
+        athlete = UserFactory(role="athlete", is_active=True)
+        refresh = RefreshToken.for_user(athlete)
+        api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
+        response = api_client.post("/api/packages/", {
+            "name": "الباقة الممنوعة",
+            "price": 100,
+            "duration_type": "months",
+            "duration_value": 1,
+        })
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    def test_parent_cannot_create_package(self, api_client, package):
+        parent = UserFactory(role="parent", is_active=True)
+        refresh = RefreshToken.for_user(parent)
+        api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
+        response = api_client.post("/api/packages/", {
+            "name": "الباقة الممنوعة",
+            "price": 100,
+            "duration_type": "months",
+            "duration_value": 1,
+        })
+        assert response.status_code == status.HTTP_403_FORBIDDEN

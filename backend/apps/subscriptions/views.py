@@ -47,7 +47,6 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
         return base
 
     def perform_update(self, serializer):
-        import datetime
         instance = serializer.instance
         old_status = instance.status
         updated_instance = serializer.save()
@@ -60,7 +59,7 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
             Notification.objects.create(
                 athlete=updated_instance.athlete,
                 title="تم رفض الاشتراك",
-                body=updated_instance.rejection_reason or "تم رفض طلب الاشتراك الخاص بك. يرجى التواصل مع الإدارة للمزيد من المعلومات.",
+                body=updated_instance.rejection_reason,
             )
 
     def get_permissions(self):

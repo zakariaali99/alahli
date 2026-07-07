@@ -143,6 +143,13 @@ export default function UserSubscriptions() {
           </div>
         </div>
 
+        {sub.status === "rejected" && sub.rejection_reason && (
+          <div className="rounded-xl border border-red-200 bg-red-50 p-3 text-xs">
+            <p className="text-muted-foreground mb-0.5">سبب الرفض</p>
+            <p className="font-semibold text-red-700">{sub.rejection_reason}</p>
+          </div>
+        )}
+
         {sub.status === "active" && (
           <div className="flex items-center gap-1.5 text-xs">
             <Clock className="w-3.5 h-3.5 text-muted-foreground" />

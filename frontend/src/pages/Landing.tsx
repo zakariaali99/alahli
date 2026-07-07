@@ -14,7 +14,6 @@ import {
   Phone,
   UserPlus,
   Users,
-  Dumbbell,
 } from "lucide-react"
 
 export default function Landing() {
@@ -90,8 +89,8 @@ export default function Landing() {
       <header className="border-b border-white/70 bg-white/80 backdrop-blur-xl">
         <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 md:px-6">
           <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md shadow-primary/20">
-              <Dumbbell className="h-5 w-5 animate-pulse-soft" />
+            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md shadow-primary/20 overflow-hidden">
+              <img src="/logo.svg" alt="Logo" className="h-7 w-7 object-contain brightness-0 invert" />
             </div>
             <div>
               <p className="text-sm font-black leading-none text-[#102033]">أكاديمية النادي الأهلي الرياضي</p>
@@ -124,7 +123,7 @@ export default function Landing() {
             <div className="grid gap-4 sm:grid-cols-2 max-w-xl">
               {/* Athlete Registration */}
               <Link to="/register/athlete" className="group">
-                <Card className="p-5 border border-white/90 bg-white/70 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-primary/35 hover:shadow-lg hover:shadow-primary/5 cursor-pointer">
+                <Card className="p-5 border border-[#102033]/15 bg-white/70 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-primary/35 hover:shadow-lg hover:shadow-primary/5 cursor-pointer">
                   <div className="mb-3.5 flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:scale-110 transition-transform">
                     <UserPlus className="h-5 w-5" />
                   </div>
@@ -135,7 +134,7 @@ export default function Landing() {
 
               {/* Parent Registration */}
               <Link to="/register/parent" className="group">
-                <Card className="p-5 border border-white/90 bg-white/70 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-[#102033]/35 hover:shadow-lg hover:shadow-[#102033]/5 cursor-pointer">
+                <Card className="p-5 border border-[#102033]/15 bg-white/70 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-[#102033]/35 hover:shadow-lg hover:shadow-[#102033]/5 cursor-pointer">
                   <div className="mb-3.5 flex h-10 w-10 items-center justify-center rounded-xl bg-[#102033]/10 text-[#102033] group-hover:scale-110 transition-transform">
                     <Users className="h-5 w-5" />
                   </div>

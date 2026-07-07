@@ -9,6 +9,7 @@ class ApiEndpoints {
   static const String logout = '/auth/logout/';
   static const String me = '/auth/me/';
   static const String changePassword = '/auth/change-password/';
+  static const String deleteRejectedAccount = '/auth/delete-rejected-account/';
   static const String users = '/auth/users/';
 
   // Athletes

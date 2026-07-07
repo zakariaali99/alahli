@@ -52,6 +52,8 @@ class UserModel {
   final int? academy;
   final String? academyName;
   final AthleteDetail? athleteDetail;
+  final String? registrationStatus;
+  final String? registrationRejectionReason;
 
   UserModel({
     required this.id,
@@ -65,6 +67,8 @@ class UserModel {
     this.academy,
     this.academyName,
     this.athleteDetail,
+    this.registrationStatus,
+    this.registrationRejectionReason,
   });
 
   factory UserModel.fromJson(Map<String, dynamic> json) {
@@ -82,6 +86,8 @@ class UserModel {
       athleteDetail: json['athlete_detail'] != null
           ? AthleteDetail.fromJson(json['athlete_detail'])
           : null,
+      registrationStatus: asString(json['registration_status']),
+      registrationRejectionReason: asString(json['registration_rejection_reason']),
     );
   }
 
@@ -98,10 +104,13 @@ class UserModel {
       'academy': academy,
       'academy_name': academyName,
       'athlete_detail': athleteDetail?.toJson(),
+      'registration_status': registrationStatus,
+      'registration_rejection_reason': registrationRejectionReason,
     };
   }
 
   bool get isSuperAdmin => role == 'super_admin';
   bool get isReception => role == 'reception';
   bool get isAcademyManager => role == 'academy_manager';
+  bool get isRejectedRegistration => registrationStatus == 'rejected' && !isActive;
 }

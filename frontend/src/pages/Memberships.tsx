@@ -897,7 +897,9 @@ export default function MembershipsPage() {
               سيتم رفض اشتراك <span className="font-semibold text-foreground">{rejectTarget.name}</span>.
             </p>
             <div>
-              <label className="mb-1 block text-xs text-muted-foreground">سبب الرفض (اختياري)</label>
+              <label className="mb-1 block text-xs text-muted-foreground">
+                سبب الرفض <span className="text-destructive">*</span>
+              </label>
               <textarea
                 rows={3}
                 value={rejectReason}
@@ -911,6 +913,7 @@ export default function MembershipsPage() {
               <Button
                 type="button"
                 variant="destructive"
+                disabled={!rejectReason.trim()}
                 onClick={() => {
                   void handleReject(rejectTarget.id, rejectReason)
                   setRejectTarget(null)

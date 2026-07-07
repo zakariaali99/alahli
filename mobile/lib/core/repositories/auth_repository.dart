@@ -80,6 +80,10 @@ class AuthRepository {
     }
   }
 
+  Future<void> deleteRejectedAccount() async {
+    await apiClient.dio.post(ApiEndpoints.deleteRejectedAccount);
+  }
+
   Future<void> logout() async {
     try {
       final refresh = await SecureStorage.getRefreshToken();

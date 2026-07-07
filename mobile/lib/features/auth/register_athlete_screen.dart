@@ -170,12 +170,12 @@ class _RegisterAthleteScreenState extends ConsumerState<RegisterAthleteScreen> {
                 ),
                 const SizedBox(height: 24),
                 Text(
-                  'تم التسجيل بنجاح',
+                  'تم إرسال طلب التسجيل',
                   style: theme.textTheme.headlineSmall?.copyWith(fontWeight: FontWeight.bold),
                 ),
                 const SizedBox(height: 8),
                 const Text(
-                  'تم إرسال طلب التسجيل بنجاح. يرجى الانتظار للموافقة والاعتماد بعد إتمام سداد الاشتراك.',
+                  'حسابك قيد المراجعة من قبل الإدارة. سيتمكن المستخدم من تسجيل الدخول بعد اعتماد الطلب.',
                   textAlign: TextAlign.center,
                   style: TextStyle(color: AppColors.mutedForeground, height: 1.5),
                 ),
@@ -183,11 +183,11 @@ class _RegisterAthleteScreenState extends ConsumerState<RegisterAthleteScreen> {
                 SizedBox(
                   width: double.infinity,
                   child: FilledButton(
-                    onPressed: () => context.go('/login'),
+                    onPressed: () => context.go('/'),
                     style: FilledButton.styleFrom(
                       backgroundColor: const Color(0xFF0F4C81),
                     ),
-                    child: const Text('تسجيل الدخول'),
+                    child: const Text('العودة إلى الرئيسية'),
                   ),
                 ),
               ],

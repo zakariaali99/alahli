@@ -138,6 +138,10 @@ DEFAULT_AUTO_FIELD = "django.db.models.BigAutoField"
 
 AUTH_USER_MODEL = "accounts.User"
 
+AUTHENTICATION_BACKENDS = [
+    "apps.accounts.auth_backends.RejectedRegistrationBackend",
+]
+
 LOGGING = {
     "version": 1,
     "disable_existing_loggers": False,
@@ -173,10 +177,11 @@ LOGGING = {
 
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": (
-        "rest_framework_simplejwt.authentication.JWTAuthentication",
+        "apps.accounts.auth.RejectedRegistrationAwareJWTAuth",
     ),
     "DEFAULT_PERMISSION_CLASSES": (
         "rest_framework.permissions.IsAuthenticated",
+        "apps.accounts.permissions.IsNotRejectedAccount",
     ),
     "DEFAULT_PAGINATION_CLASS": "apps.accounts.pagination.StandardPagination",
     "PAGE_SIZE": 20,
