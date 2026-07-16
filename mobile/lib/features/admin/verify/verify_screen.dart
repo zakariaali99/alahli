@@ -216,11 +216,11 @@ class _VerifyScreenState extends ConsumerState<VerifyScreen>
                         }
                       }
                     },
-                    errorBuilder: (context, error, child) {
+                    errorBuilder: (context, error) {
                       WidgetsBinding.instance.addPostFrameCallback((_) {
                         if (!_cameraError) setState(() => _cameraError = true);
                       });
-                      return child ?? const SizedBox.shrink();
+                      return const SizedBox.shrink();
                     },
                   ),
                 )
