@@ -82,6 +82,27 @@ export interface RegistrationRequest {
   created_at: string
 }
 
+export interface Athlete {
+  id: number
+  membership_number: string
+  full_name: string
+  phone: string
+  parent_phone?: string
+  birth_date: string
+  gender: "male" | "female"
+  age?: number | null
+  department: number | null
+  department_name?: string
+  sport?: number | null
+  sport_name?: string | null
+  photo: string | null
+  qr_code?: string | null
+  notes?: string
+  is_active: boolean
+  created_at?: string
+  updated_at?: string
+}
+
 export interface ParentAthlete {
   id: number
   parent: number

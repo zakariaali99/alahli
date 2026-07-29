@@ -11,13 +11,14 @@ PASSWORD_HELP = "أقل شيء حرف واحد"
 
 class AthleteListSerializer(serializers.ModelSerializer):
     department_name = serializers.CharField(source="department.name_ar", read_only=True)
+    sport_name = serializers.CharField(source="sport.name_ar", read_only=True, allow_null=True)
     subscription_end_date = serializers.SerializerMethodField()
 
     class Meta:
         model = Athlete
         fields = [
             "id", "membership_number", "full_name", "phone",
-            "gender", "department", "department_name",
+            "gender", "department", "department_name", "sport", "sport_name",
             "photo", "is_active", "created_at", "subscription_end_date",
         ]
 
@@ -161,6 +162,7 @@ class RegisterSerializer(serializers.Serializer):
     birth_month = serializers.IntegerField(required=False, allow_null=True, default=None)
     birth_year = serializers.IntegerField(required=False, allow_null=True, default=None)
     department = serializers.IntegerField(required=False, allow_null=True, help_text="Department ID for the athlete")
+    sport = serializers.IntegerField(required=False, allow_null=True, help_text="Sport ID for the athlete or preferred sport for parent")
     residence = serializers.CharField(max_length=200, required=False, allow_blank=True, default="")
     health_status = serializers.CharField(required=False, allow_blank=True, default="")
     parent_name = serializers.CharField(max_length=100, required=False, allow_blank=True, default="")
@@ -204,6 +206,12 @@ class RegisterSerializer(serializers.Serializer):
             from apps.departments.models import Department
             if not Department.objects.filter(id=department_id).exists():
                 raise serializers.ValidationError({"department": "رقم الأكاديمية غير صحيح"})
+
+        sport_id = attrs.get("sport")
+        if sport_id is not None:
+            from apps.departments.models import Sport
+            if not Sport.objects.filter(id=sport_id).exists():
+                raise serializers.ValidationError({"sport": "رقم الرياضة غير صحيح"})
 
         attrs["birth_date"] = self.validate_birth_date(attrs)
         return attrs

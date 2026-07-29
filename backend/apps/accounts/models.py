@@ -30,6 +30,10 @@ class User(AbstractUser):
         "departments.Department", on_delete=models.SET_NULL, null=True, blank=True,
         related_name="managers"
     )
+    preferred_sport = models.ForeignKey(
+        "departments.Sport", on_delete=models.SET_NULL, null=True, blank=True,
+        related_name="preferred_by_users",
+    )
     is_active = models.BooleanField(default=True)
     residence = models.CharField(max_length=200, blank=True, default="", help_text="السكن / العنوان")
     whatsapp_phone = models.CharField(max_length=20, blank=True, default="", help_text="رقم الواتساب")

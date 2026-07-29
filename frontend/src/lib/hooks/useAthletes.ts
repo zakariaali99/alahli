@@ -13,6 +13,8 @@ interface Athlete {
   age: number | null
   department: number | null
   department_name: string
+  sport?: number | null
+  sport_name?: string | null
   photo: string | null
   qr_code: string | null
   notes: string

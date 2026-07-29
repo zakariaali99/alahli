@@ -79,6 +79,7 @@ export default function ManagerDashboard() {
   }
 
   // Cards definitions
+  // Cards definitions
   const ahliCards: ActionCard[] = [
     {
       title: "إضافة رياضي جديد",
@@ -107,6 +108,13 @@ export default function ManagerDashboard() {
       icon: CreditCard,
       url: `/dashboard/memberships?department=4`,
       color: "from-emerald-500/10 to-emerald-600/5 hover:border-emerald-500 text-emerald-600"
+    },
+    {
+      title: "طلبات التسجيل المعلقة",
+      desc: "مراجعة واعتماد طلبات الانتساب والتسجيل الجديدة للمركز",
+      icon: ShieldCheck,
+      url: `/dashboard/registrations?department=4`,
+      color: "from-amber-500/10 to-amber-600/5 hover:border-amber-500 text-amber-600"
     }
   ]
 
@@ -138,6 +146,13 @@ export default function ManagerDashboard() {
       icon: CreditCard,
       url: `/dashboard/memberships?department=5`,
       color: "from-green-500/10 to-green-600/5 hover:border-green-500 text-green-600"
+    },
+    {
+      title: "طلبات التسجيل المعلقة",
+      desc: "مراجعة واعتماد طلبات الانتساب والتسجيل الجديدة للأكاديمية",
+      icon: ShieldCheck,
+      url: `/dashboard/registrations?department=5`,
+      color: "from-amber-500/10 to-amber-600/5 hover:border-amber-500 text-amber-600"
     }
   ]
 

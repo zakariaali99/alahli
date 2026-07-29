@@ -3,7 +3,7 @@ import { Link, useSearchParams } from "react-router-dom"
 import { motion, type Variants } from "framer-motion"
 import {
   Plus, Search, Filter, LayoutGrid, TableProperties, Eye, Edit2,
-  ChevronRight, ChevronLeft, Users, UserX, MoreVertical, Trash2, UserCog,
+  ChevronRight, ChevronLeft, Users, UserX, MoreVertical, Trash2, UserCog, RefreshCw,
 } from "lucide-react"
 import { useAthletes } from "@/lib/hooks/useAthletes"
 import { Button } from "@/components/ui/button"
@@ -93,13 +93,26 @@ export default function AthletesPage() {
     }
   }
 
-  const { data, isLoading } = useAthletes({
+  const { data, isLoading, refetch } = useAthletes({
     page,
     page_size: 20,
     ...(searchQuery ? { search: searchQuery } : {}),
     ...(statusFilter !== "all" ? { is_active: statusFilter === "active" ? "true" : "false" } : {}),
     ...(deptParam ? { department: deptParam } : {}),
   })
+
+  const [showSyncModal, setShowSyncModal] = useState(false)
+
+  const handleRefresh = async () => {
+    setShowSyncModal(true)
+    const startTime = Date.now()
+    await refetch()
+    const elapsedTime = Date.now() - startTime
+    const delay = Math.max(0, 1000 - elapsedTime)
+    setTimeout(() => {
+      setShowSyncModal(false)
+    }, delay)
+  }
 
   const athletes = data?.results || []
   const totalPages = data ? Math.ceil(data.count / 20) : 0
@@ -169,14 +182,20 @@ export default function AthletesPage() {
             عرض وإدارة بيانات جميع الرياضيين المسجلين في النظام.
           </p>
         </div>
-        <Can action="athletes:create">
-          <Link to={`/dashboard/athletes/add${deptParam ? `?department=${deptParam}` : ""}`}>
-            <Button size="lg" className="bg-gradient-to-r from-primary to-primary-container text-primary-foreground shadow-lg shadow-primary/20 hover:shadow-primary/30">
-              <Plus className="w-4 h-4" />
-              إضافة رياضي جديد
-            </Button>
-          </Link>
-        </Can>
+        <div className="flex gap-2">
+          <Button variant="outline" size="lg" onClick={handleRefresh}>
+            <RefreshCw className="w-4 h-4" />
+            تحديث
+          </Button>
+          <Can action="athletes:create">
+            <Link to={`/dashboard/athletes/add${deptParam ? `?department=${deptParam}` : ""}`}>
+              <Button size="lg" className="bg-gradient-to-r from-primary to-primary-container text-primary-foreground shadow-lg shadow-primary/20 hover:shadow-primary/30">
+                <Plus className="w-4 h-4" />
+                إضافة رياضي جديد
+              </Button>
+            </Link>
+          </Can>
+        </div>
       </motion.div>
 
       {/* ── Filter Bar ── */}
@@ -570,6 +589,25 @@ export default function AthletesPage() {
             </div>
           )}
         </motion.div>
+      )}
+      {showSyncModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-card border border-border/40 p-8 rounded-3xl shadow-2xl flex flex-col items-center space-y-4 max-w-xs text-center"
+          >
+            <div className="relative w-16 h-16 flex items-center justify-center">
+              <div className="absolute inset-0 rounded-full border-4 border-primary/20 animate-pulse" />
+              <div className="absolute inset-0 rounded-full border-4 border-t-primary border-r-transparent border-b-transparent border-l-transparent animate-spin" />
+              <RefreshCw className="w-6 h-6 text-primary animate-pulse" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="font-extrabold text-foreground text-lg">تحديث البيانات</h3>
+              <p className="text-xs text-muted-foreground">يرجى الانتظار، جاري جلب أحدث البيانات...</p>
+            </div>
+          </motion.div>
+        </div>
       )}
     </motion.div>
   )

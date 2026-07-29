@@ -96,6 +96,8 @@ def register_view(request):
         and request.user.role in ["super_admin", "academy_manager", "special_manager", "reception"]
     )
 
+    sport_id = serializer.validated_data.get("sport")
+
     try:
         with transaction.atomic():
             user = User.objects.create_user(
@@ -108,6 +110,7 @@ def register_view(request):
                 whatsapp_phone=whatsapp_phone,
                 is_active=is_staff_creator,
                 academy_id=dept_id,
+                preferred_sport_id=sport_id if role == "parent" else None,
             )
 
             reg_status = RegistrationRequest.Status.APPROVED if is_staff_creator else RegistrationRequest.Status.PENDING
@@ -136,6 +139,7 @@ def register_view(request):
                     is_active=is_staff_creator,
                     registration=registration,
                     department_id=dept_id,
+                    sport_id=sport_id,
                 )
                 user.athlete = athlete
                 user.save(update_fields=["athlete"])
@@ -164,7 +168,11 @@ def register_view(request):
             logging.getLogger(__name__).exception("Failed to send push notification for registration")
 
     return Response(
-        {"message": "تم التسجيل بنجاح", "registration_id": registration.id},
+        {
+            "message": "تم التسجيل بنجاح",
+            "registration_id": registration.id,
+            "athlete_id": athlete.id if role == "athlete" and 'athlete' in locals() else None,
+        },
         status=status.HTTP_201_CREATED,
     )
 
@@ -496,6 +504,7 @@ class ParentAthleteViewSet(viewsets.ModelViewSet):
             is_active=False,
             registration=registration,
             department_id=request.user.academy_id or 5,
+            sport=request.user.preferred_sport,
         )
         user.athlete = athlete
         user.save(update_fields=["athlete"])

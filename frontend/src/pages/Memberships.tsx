@@ -144,7 +144,7 @@ export default function MembershipsPage() {
   const [quickRenewError, setQuickRenewError] = useState<string | null>(null)
   const [departments, setDepartments] = useState<Array<{ id: number; name_ar: string }>>([])
 
-  const canManagePackages = user?.is_superuser || user?.role === "super_admin" || user?.role === "reception"
+  const canManagePackages = user?.is_superuser || user?.role === "super_admin" || user?.role === "reception" || user?.role === "special_manager"
 
   useEffect(() => {
     if (!flash) return

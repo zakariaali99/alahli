@@ -1,5 +1,5 @@
 from rest_framework import viewsets
-from rest_framework.permissions import IsAuthenticated
+from rest_framework.permissions import AllowAny, IsAuthenticated
 
 from apps.accounts.permissions import (
     IsManagementOrAbove,
@@ -57,7 +57,7 @@ class SportViewSet(viewsets.ModelViewSet):
         if self.action in ["create", "update", "partial_update"]:
             return [IsManagementOrAbove()]
         if self.action in ["list", "retrieve"]:
-            return [IsAuthenticated()]
+            return [AllowAny()]
         return [IsStaffOrAbove()]
 
 

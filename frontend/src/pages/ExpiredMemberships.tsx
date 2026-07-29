@@ -80,6 +80,18 @@ export default function ExpiredMembershipsPage() {
   const PAGE_SIZE = 20
   const [searchParams] = useSearchParams()
   const deptParam = searchParams.get("department")
+  const [showSyncModal, setShowSyncModal] = useState(false)
+
+  const handleRefresh = async () => {
+    setShowSyncModal(true)
+    const startTime = Date.now()
+    await refetch()
+    const elapsedTime = Date.now() - startTime
+    const delay = Math.max(0, 1000 - elapsedTime) // delay at least 1s
+    setTimeout(() => {
+      setShowSyncModal(false)
+    }, delay)
+  }
 
   const params: Record<string, string> = {
     status: "expired",
@@ -90,7 +102,7 @@ export default function ExpiredMembershipsPage() {
   if (search) params.search = search
   if (deptParam) params.athlete__department = deptParam
 
-  const { data, isLoading, refetch } = useQuery({
+  const { data, isLoading, isFetching, refetch } = useQuery({
     queryKey: ["expired-memberships", params],
     queryFn: () =>
       api.get<PaginatedResponse<ExpiredSub> | ExpiredSub[]>("/subscriptions/", params),
@@ -135,7 +147,7 @@ export default function ExpiredMembershipsPage() {
           </p>
         </div>
         <div className="flex gap-2">
-          <Button variant="outline" size="sm" onClick={() => refetch()}>
+          <Button variant="outline" size="sm" onClick={handleRefresh}>
             <RefreshCw className="w-4 h-4" />
             تحديث
           </Button>
@@ -356,6 +368,25 @@ export default function ExpiredMembershipsPage() {
             </div>
           )}
         </motion.div>
+      )}
+      {showSyncModal && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-md">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-card border border-border/40 p-8 rounded-3xl shadow-2xl flex flex-col items-center space-y-4 max-w-xs text-center"
+          >
+            <div className="relative w-16 h-16 flex items-center justify-center">
+              <div className="absolute inset-0 rounded-full border-4 border-primary/20 animate-pulse" />
+              <div className="absolute inset-0 rounded-full border-4 border-t-primary border-r-transparent border-b-transparent border-l-transparent animate-spin" />
+              <RefreshCw className="w-6 h-6 text-primary animate-pulse" />
+            </div>
+            <div className="space-y-1">
+              <h3 className="font-extrabold text-foreground text-lg">تحديث البيانات</h3>
+              <p className="text-xs text-muted-foreground">يرجى الانتظار، جاري جلب أحدث البيانات...</p>
+            </div>
+          </motion.div>
+        </div>
       )}
     </motion.div>
   )

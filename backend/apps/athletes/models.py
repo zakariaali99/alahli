@@ -32,6 +32,9 @@ class Athlete(models.Model):
     department = models.ForeignKey(
         "departments.Department", on_delete=models.SET_NULL, null=True, related_name="athletes"
     )
+    sport = models.ForeignKey(
+        "departments.Sport", on_delete=models.SET_NULL, null=True, blank=True, related_name="athletes"
+    )
     photo = models.ImageField(
         upload_to="athletes/",
         blank=True,

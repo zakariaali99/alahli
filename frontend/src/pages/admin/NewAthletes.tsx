@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from "react"
 import { motion } from "framer-motion"
-import { useNavigate } from "react-router-dom"
+import { useNavigate, useSearchParams } from "react-router-dom"
 import { Button } from "@/components/ui/button"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { api } from "@/lib/api"
@@ -21,6 +21,8 @@ function formatDate(value?: string | null) {
 
 export default function NewAthletes() {
   const navigate = useNavigate()
+  const [searchParams] = useSearchParams()
+  const deptParam = searchParams.get("department")
   const [registrations, setRegistrations] = useState<RegistrationRequest[]>([])
   const [pendingSubscriptions, setPendingSubscriptions] = useState<Subscription[]>([])
   const [loading, setLoading] = useState(true)
@@ -35,15 +37,22 @@ export default function NewAthletes() {
 
   useEffect(() => {
     void fetchAll()
-  }, [])
+  }, [deptParam])
 
   const fetchAll = async () => {
     setLoading(true)
     try {
       setActionError(null)
+      const regsUrl = deptParam
+        ? `/athletes/registrations/?status=pending&department=${deptParam}`
+        : "/athletes/registrations/?status=pending"
+      const subsUrl = deptParam
+        ? `/subscriptions/?status=pending&athlete__department=${deptParam}`
+        : "/subscriptions/?status=pending"
+
       const [regs, subs] = await Promise.all([
-        api.get<{ results: RegistrationRequest[] } | RegistrationRequest[]>("/athletes/registrations/?status=pending"),
-        api.get<{ results: Subscription[] } | Subscription[]>("/subscriptions/?status=pending"),
+        api.get<{ results: RegistrationRequest[] } | RegistrationRequest[]>(regsUrl),
+        api.get<{ results: Subscription[] } | Subscription[]>(subsUrl),
       ])
       setRegistrations(extractResults(regs))
       setPendingSubscriptions(extractResults(subs))

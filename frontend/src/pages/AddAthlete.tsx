@@ -1,15 +1,16 @@
 import { useState, useEffect } from "react"
 import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
-import { ArrowRight, Dumbbell, Users, CheckCircle, AlertCircle, Loader2, Building2, Sparkles } from "lucide-react"
+import { ArrowRight, Dumbbell, Users, CheckCircle, AlertCircle, Loader2, Building2, Sparkles, Trophy } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { api } from "@/lib/api"
 import { useToast } from "@/lib/toast"
 import { validateLibyanPhone } from "@/lib/utils"
+import { extractResults } from "@/lib/response"
 import CameraCapture from "@/components/ui/camera-capture"
-import type { Department } from "@/lib/types"
+import type { Department, Sport } from "@/lib/types"
 
-type Step = "choose" | "form"
+type Step = "choose" | "sport" | "form"
 
 const ACADEMIES: Department[] = [
   {
@@ -53,6 +54,10 @@ export default function AddAthletePage() {
 
   const [step, setStep] = useState<Step>("choose")
   const [selectedAcademy, setSelectedAcademy] = useState<Department | null>(null)
+  const [sports, setSports] = useState<Sport[]>([])
+  const [selectedSport, setSelectedSport] = useState<Sport | null>(null)
+  const [loadingSports, setLoadingSports] = useState(false)
+
   const [form, setForm] = useState(defaultForm)
   const [photo, setPhoto] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -60,26 +65,39 @@ export default function AddAthletePage() {
   const [success, setSuccess] = useState(false)
   const [searchParams] = useSearchParams()
   const deptParam = searchParams.get("department")
+  const isParent = selectedAcademy?.id === 5
+
+  const handleSelectAcademy = async (academy: Department) => {
+    setSelectedAcademy(academy)
+    setSelectedSport(null)
+    setForm(defaultForm)
+    setPhoto(null)
+    setError("")
+    setLoadingSports(true)
+    try {
+      const res = await api.get<{ results: Sport[] } | Sport[]>("/sports/", { department: String(academy.id) })
+      const list = extractResults(res)
+      setSports(list)
+      if (list.length > 0) {
+        setStep("sport")
+      } else {
+        setStep("form")
+      }
+    } catch {
+      setStep("form")
+    } finally {
+      setLoadingSports(false)
+    }
+  }
 
   useEffect(() => {
     if (deptParam) {
       const match = ACADEMIES.find((a) => a.id === Number(deptParam))
       if (match) {
-        setSelectedAcademy(match)
-        setStep("form")
+        void handleSelectAcademy(match)
       }
     }
   }, [deptParam])
-
-  const isParent = selectedAcademy?.id === 5
-
-  const handleSelectAcademy = (academy: Department) => {
-    setSelectedAcademy(academy)
-    setForm(defaultForm)
-    setPhoto(null)
-    setError("")
-    setStep("form")
-  }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -101,6 +119,7 @@ export default function AddAthletePage() {
       phone: form.phone.trim(),
       residence: form.residence.trim(),
       department: selectedAcademy.id,
+      ...(selectedSport ? { sport: selectedSport.id } : {}),
     }
 
     if (isParent) {
@@ -115,9 +134,13 @@ export default function AddAthletePage() {
 
     try {
       setSubmitting(true)
-      await api.post("/auth/register/", body)
-      setSuccess(true)
+      const res = await api.post<{ athlete_id?: number }>("/auth/register/", body)
       toast.success("تم إنشاء الحساب بنجاح")
+      if (res?.athlete_id) {
+        navigate(`/dashboard/athletes/${res.athlete_id}`)
+      } else {
+        setSuccess(true)
+      }
     } catch (err: any) {
       setError(api.getErrorMessage(err, "حدث خطأ أثناء التسجيل"))
     } finally {
@@ -153,7 +176,7 @@ export default function AddAthletePage() {
 
   return (
     <div className="max-w-2xl mx-auto space-y-6">
-      <div>
+      <div className="text-center">
         <h1 className="text-2xl font-extrabold gradient-text">إضافة مستخدم جديد</h1>
         <p className="mt-1 text-xs text-muted-foreground">
           أنشئ حساب رياضي أو ولي أمر مباشرة من لوحة الإدارة. الحساب يُفعَّل تلقائياً.
@@ -168,14 +191,18 @@ export default function AddAthletePage() {
       )}
 
       {/* Step indicators */}
-      <div className="flex items-center gap-3 text-xs font-bold">
+      <div className="flex items-center justify-center gap-2 sm:gap-3 text-xs font-bold flex-wrap">
         <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-colors ${step === "choose" ? "bg-primary text-primary-foreground" : "bg-card border border-border text-muted-foreground"}`}>
           <Building2 className="w-3.5 h-3.5" /> 1. اختيار الأكاديمية
         </div>
         <span className="text-muted-foreground">←</span>
+        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-colors ${step === "sport" ? "bg-primary text-primary-foreground" : "bg-card border border-border text-muted-foreground"}`}>
+          <Trophy className="w-3.5 h-3.5" /> 2. اختيار الرياضة
+        </div>
+        <span className="text-muted-foreground">←</span>
         <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-colors ${step === "form" ? "bg-primary text-primary-foreground" : "bg-card border border-border text-muted-foreground"}`}>
           {isParent ? <Users className="w-3.5 h-3.5" /> : <Dumbbell className="w-3.5 h-3.5" />}
-          2. البيانات الشخصية
+          3. البيانات الشخصية
         </div>
       </div>
 
@@ -193,8 +220,8 @@ export default function AddAthletePage() {
                 key={academy.id}
                 type="button"
                 onClick={() => handleSelectAcademy(academy)}
+                disabled={loadingSports}
                 className="group rounded-2xl border-2 border-border bg-card p-8 text-right transition-all hover:shadow-lg hover:-translate-y-0.5 flex flex-col justify-between"
-                style={{ borderColor: undefined }}
                 onMouseEnter={(e) => (e.currentTarget.style.borderColor = academy.color ?? "")}
                 onMouseLeave={(e) => (e.currentTarget.style.borderColor = "")}
               >
@@ -215,18 +242,18 @@ export default function AddAthletePage() {
           </motion.div>
         )}
 
-        {step === "form" && selectedAcademy && (
+        {step === "sport" && (
           <motion.div
-            key="form"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
+            key="sport"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -8 }}
+            className="space-y-4"
           >
-            {/* Selected academy badge */}
-            <div className="flex items-center justify-between bg-card px-4 py-3 rounded-2xl border border-border mb-4">
+            <div className="flex items-center justify-between bg-card px-4 py-3 rounded-2xl border border-border mb-4 max-w-md mx-auto">
               <div className="flex items-center gap-2">
-                <span className="w-3 h-3 rounded-full" style={{ backgroundColor: selectedAcademy.color ?? "#0F4C81" }} />
-                <span className="text-xs font-black">الأكاديمية: {selectedAcademy.name_ar}</span>
+                <span className="w-3 h-3 rounded-full" style={{ backgroundColor: selectedAcademy?.color ?? "#0F4C81" }} />
+                <span className="text-xs font-black">الأكاديمية: {selectedAcademy?.name_ar}</span>
               </div>
               {!deptParam && (
                 <button
@@ -239,7 +266,61 @@ export default function AddAthletePage() {
               )}
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl border border-border bg-card p-6 max-w-md">
+            <div className="grid gap-4 sm:grid-cols-2 max-w-md mx-auto">
+              {sports.map((sp) => (
+                <button
+                  key={sp.id}
+                  type="button"
+                  onClick={() => { setSelectedSport(sp); setStep("form") }}
+                  className="group rounded-2xl border-2 border-border bg-card p-6 text-right transition-all hover:border-primary hover:shadow-lg hover:-translate-y-0.5 flex flex-col justify-between"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="p-2 rounded-xl bg-primary/10 text-primary font-bold">
+                      <Trophy className="w-5 h-5" />
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="text-base font-black">{sp.name_ar}</h3>
+                    <p className="text-xs text-muted-foreground mt-1">اختيار التخصص {sp.name_ar}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+            {sports.length === 0 && (
+              <div className="text-center py-4">
+                <Button onClick={() => setStep("form")} variant="outline">متابعة بدون تحديد رياضة</Button>
+              </div>
+            )}
+          </motion.div>
+        )}
+
+        {step === "form" && selectedAcademy && (
+          <motion.div
+            key="form"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            exit={{ opacity: 0, x: -20 }}
+          >
+            {/* Selected academy badge */}
+            <div className="flex items-center justify-between bg-card px-4 py-3 rounded-2xl border border-border mb-4 max-w-md mx-auto">
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full" style={{ backgroundColor: selectedAcademy.color ?? "#0F4C81" }} />
+                <span className="text-xs font-black">
+                  {selectedAcademy.name_ar} {selectedSport ? `← ${selectedSport.name_ar}` : ""}
+                </span>
+              </div>
+              {!deptParam && (
+                <button
+                  type="button"
+                  onClick={() => setStep(sports.length > 0 ? "sport" : "choose")}
+                  className="text-xs text-primary hover:underline font-bold"
+                >
+                  تغيير
+                </button>
+              )}
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl border border-border bg-card p-6 max-w-md mx-auto">
               <div className="text-center mb-2">
                 <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl" style={{ backgroundColor: (selectedAcademy.color ?? "#0F4C81") + "1A" }}>
                   {isParent

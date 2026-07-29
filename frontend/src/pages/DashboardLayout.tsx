@@ -2,7 +2,7 @@ import React, { useState, useEffect, useCallback } from "react"
 import { Link, Outlet, useLocation, useNavigate, Navigate } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import {
   LayoutDashboard,
@@ -14,7 +14,7 @@ import {
   Building2,
   Settings,
   LogOut,
-  Search,
+
   ChevronLeft,
   Menu,
   Dumbbell,
@@ -273,13 +273,6 @@ export default function DashboardLayout() {
                   <Menu className="w-5 h-5" />
                 </Button>
               )}
-              <div className="hidden w-full md:block md:w-64 lg:w-80">
-                <Input
-                  className="bg-surface-container-low/50"
-                  placeholder="ابحث عن رياضي أو اشتراك..."
-                  icon={<Search className="w-4 h-4 text-muted-foreground" />}
-                />
-              </div>
             </div>
 
             {/* Right: Actions */}

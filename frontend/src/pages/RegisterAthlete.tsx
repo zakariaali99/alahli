@@ -6,13 +6,17 @@ import { api } from "@/lib/api"
 import CameraCapture from "@/components/ui/camera-capture"
 import { validateLibyanPhone } from "@/lib/utils"
 import { extractResults } from "@/lib/response"
-import { Dumbbell, ArrowRight, CheckCircle, Building2, User, Phone, MapPin, HeartPulse, Sparkles } from "lucide-react"
-import type { Department } from "@/lib/types"
+import { Trophy, Dumbbell, ArrowRight, CheckCircle, Building2, User, Phone, MapPin, HeartPulse, Sparkles, Loader2 } from "lucide-react"
+import type { Department, Sport } from "@/lib/types"
 
 export default function RegisterAthlete() {
   const navigate = useNavigate()
-  const [step, setStep] = useState<1 | 2>(1)
+  const [step, setStep] = useState<1 | 2 | 3>(1)
   const [selectedAcademy, setSelectedAcademy] = useState<Department | null>(null)
+  const [sports, setSports] = useState<Sport[]>([])
+  const [selectedSport, setSelectedSport] = useState<Sport | null>(null)
+  const [loadingSports, setLoadingSports] = useState(false)
+
   const HARDCODED_DEPARTMENTS: Department[] = [
     {
       id: 4,
@@ -38,7 +42,6 @@ export default function RegisterAthlete() {
     },
   ]
 
-
   const [departments, setDepartments] = useState<Department[]>(HARDCODED_DEPARTMENTS)
   
   const [form, setForm] = useState({
@@ -59,10 +62,24 @@ export default function RegisterAthlete() {
   const [loading, setLoading] = useState(false)
   const [success, setSuccess] = useState(false)
 
-
-  const handleSelectAcademy = (academy: Department) => {
+  const handleSelectAcademy = async (academy: Department) => {
     setSelectedAcademy(academy)
-    setStep(2)
+    setSelectedSport(null)
+    setLoadingSports(true)
+    try {
+      const res = await api.get<{ results: Sport[] } | Sport[]>("/sports/", { department: String(academy.id) })
+      const list = extractResults(res)
+      setSports(list)
+      if (list.length > 0) {
+        setStep(2)
+      } else {
+        setStep(3)
+      }
+    } catch {
+      setStep(3)
+    } finally {
+      setLoadingSports(false)
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -96,6 +113,7 @@ export default function RegisterAthlete() {
         phone: form.phone.trim(),
         residence: form.residence,
         department: selectedAcademy.id,
+        ...(selectedSport ? { sport: selectedSport.id } : {}),
       }
 
       if (isParent) {
@@ -150,13 +168,17 @@ export default function RegisterAthlete() {
         </div>
 
         {/* Step Indicator */}
-        <div className="flex items-center justify-center gap-3 mb-6 text-xs font-bold">
+        <div className="flex items-center justify-center gap-2 sm:gap-3 mb-6 text-xs font-bold flex-wrap">
           <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full ${step === 1 ? "bg-[#0F4C81] text-white" : "bg-white text-muted-foreground border"}`}>
             <Building2 className="w-3.5 h-3.5" /> 1. اختيار الأكاديمية
           </div>
           <span className="text-muted-foreground">←</span>
           <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full ${step === 2 ? "bg-[#0F4C81] text-white" : "bg-white text-muted-foreground border"}`}>
-            <User className="w-3.5 h-3.5" /> 2. البيانات الشخصية
+            <Trophy className="w-3.5 h-3.5" /> 2. اختيار الرياضة
+          </div>
+          <span className="text-muted-foreground">←</span>
+          <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full ${step === 3 ? "bg-[#0F4C81] text-white" : "bg-white text-muted-foreground border"}`}>
+            <User className="w-3.5 h-3.5" /> 3. البيانات الشخصية
           </div>
         </div>
 
@@ -171,6 +193,7 @@ export default function RegisterAthlete() {
                   key={dept.id}
                   type="button"
                   onClick={() => handleSelectAcademy(dept)}
+                  disabled={loadingSports}
                   className={`p-6 rounded-2xl border-2 text-right transition-all cursor-pointer bg-white hover:shadow-xl hover:-translate-y-1 flex flex-col justify-between ${
                     dept.name_ar.includes("الأهلي") ? "border-[#00204F]/30 hover:border-[#00204F]" : "border-[#1A7A42]/30 hover:border-[#1A7A42]"
                   }`}
@@ -191,15 +214,60 @@ export default function RegisterAthlete() {
           </motion.div>
         )}
 
-        {/* STEP 2: PERSONAL DATA */}
+        {/* STEP 2: SELECT SPORT */}
         {step === 2 && (
-          <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}>
+          <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }} className="space-y-4">
             <div className="flex items-center justify-between bg-white px-4 py-3 rounded-2xl border border-border/50 mb-4">
               <div className="flex items-center gap-2">
                 <span className="w-3 h-3 rounded-full" style={{ backgroundColor: selectedAcademy?.color || "#0F4C81" }} />
                 <span className="text-xs font-black text-[#102033]">الأكاديمية المختارة: {selectedAcademy?.name_ar}</span>
               </div>
               <button type="button" onClick={() => setStep(1)} className="text-xs text-[#0F4C81] hover:underline font-bold">
+                تغيير
+              </button>
+            </div>
+
+            <h2 className="text-center text-sm font-extrabold text-[#102033] mb-4">اختر الرياضة أو التخصص المطلوبة</h2>
+
+            <div className="grid gap-4 sm:grid-cols-2">
+              {sports.map((sp) => (
+                <button
+                  key={sp.id}
+                  type="button"
+                  onClick={() => { setSelectedSport(sp); setStep(3) }}
+                  className="p-6 rounded-2xl border-2 border-primary/20 hover:border-primary text-right transition-all cursor-pointer bg-white hover:shadow-xl hover:-translate-y-1 flex flex-col justify-between"
+                >
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="p-2.5 rounded-xl bg-primary/10 text-primary font-bold">
+                      <Trophy className="w-5 h-5" />
+                    </span>
+                  </div>
+                  <div>
+                    <h3 className="text-lg font-black text-[#102033]">{sp.name_ar}</h3>
+                    <p className="text-xs text-muted-foreground mt-1">انقر لاختيار رياضة {sp.name_ar}</p>
+                  </div>
+                </button>
+              ))}
+            </div>
+            {sports.length === 0 && (
+              <div className="text-center py-6">
+                <Button onClick={() => setStep(3)} variant="outline">متابعة بدون تحديد رياضة</Button>
+              </div>
+            )}
+          </motion.div>
+        )}
+
+        {/* STEP 3: PERSONAL DATA */}
+        {step === 3 && (
+          <motion.div initial={{ opacity: 0, y: 15 }} animate={{ opacity: 1, y: 0 }}>
+            <div className="flex items-center justify-between bg-white px-4 py-3 rounded-2xl border border-border/50 mb-4">
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full" style={{ backgroundColor: selectedAcademy?.color || "#0F4C81" }} />
+                <span className="text-xs font-black text-[#102033]">
+                  {selectedAcademy?.name_ar} {selectedSport ? `← ${selectedSport.name_ar}` : ""}
+                </span>
+              </div>
+              <button type="button" onClick={() => setStep(sports.length > 0 ? 2 : 1)} className="text-xs text-[#0F4C81] hover:underline font-bold">
                 تغيير
               </button>
             </div>

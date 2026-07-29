@@ -3,7 +3,7 @@ from django.db.models import Case, IntegerField, Value, When
 from rest_framework import viewsets
 from rest_framework.permissions import IsAuthenticated
 
-from apps.accounts.permissions import IsSuperAdmin, is_super_admin
+from apps.accounts.permissions import IsManagementOrAbove, is_super_admin
 
 from .models import SubscriptionPackage
 from .serializers import SubscriptionPackageSerializer
@@ -15,7 +15,7 @@ class SubscriptionPackageViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action in ["create", "update", "partial_update", "destroy"]:
-            return [IsSuperAdmin()]
+            return [IsManagementOrAbove()]
         return [IsAuthenticated()]
 
     def get_queryset(self):
