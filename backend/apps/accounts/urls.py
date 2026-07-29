@@ -14,6 +14,7 @@ urlpatterns = [
     path("logout/", views.logout_view, name="auth-logout"),
     path("register/", register_view, name="auth-register"),
     path("me/", views.me_view, name="auth-me"),
+    path("profile/", views.update_profile_view, name="auth-profile"),
     path("change-password/", views.change_password_view, name="auth-change-password"),
     path("delete-rejected-account/", views.delete_rejected_account_view, name="auth-delete-rejected-account"),
     path("token/", TokenObtainPairView.as_view(), name="token-obtain"),

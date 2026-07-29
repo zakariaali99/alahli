@@ -16,6 +16,7 @@ from apps.accounts.permissions import (
     IsManagementOrAbove,
     IsStaffOrAbove,
     IsSuperAdmin,
+    is_management_staff,
     is_staff_user,
     scope_by_academy,
 )
@@ -53,8 +54,25 @@ def register_view(request):
     serializer = RegisterSerializer(data=request.data)
     serializer.is_valid(raise_exception=True)
 
+    dept_id = serializer.validated_data.get("department")
+    role = serializer.validated_data["role"]
+    if dept_id:
+        if dept_id == 5:
+            role = "parent"
+        elif dept_id == 4:
+            role = "athlete"
+        else:
+            from apps.departments.models import Department
+            dept = Department.objects.filter(id=dept_id).first()
+            if dept:
+                if "أوس" in dept.name_ar or "aws" in dept.name.lower():
+                    role = "parent"
+                elif "أهلي" in dept.name_ar or "ahli" in dept.name.lower():
+                    role = "athlete"
+
+
     photo_file = None
-    if serializer.validated_data["role"] == "athlete":
+    if role == "athlete":
         photo_data = serializer.validated_data.get("photo")
         if photo_data:
             try:
@@ -64,36 +82,64 @@ def register_view(request):
             except (ValueError, IndexError, TypeError):
                 return Response({"photo": "تنسيق الصورة غير صالح"}, status=status.HTTP_400_BAD_REQUEST)
 
+    raw_password = serializer.validated_data.get("password") or secrets.token_urlsafe(16)
+    residence = serializer.validated_data.get("residence", "")
+    health_status = serializer.validated_data.get("health_status", "")
+    whatsapp_phone = serializer.validated_data.get("whatsapp_phone", "")
+    parent_name = serializer.validated_data.get("parent_name", "")
+    parent_phone = serializer.validated_data.get("parent_phone", "")
+
+    # Auto-approve when a staff/management user creates the account
+    is_staff_creator = (
+        request.user
+        and request.user.is_authenticated
+        and request.user.role in ["super_admin", "academy_manager", "reception"]
+    )
+
     try:
         with transaction.atomic():
             user = User.objects.create_user(
-            phone=serializer.validated_data["phone"],
-            first_name_ar=serializer.validated_data["full_name"],
-            last_name_ar="",
-            password=serializer.validated_data["password"],
-            role=serializer.validated_data["role"],
-            is_active=False,
-        )
-
-        registration = RegistrationRequest.objects.create(
-            user=user,
-            role_choice=serializer.validated_data["role"],
-        )
-
-        if serializer.validated_data["role"] == "athlete":
-            athlete = Athlete.objects.create(
-                full_name=serializer.validated_data["full_name"],
                 phone=serializer.validated_data["phone"],
-                birth_date=serializer.validated_data["birth_date"],
-                gender="male",
-                photo=photo_file,
-                notes="",
-                is_active=False,
-                registration=registration,
-                department_id=serializer.validated_data.get("department"),
+                first_name_ar=serializer.validated_data["full_name"],
+                last_name_ar="",
+                password=raw_password,
+                role=role,
+                residence=residence,
+                whatsapp_phone=whatsapp_phone,
+                is_active=is_staff_creator,
+                academy_id=dept_id,
             )
-            user.athlete = athlete
-            user.save(update_fields=["athlete"])
+
+            reg_status = RegistrationRequest.Status.APPROVED if is_staff_creator else RegistrationRequest.Status.PENDING
+            registration = RegistrationRequest.objects.create(
+                user=user,
+                role_choice=role,
+                residence=residence,
+                health_status=health_status,
+                status=reg_status,
+                reviewed_by=request.user if is_staff_creator else None,
+                reviewed_at=timezone.now() if is_staff_creator else None,
+            )
+
+            if role == "athlete":
+                athlete = Athlete.objects.create(
+                    full_name=serializer.validated_data["full_name"],
+                    phone=serializer.validated_data["phone"],
+                    parent_name="",
+                    parent_phone="",
+                    residence=residence,
+                    health_status=health_status,
+                    birth_date=serializer.validated_data["birth_date"],
+                    gender="male",
+                    photo=photo_file,
+                    notes="",
+                    is_active=is_staff_creator,
+                    registration=registration,
+                    department_id=dept_id,
+                )
+                user.athlete = athlete
+                user.save(update_fields=["athlete"])
+
 
     except IntegrityError:
         return Response(
@@ -101,20 +147,21 @@ def register_view(request):
             status=status.HTTP_400_BAD_REQUEST,
         )
 
-    try:
-        from apps.notifications.services import send_admin_push_sync
+    if not is_staff_creator:
+        try:
+            from apps.notifications.services import send_admin_push_sync
 
-        role = serializer.validated_data["role"]
-        role_label = "لاعب" if role == "athlete" else "ولي أمر"
-        send_admin_push_sync(
-            title=f"تسجيل {role_label} جديد",
-            body=f"طلب تسجيل جديد من {role_label} {serializer.validated_data['full_name']} - {serializer.validated_data['phone']}",
-            notification_type="new_registration",
-            entity_id=registration.id,
-        )
-    except Exception:
-        import logging
-        logging.getLogger(__name__).exception("Failed to send push notification for registration")
+            _role = serializer.validated_data["role"]
+            role_label = "رياضي" if _role == "athlete" else "ولي أمر"
+            send_admin_push_sync(
+                title=f"تسجيل {role_label} جديد",
+                body=f"طلب تسجيل جديد من {role_label} {serializer.validated_data['full_name']} - {serializer.validated_data['phone']}",
+                notification_type="new_registration",
+                entity_id=registration.id,
+            )
+        except Exception:
+            import logging
+            logging.getLogger(__name__).exception("Failed to send push notification for registration")
 
     return Response(
         {"message": "تم التسجيل بنجاح", "registration_id": registration.id},
@@ -128,7 +175,7 @@ class AthleteViewSet(viewsets.ModelViewSet):
     search_fields = ["full_name", "membership_number", "phone"]
 
     def get_queryset(self):
-        qs = Athlete.objects.select_related("department", "registration")
+        qs = Athlete.objects.select_related("department", "registration").prefetch_related("subscriptions")
         user = self.request.user
         qs = scope_by_academy(user, qs, academy_field="department")
         if not is_staff_user(user):
@@ -143,11 +190,23 @@ class AthleteViewSet(viewsets.ModelViewSet):
     def get_permissions(self):
         if self.action == "destroy":
             return [IsSuperAdmin()]
-        if self.action in ["create", "update", "partial_update"]:
+        if self.action == "create":
             return [IsManagementOrAbove()]
-        if self.action == "me":
+        if self.action in ["update", "partial_update", "me"]:
             return [IsAuthenticated()]
         return [IsStaffOrAbove()]
+
+    def check_object_permissions(self, request, obj):
+        super().check_object_permissions(request, obj)
+        if self.action in ["update", "partial_update"]:
+            user = request.user
+            if is_management_staff(user):
+                return
+            if hasattr(user, "athlete") and user.athlete == obj:
+                return
+            if user.role == "parent" and ParentAthlete.objects.filter(parent=user, athlete=obj).exists():
+                return
+            self.permission_denied(request, message="ليس لديك صلاحية لتعديل بيانات هذا الرياضي")
 
     @transaction.atomic
     def create(self, request, *args, **kwargs):
@@ -157,13 +216,19 @@ class AthleteViewSet(viewsets.ModelViewSet):
 
         athlete = serializer.save()
 
+        # Determine user role based on academy (Al Aws -> Parent, Al Ahli -> Athlete)
+        target_role = User.Role.ATHLETE
+        if athlete.department and ("أوس" in athlete.department.name_ar or "aws" in athlete.department.name.lower()):
+            target_role = User.Role.PARENT
+
         first_name, last_name = _split_full_name(athlete.full_name)
         user, created = User.objects.get_or_create(
             phone=athlete.phone,
             defaults={
                 "first_name_ar": first_name or athlete.full_name,
                 "last_name_ar": last_name,
-                "role": User.Role.ATHLETE,
+                "role": target_role,
+                "residence": athlete.residence,
                 "is_active": athlete.is_active,
             },
         )
@@ -173,14 +238,17 @@ class AthleteViewSet(viewsets.ModelViewSet):
         elif password:
             user.set_password(password)
 
-        if user.role != User.Role.ATHLETE:
-            user.role = User.Role.ATHLETE
+        if user.role != target_role:
+            user.role = target_role
 
         user.first_name_ar = first_name or user.first_name_ar or athlete.full_name
         user.last_name_ar = last_name
         user.athlete = athlete
         user.is_active = athlete.is_active
         user.save()
+
+        if target_role == User.Role.PARENT:
+            ParentAthlete.objects.get_or_create(parent=user, athlete=athlete)
 
         headers = self.get_success_headers(serializer.data)
         response_data = self.get_serializer(athlete).data
@@ -228,13 +296,21 @@ class RegistrationRequestViewSet(viewsets.ReadOnlyModelViewSet):
     filterset_fields = ["status", "role_choice"]
 
     def get_queryset(self):
-        return scope_by_academy(
-            self.request.user,
-            RegistrationRequest.objects.all().select_related(
-                "user", "reviewed_by", "athlete", "athlete__department"
-            ).prefetch_related("athlete__parents__parent"),
-            academy_field="athlete__department",
-        )
+        from apps.accounts.permissions import is_super_admin
+        from django.db.models import Q
+        user = self.request.user
+        qs = RegistrationRequest.objects.all().select_related(
+            "user", "reviewed_by", "athlete", "athlete__department"
+        ).prefetch_related("athlete__parents__parent")
+        if is_super_admin(user):
+            return qs
+        if user.academy:
+            return qs.filter(
+                Q(athlete__department=user.academy) |
+                Q(athlete__isnull=True, user__academy=user.academy)
+            )
+        return qs
+
 
     @transaction.atomic
     @action(detail=True, methods=["post"], url_path="create-athlete")
@@ -357,28 +433,31 @@ class ParentAthleteViewSet(viewsets.ModelViewSet):
         birth_day = request.data.get("birth_day")
         birth_month = request.data.get("birth_month")
         birth_year = request.data.get("birth_year")
+        health_status = request.data.get("health_status", "")
 
-        if not full_name or not phone:
-            return Response({"detail": "الاسم الكامل ورقم الهاتف مطلوبان"}, status=status.HTTP_400_BAD_REQUEST)
+        if not full_name:
+            return Response({"detail": "الاسم الكامل مطلوب"}, status=status.HTTP_400_BAD_REQUEST)
 
-        phone = validate_libyan_phone(phone)
-        if not photo_data:
-            return Response({"detail": "الصورة مطلوبة"}, status=status.HTTP_400_BAD_REQUEST)
+        if not phone:
+            phone = f"child_{uuid.uuid4().hex[:10]}"
+        else:
+            phone = validate_libyan_phone(phone)
+            if User.objects.filter(phone=phone).exists() or Athlete.objects.filter(phone=phone).exists():
+                return Response({"detail": "رقم الهاتف مسجل بالفعل"}, status=status.HTTP_400_BAD_REQUEST)
 
         try:
             birth_date = datetime.date(int(birth_year), int(birth_month), int(birth_day))
         except (ValueError, TypeError, OverflowError):
             return Response({"detail": "تاريخ الميلاد غير صالح"}, status=status.HTTP_400_BAD_REQUEST)
 
-        if User.objects.filter(phone=phone).exists() or Athlete.objects.filter(phone=phone).exists():
-            return Response({"detail": "رقم الهاتف مسجل بالفعل"}, status=status.HTTP_400_BAD_REQUEST)
-
-        try:
-            img_format, imgstr = photo_data.split(";base64,")
-            ext = img_format.split("/")[-1] if "/" in img_format else "jpg"
-            photo_file = ContentFile(base64.b64decode(imgstr), name=f"{uuid.uuid4().hex}.{ext}")
-        except (ValueError, IndexError, TypeError):
-            return Response({"detail": "تنسيق الصورة غير صالح"}, status=status.HTTP_400_BAD_REQUEST)
+        photo_file = None
+        if photo_data:
+            try:
+                img_format, imgstr = photo_data.split(";base64,")
+                ext = img_format.split("/")[-1] if "/" in img_format else "jpg"
+                photo_file = ContentFile(base64.b64decode(imgstr), name=f"{uuid.uuid4().hex}.{ext}")
+            except (ValueError, IndexError, TypeError):
+                return Response({"detail": "تنسيق الصورة غير صالح"}, status=status.HTTP_400_BAD_REQUEST)
 
         user = User.objects.create_user(
             phone=phone,
@@ -386,10 +465,16 @@ class ParentAthleteViewSet(viewsets.ModelViewSet):
             last_name_ar="",
             password=secrets.token_urlsafe(16),
             role="athlete",
+            residence=request.user.residence,
+            whatsapp_phone=request.user.phone,
+            is_active=False,
+            academy_id=request.user.academy_id or 5,
         )
         registration = RegistrationRequest.objects.create(
             user=user,
             role_choice=RegistrationRequest.RoleChoice.ATHLETE,
+            residence=request.user.residence,
+            health_status=health_status,
         )
 
         athlete = Athlete.objects.create(
@@ -398,9 +483,12 @@ class ParentAthleteViewSet(viewsets.ModelViewSet):
             birth_date=birth_date,
             gender="male",
             photo=photo_file,
+            residence=request.user.residence,
+            health_status=health_status,
             notes="",
             is_active=False,
             registration=registration,
+            department_id=request.user.academy_id or 5,
         )
         user.athlete = athlete
         user.save(update_fields=["athlete"])

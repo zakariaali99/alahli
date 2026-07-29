@@ -17,8 +17,24 @@ class DepartmentViewSet(viewsets.ModelViewSet):
     serializer_class = DepartmentSerializer
     search_fields = ["name", "name_ar"]
 
+    def create(self, request, *args, **kwargs):
+        from rest_framework.response import Response
+        from rest_framework import status
+        return Response(
+            {"detail": "النظام محدد بالأكاديميتين الأساسيتين فقط ولا يمكن إضافة أكاديميات جديدة"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
+    def destroy(self, request, *args, **kwargs):
+        from rest_framework.response import Response
+        from rest_framework import status
+        return Response(
+            {"detail": "لا يمكن حذف الأكاديميات الأساسية بالنظام"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
     def get_permissions(self):
-        if self.action in ["create", "update", "partial_update", "destroy"]:
+        if self.action in ["update", "partial_update"]:
             return [IsSuperAdmin()]
         if self.action in ["list", "retrieve"]:
             return []

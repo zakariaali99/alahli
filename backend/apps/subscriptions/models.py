@@ -31,6 +31,7 @@ class Subscription(models.Model):
         "departments.Group", on_delete=models.SET_NULL, null=True, blank=True,
         related_name="subscriptions",
     )
+    shift_name = models.CharField(max_length=100, blank=True, default="", help_text="اسم الفترة المختارة")
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING, db_index=True)
     approved_by = models.ForeignKey(
         "accounts.User", on_delete=models.SET_NULL, null=True, blank=True,

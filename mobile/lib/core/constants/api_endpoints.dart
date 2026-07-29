@@ -8,6 +8,7 @@ class ApiEndpoints {
   static const String login = '/auth/login/';
   static const String logout = '/auth/logout/';
   static const String me = '/auth/me/';
+  static const String profile = '/auth/profile/';
   static const String changePassword = '/auth/change-password/';
   static const String deleteRejectedAccount = '/auth/delete-rejected-account/';
   static const String users = '/auth/users/';

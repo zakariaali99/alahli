@@ -119,30 +119,25 @@ export default function Landing() {
               </p>
             </div>
 
-            {/* Registration Portal Cards */}
-            <div className="grid gap-4 sm:grid-cols-2 max-w-xl">
-              {/* Athlete Registration */}
-              <Link to="/register/athlete" className="group">
-                <Card className="p-5 border border-[#102033]/15 bg-white/70 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-primary/35 hover:shadow-lg hover:shadow-primary/5 cursor-pointer">
-                  <div className="mb-3.5 flex h-10 w-10 items-center justify-center rounded-xl bg-primary/10 text-primary group-hover:scale-110 transition-transform">
-                    <UserPlus className="h-5 w-5" />
+            {/* Single Registration Portal Card */}
+            <div className="max-w-xl">
+              <Link to="/register/athlete" className="group block">
+                <Card className="p-6 border border-primary/20 bg-gradient-to-r from-primary/5 via-white/80 to-white/90 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-primary/50 hover:shadow-xl hover:shadow-primary/10 cursor-pointer">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-center gap-4">
+                      <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-md shadow-primary/25 group-hover:scale-105 transition-transform">
+                        <UserPlus className="h-6 w-6" />
+                      </div>
+                      <div>
+                        <h3 className="text-lg font-black text-[#102033] group-hover:text-primary transition-colors">انضم إلينا</h3>
+                        <p className="mt-1 text-xs leading-5 text-[#5f7288] font-medium">سجل حسابك كلاعب أو كولي أمر للالتحاق بمركز الأهلي الرياضي وأكاديمية الأوس</p>
+                      </div>
+                    </div>
                   </div>
-                  <h3 className="text-sm font-extrabold text-[#102033] group-hover:text-primary transition-colors">تسجيل رياضي جديد</h3>
-                  <p className="mt-2 text-xs leading-5 text-[#5f7288]">سجل حسابك كلاعب في الأكاديمية والتحق بالمجموعات والتمارين مباشرة.</p>
-                </Card>
-              </Link>
-
-              {/* Parent Registration */}
-              <Link to="/register/parent" className="group">
-                <Card className="p-5 border border-[#102033]/15 bg-white/70 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-[#102033]/35 hover:shadow-lg hover:shadow-[#102033]/5 cursor-pointer">
-                  <div className="mb-3.5 flex h-10 w-10 items-center justify-center rounded-xl bg-[#102033]/10 text-[#102033] group-hover:scale-110 transition-transform">
-                    <Users className="h-5 w-5" />
-                  </div>
-                  <h3 className="text-sm font-extrabold text-[#102033] group-hover:text-[#102033] transition-colors">تسجيل ولي أمر</h3>
-                  <p className="mt-2 text-xs leading-5 text-[#5f7288]">سجل حسابك كولي أمر لإضافة وإدارة لاعبيك ودفع اشتراكاتهم دفعة واحدة.</p>
                 </Card>
               </Link>
             </div>
+
           </div>
 
           {/* Login Form Side */}

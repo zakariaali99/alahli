@@ -38,7 +38,7 @@ export default function DashboardPage() {
 
   const statCards = [
     {
-      label: "إجمالي اللاعبين",
+      label: "إجمالي الرياضيين",
       value: stats?.total_athletes ?? 0,
       icon: Users,
       iconBg: "bg-primary-container/30 text-primary",
@@ -135,7 +135,7 @@ export default function DashboardPage() {
             className="bg-gradient-to-r from-primary to-primary-container text-primary-foreground px-5 py-2.5 rounded-xl text-sm font-semibold shadow-lg shadow-primary/20 flex items-center gap-2"
           >
             <Plus className="w-4 h-4" />
-            إضافة لاعب جديد
+            إضافة رياضي جديد
           </motion.button>
         </Link>
       </motion.div>
@@ -180,7 +180,7 @@ export default function DashboardPage() {
                 <UserPlus className="w-5 h-5" />
               </div>
               <div className="text-right flex-1">
-                <p className="font-bold text-foreground">إضافة لاعب</p>
+                <p className="font-bold text-foreground">إضافة رياضي</p>
                 <p className="text-xs text-muted-foreground mt-0.5">تسجيل رياضي جديد في النظام</p>
               </div>
               <ArrowLeft className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
@@ -195,7 +195,7 @@ export default function DashboardPage() {
               </div>
               <div className="text-right flex-1">
                 <p className="font-bold text-foreground">اشتراك جديد</p>
-                <p className="text-xs text-muted-foreground mt-0.5">إضافة اشتراك يدوي للاعب موجود</p>
+                <p className="text-xs text-muted-foreground mt-0.5">إضافة اشتراك يدوي لرياضي موجود</p>
               </div>
               <ArrowLeft className="w-4 h-4 text-muted-foreground opacity-0 group-hover:opacity-100 transition-opacity shrink-0" />
             </Button>
@@ -283,7 +283,7 @@ export default function DashboardPage() {
 
         {/* Department Distribution */}
         <motion.div variants={cardVariants} className="glass-card rounded-3xl p-6 flex flex-col gap-6">
-          <h2 className="section-header">توزيع اللاعبين</h2>
+          <h2 className="section-header">توزيع الرياضيين</h2>
           {(departments || []).length === 0 ? (
             <div className="flex-1 flex items-center justify-center py-8 text-muted-foreground text-sm">
               لا توجد بيانات
@@ -297,7 +297,7 @@ export default function DashboardPage() {
                 <div key={idx} className="p-4 rounded-2xl bg-surface-container-lowest border border-outline-variant/30">
                   <div className="flex justify-between items-center mb-3">
                     <span className="text-sm font-bold text-foreground">{dept.department_name}</span>
-                    <span className="text-xs font-semibold text-muted-foreground">{dept.count} لاعب</span>
+                    <span className="text-xs font-semibold text-muted-foreground">{dept.count} رياضي</span>
                   </div>
                   <div className="w-full bg-surface-variant rounded-full h-1.5 overflow-hidden">
                     <div className={`${colors[idx % colors.length]} h-full rounded-full transition-all duration-700`} style={{ width: `${pct}%` }} />
@@ -324,7 +324,7 @@ export default function DashboardPage() {
           <table className="w-full text-right">
             <thead>
               <tr className="border-b border-outline-variant/20 text-muted-foreground text-xs font-semibold">
-                <th className="pb-4 pl-4 font-medium">اللاعب</th>
+                <th className="pb-4 pl-4 font-medium">الرياضي</th>
                 <th className="pb-4 pl-4 font-medium">تاريخ التسجيل</th>
                 <th className="pb-4 pl-4 font-medium">الفرع / الرياضة</th>
                 <th className="pb-4 pl-4 font-medium">الباقة</th>

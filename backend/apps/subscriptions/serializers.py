@@ -61,6 +61,7 @@ class CheckoutSerializer(serializers.Serializer):
     sport_id = serializers.IntegerField()
     group_id = serializers.IntegerField()
     package_id = serializers.IntegerField()
+    shift_name = serializers.CharField(required=False, allow_blank=True, default="")
     payment_method = serializers.ChoiceField(choices=["cash", "bank_transfer"])
     invoice_pdf = serializers.FileField(required=False, allow_null=True)
     athlete_id = serializers.IntegerField(required=False, help_text="Required for parent accounts")

@@ -98,6 +98,21 @@ class AthleteRepository {
     }
   }
 
+  Future<AthleteModel> updateAthleteJson(int id, Map<String, dynamic> jsonBody) async {
+    try {
+      final res = await apiClient.dio.patch(
+        '${ApiEndpoints.athletes}$id/',
+        data: jsonBody,
+      );
+      final data = asMap(res.data);
+      if (data == null) throw _appEx('فشل تحديث اللاعب');
+      return AthleteModel.fromJson(data);
+    } on DioException catch (e) {
+      throw dioToAppApiException(e, fallback: 'فشل تعديل بيانات اللاعب');
+    }
+  }
+
+
   Future<void> deleteAthlete(int id) async {
     try {
       await apiClient.dio.delete('${ApiEndpoints.athletes}$id/');

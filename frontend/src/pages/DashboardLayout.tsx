@@ -19,6 +19,7 @@ import {
   Menu,
   Dumbbell,
   UserCog,
+  BadgeAlert,
 } from "lucide-react"
 import { useAuth, isRejectedUser } from "@/lib/auth"
 import { ErrorBoundary } from "@/components/ui/error-boundary"
@@ -34,10 +35,12 @@ interface NavItem {
 
 const allNavItems: NavItem[] = [
   { name: "لوحة القيادة", path: "/dashboard", icon: LayoutDashboard, permission: "analytics:read" },
-  { name: "اللاعبين", path: "/dashboard/athletes", icon: Users, permission: "athletes:read" },
+  { name: "الرياضيين", path: "/dashboard/athletes", icon: Users, permission: "athletes:read" },
   { name: "الاشتراكات", path: "/dashboard/memberships", icon: CreditCard, permission: "subscriptions:read" },
+  { name: "الاشتراكات المنتهية", path: "/dashboard/expired-memberships", icon: BadgeAlert, permission: "subscriptions:read" },
   { name: "الفحص السريع", path: "/dashboard/verify", icon: QrCode, permission: "verify:read" },
   { name: "الطلبات الجديدة", path: "/dashboard/registrations", icon: Users, permission: "registrations:read" },
+  { name: "الحسابات", path: "/dashboard/accounts", icon: UserCog, permission: "registrations:read" },
   { name: "الأكاديميات", path: "/dashboard/academies", icon: Building2, permission: "departments:read" },
   { name: "المدربون", path: "/dashboard/coaches", icon: Dumbbell, permission: "coaches:read" },
   { name: "الإدارة", path: "/dashboard/staff", icon: UserCog, permission: "staff:read" },
@@ -262,7 +265,7 @@ export default function DashboardLayout() {
               <div className="hidden w-full md:block md:w-64 lg:w-80">
                 <Input
                   className="bg-surface-container-low/50"
-                  placeholder="ابحث عن لاعب أو اشتراك..."
+                  placeholder="ابحث عن رياضي أو اشتراك..."
                   icon={<Search className="w-4 h-4 text-muted-foreground" />}
                 />
               </div>

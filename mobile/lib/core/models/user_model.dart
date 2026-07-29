@@ -7,6 +7,8 @@ class AthleteDetail {
   final String? membershipNumber;
   final String? departmentName;
   final String? photo;
+  final String? residence;
+  final String? healthStatus;
 
   AthleteDetail({
     required this.id,
@@ -15,6 +17,8 @@ class AthleteDetail {
     this.membershipNumber,
     this.departmentName,
     this.photo,
+    this.residence,
+    this.healthStatus,
   });
 
   factory AthleteDetail.fromJson(Map<String, dynamic> json) {
@@ -25,6 +29,8 @@ class AthleteDetail {
       membershipNumber: asString(json['membership_number']),
       departmentName: asString(json['department_name']),
       photo: asString(json['photo']),
+      residence: asString(json['residence']),
+      healthStatus: asString(json['health_status']),
     );
   }
 
@@ -36,6 +42,8 @@ class AthleteDetail {
       'membership_number': membershipNumber,
       'department_name': departmentName,
       'photo': photo,
+      'residence': residence,
+      'health_status': healthStatus,
     };
   }
 }
@@ -49,6 +57,8 @@ class UserModel {
   final String role;
   final bool isActive;
   final String? photo;
+  final String? residence;
+  final String? whatsappPhone;
   final int? academy;
   final String? academyName;
   final AthleteDetail? athleteDetail;
@@ -64,6 +74,8 @@ class UserModel {
     required this.role,
     required this.isActive,
     this.photo,
+    this.residence,
+    this.whatsappPhone,
     this.academy,
     this.academyName,
     this.athleteDetail,
@@ -81,6 +93,8 @@ class UserModel {
       role: asString(json['role']) ?? '',
       isActive: asBool(json['is_active']) ?? false,
       photo: asString(json['photo']),
+      residence: asString(json['residence']),
+      whatsappPhone: asString(json['whatsapp_phone']),
       academy: asInt(json['academy']),
       academyName: asString(json['academy_name']),
       athleteDetail: json['athlete_detail'] != null
@@ -101,6 +115,8 @@ class UserModel {
       'role': role,
       'is_active': isActive,
       'photo': photo,
+      'residence': residence,
+      'whatsapp_phone': whatsappPhone,
       'academy': academy,
       'academy_name': academyName,
       'athlete_detail': athleteDetail?.toJson(),
@@ -108,6 +124,7 @@ class UserModel {
       'registration_rejection_reason': registrationRejectionReason,
     };
   }
+
 
   bool get isSuperAdmin => role == 'super_admin';
   bool get isReception => role == 'reception';

@@ -71,9 +71,16 @@ def login_view(request):
     serializer.is_valid(raise_exception=True)
 
     phone = serializer.validated_data["phone"]
+    password = serializer.validated_data.get("password", "")
 
     existing_user = User.objects.filter(phone=phone).first()
-    if existing_user and not existing_user.is_active:
+    if not existing_user:
+        return Response(
+            {"detail": "رقم الهاتف هذا غير مسجل بالنظام"},
+            status=status.HTTP_401_UNAUTHORIZED,
+        )
+
+    if not existing_user.is_active:
         has_rejected = existing_user.registration_requests.filter(status="rejected").exists()
         if not has_rejected:
             return Response(
@@ -81,16 +88,22 @@ def login_view(request):
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
-    user = authenticate(
-        username=phone,
-        password=serializer.validated_data["password"],
-    )
-
-    if not user:
-        return Response(
-            {"detail": "رقم الهاتف أو كلمة المرور غير صحيحة"},
-            status=status.HTTP_401_UNAUTHORIZED,
-        )
+    # Phone-only login for client users (athletes and parents)
+    if existing_user.role in ["athlete", "parent"]:
+        user = existing_user
+    else:
+        # Require password for staff and management accounts
+        if not password:
+            return Response(
+                {"detail": "كلمة المرور مطلوبة لحسابات الإدارة والموظفين"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        user = authenticate(username=phone, password=password)
+        if not user:
+            return Response(
+                {"detail": "رقم الهاتف أو كلمة المرور غير صحيحة"},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
 
     user = User.objects.select_related("athlete__department").get(pk=user.pk)
     refresh = RefreshToken.for_user(user)
@@ -129,6 +142,33 @@ def logout_view(request):
 def me_view(request):
     user = User.objects.select_related("athlete__department").get(pk=request.user.pk)
     return Response(UserSerializer(user, context={"request": request}).data)
+
+
+@api_view(["PATCH", "PUT"])
+@permission_classes([IsAuthenticated])
+def update_profile_view(request):
+    user = request.user
+    serializer = UserProfileUpdateSerializer(user, data=request.data, partial=True, context={"request": request})
+    serializer.is_valid(raise_exception=True)
+    serializer.save()
+
+    # Also update residence on linked athlete if user is an athlete
+    if hasattr(user, "athlete") and user.athlete:
+        if "residence" in request.data:
+            user.athlete.residence = request.data["residence"]
+        if "first_name_ar" in request.data:
+            user.athlete.full_name = request.data["first_name_ar"]
+        user.athlete.save()
+
+    # Also update residence on child athletes if user is a parent
+    if user.role == "parent" and "residence" in request.data:
+        from apps.athletes.models import ParentAthlete
+        linked_athlete_ids = ParentAthlete.objects.filter(parent=user).values_list("athlete_id", flat=True)
+        from apps.athletes.models import Athlete
+        Athlete.objects.filter(id__in=linked_athlete_ids).update(residence=request.data["residence"])
+
+    updated_user = User.objects.select_related("athlete__department").get(pk=user.pk)
+    return Response(UserSerializer(updated_user, context={"request": request}).data)
 
 
 @api_view(["POST"])

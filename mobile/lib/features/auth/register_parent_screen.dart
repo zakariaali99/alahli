@@ -17,7 +17,8 @@ class _RegisterParentScreenState extends ConsumerState<RegisterParentScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
-  final _passwordController = TextEditingController();
+  final _whatsappPhoneController = TextEditingController();
+  final _residenceController = TextEditingController();
   final _dayController = TextEditingController();
   final _monthController = TextEditingController();
   final _yearController = TextEditingController();
@@ -25,13 +26,13 @@ class _RegisterParentScreenState extends ConsumerState<RegisterParentScreen> {
   bool _loading = false;
   String? _error;
   bool _success = false;
-  bool _obscurePassword = true;
 
   @override
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
-    _passwordController.dispose();
+    _whatsappPhoneController.dispose();
+    _residenceController.dispose();
     _dayController.dispose();
     _monthController.dispose();
     _yearController.dispose();
@@ -53,7 +54,8 @@ class _RegisterParentScreenState extends ConsumerState<RegisterParentScreen> {
         'role': 'parent',
         'full_name': _nameController.text.trim(),
         'phone': _phoneController.text.trim(),
-        'password': _passwordController.text,
+        'whatsapp_phone': _whatsappPhoneController.text.trim(),
+        'residence': _residenceController.text.trim(),
         'birth_day': int.tryParse(_dayController.text),
         'birth_month': int.tryParse(_monthController.text),
         'birth_year': int.tryParse(_yearController.text),
@@ -73,6 +75,7 @@ class _RegisterParentScreenState extends ConsumerState<RegisterParentScreen> {
       });
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -167,24 +170,28 @@ class _RegisterParentScreenState extends ConsumerState<RegisterParentScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Password
+              // WhatsApp & Residence
               TextFormField(
-                controller: _passwordController,
-                obscureText: _obscurePassword,
+                controller: _whatsappPhoneController,
+                keyboardType: TextInputType.phone,
                 textAlign: TextAlign.right,
-                decoration: InputDecoration(
-                  labelText: 'كلمة المرور',
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                      size: 20,
-                    ),
-                    onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                  ),
+                decoration: const InputDecoration(
+                  labelText: 'رقم الواتساب',
+                  hintText: '09xxxxxxxx',
                 ),
-                validator: (val) => val == null || val.isEmpty ? 'يرجى إدخال كلمة المرور' : null,
               ),
               const SizedBox(height: 16),
+
+              TextFormField(
+                controller: _residenceController,
+                textAlign: TextAlign.right,
+                decoration: const InputDecoration(
+                  labelText: 'السكن / العنوان',
+                  hintText: 'مثال: مصراتة - ...',
+                ),
+              ),
+              const SizedBox(height: 16),
+
 
               // Birthdate Grid
               const Text(

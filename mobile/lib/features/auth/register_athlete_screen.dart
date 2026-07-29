@@ -21,7 +21,11 @@ class _RegisterAthleteScreenState extends ConsumerState<RegisterAthleteScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
-  final _passwordController = TextEditingController();
+  final _parentNameController = TextEditingController();
+  final _parentPhoneController = TextEditingController();
+  final _whatsappPhoneController = TextEditingController();
+  final _residenceController = TextEditingController();
+  final _healthStatusController = TextEditingController();
   final _dayController = TextEditingController();
   final _monthController = TextEditingController();
   final _yearController = TextEditingController();
@@ -31,7 +35,6 @@ class _RegisterAthleteScreenState extends ConsumerState<RegisterAthleteScreen> {
   bool _loading = false;
   String? _error;
   bool _success = false;
-  bool _obscurePassword = true;
   int? _selectedDepartmentId;
 
   final ImagePicker _picker = ImagePicker();
@@ -40,7 +43,11 @@ class _RegisterAthleteScreenState extends ConsumerState<RegisterAthleteScreen> {
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
-    _passwordController.dispose();
+    _parentNameController.dispose();
+    _parentPhoneController.dispose();
+    _whatsappPhoneController.dispose();
+    _residenceController.dispose();
+    _healthStatusController.dispose();
     _dayController.dispose();
     _monthController.dispose();
     _yearController.dispose();
@@ -128,7 +135,11 @@ class _RegisterAthleteScreenState extends ConsumerState<RegisterAthleteScreen> {
         'role': 'athlete',
         'full_name': _nameController.text.trim(),
         'phone': _phoneController.text.trim(),
-        'password': _passwordController.text,
+        'parent_name': _parentNameController.text.trim(),
+        'parent_phone': _parentPhoneController.text.trim(),
+        'whatsapp_phone': _whatsappPhoneController.text.trim(),
+        'residence': _residenceController.text.trim(),
+        'health_status': _healthStatusController.text.trim(),
         'photo': _photoBase64,
         'birth_day': int.tryParse(_dayController.text),
         'birth_month': int.tryParse(_monthController.text),
@@ -150,6 +161,7 @@ class _RegisterAthleteScreenState extends ConsumerState<RegisterAthleteScreen> {
       });
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -292,24 +304,49 @@ class _RegisterAthleteScreenState extends ConsumerState<RegisterAthleteScreen> {
               ),
               const SizedBox(height: 16),
 
-              // Password
+              // Parent & Contact Details
               TextFormField(
-                controller: _passwordController,
-                obscureText: _obscurePassword,
+                controller: _whatsappPhoneController,
+                keyboardType: TextInputType.phone,
                 textAlign: TextAlign.right,
-                decoration: InputDecoration(
-                  labelText: 'كلمة المرور',
-                  suffixIcon: IconButton(
-                    icon: Icon(
-                      _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                      size: 20,
-                    ),
-                    onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                  ),
+                decoration: const InputDecoration(
+                  labelText: 'رقم الواتساب / ولي الأمر',
+                  hintText: '09xxxxxxxx',
                 ),
-                validator: (val) => val == null || val.isEmpty ? 'يرجى إدخال كلمة المرور' : null,
               ),
               const SizedBox(height: 16),
+
+              TextFormField(
+                controller: _parentNameController,
+                textAlign: TextAlign.right,
+                decoration: const InputDecoration(
+                  labelText: 'اسم ولي الأمر',
+                  hintText: 'اسم ولي الأمر ثلاثي',
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              TextFormField(
+                controller: _residenceController,
+                textAlign: TextAlign.right,
+                decoration: const InputDecoration(
+                  labelText: 'السكن / العنوان',
+                  hintText: 'مثال: مصراتة - ...',
+                ),
+              ),
+              const SizedBox(height: 16),
+
+              TextFormField(
+                controller: _healthStatusController,
+                maxLines: 2,
+                textAlign: TextAlign.right,
+                decoration: const InputDecoration(
+                  labelText: 'الحالة الصحية / ملاحظات طبية',
+                  hintText: 'أدخل أي حالة صحية أو ملاحظات خاصة...',
+                ),
+              ),
+              const SizedBox(height: 16),
+
 
               // Birthdate Grid
               const Text(
@@ -380,29 +417,30 @@ class _RegisterAthleteScreenState extends ConsumerState<RegisterAthleteScreen> {
                 style: TextStyle(fontSize: 13, fontWeight: FontWeight.bold, color: AppColors.mutedForeground),
               ),
               const SizedBox(height: 8),
-              ref.watch(departmentsProvider).when(
-                data: (list) => DropdownButtonFormField<int?>(
-                  value: _selectedDepartmentId,
-                  decoration: const InputDecoration(
-                    hintText: 'اختر الأكاديمية',
-                    contentPadding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                  ),
-                  dropdownColor: isDark ? AppColors.darkCard : Colors.white,
-                  items: list
-                      .map((dept) => DropdownMenuItem<int?>(
-                            value: dept.id,
-                            child: Text(dept.nameAr),
-                          ))
-                      .toList(),
-                  onChanged: (val) {
-                    setState(() {
-                      _selectedDepartmentId = val;
-                    });
-                  },
+              DropdownButtonFormField<int?>(
+                value: _selectedDepartmentId,
+                decoration: const InputDecoration(
+                  hintText: 'اختر الأكاديمية',
+                  contentPadding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
                 ),
-                loading: () => const Center(child: LinearProgressIndicator()),
-                error: (err, s) => Text('خطأ في تحميل الأكاديميات'),
+                dropdownColor: isDark ? AppColors.darkCard : Colors.white,
+                items: const [
+                  DropdownMenuItem<int?>(
+                    value: 4,
+                    child: Text('مركز الأهلي الرياضي'),
+                  ),
+                  DropdownMenuItem<int?>(
+                    value: 5,
+                    child: Text('أكاديمية الأوس'),
+                  ),
+                ],
+                onChanged: (val) {
+                  setState(() {
+                    _selectedDepartmentId = val;
+                  });
+                },
               ),
+
               const SizedBox(height: 24),
 
               if (_error != null) ...[

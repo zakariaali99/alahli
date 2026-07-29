@@ -30,6 +30,8 @@ class User(AbstractUser):
         related_name="managers"
     )
     is_active = models.BooleanField(default=True)
+    residence = models.CharField(max_length=200, blank=True, default="", help_text="السكن / العنوان")
+    whatsapp_phone = models.CharField(max_length=20, blank=True, default="", help_text="رقم الواتساب")
     photo = models.ImageField(
         upload_to="users/", blank=True, null=True,
         validators=[FileExtensionValidator(allowed_extensions=["jpg", "jpeg", "png", "webp"])],

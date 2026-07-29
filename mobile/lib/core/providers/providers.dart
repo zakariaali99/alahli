@@ -28,6 +28,8 @@ import '../services/push_service.dart';
 import '../providers/paginated_providers.dart';
 import '../repositories/preferences_repository.dart';
 import '../models/user_preference_model.dart';
+import '../models/app_api_exception.dart';
+
 
 final apiClientProvider = Provider<ApiClient>((ref) {
   final client = ApiClient(baseUrl: ApiEndpoints.baseUrl);
@@ -153,6 +155,11 @@ class AuthNotifier extends StateNotifier<UserModel?> {
       authRepository.apiClient.setTokens(access: token, refresh: refresh);
       try {
         final user = await authRepository.getMe();
+        if (!adminRoles.contains(user.role)) {
+          clearSession();
+          ref.read(authInitializedProvider.notifier).state = true;
+          return;
+        }
         state = user;
         await _registerPushToken();
       } catch (_) {
@@ -162,13 +169,27 @@ class AuthNotifier extends StateNotifier<UserModel?> {
     ref.read(authInitializedProvider.notifier).state = true;
   }
 
+  Future<void> reloadUser() async {
+    try {
+      final user = await authRepository.getMe();
+      state = user;
+    } catch (_) {}
+  }
+
   Future<void> login(String phone, String password, bool rememberMe) async {
     final user = await authRepository.login(phone: phone, password: password, rememberMe: rememberMe);
+
+    if (!adminRoles.contains(user.role)) {
+      await authRepository.logout();
+      state = null;
+      throw AppApiException(message: 'قريباً...');
+    }
 
     state = user;
     ref.read(authInitializedProvider.notifier).state = true;
     await _registerPushToken();
   }
+
 
   String get _platform => defaultTargetPlatform == TargetPlatform.iOS ? 'ios' : 'android';
 

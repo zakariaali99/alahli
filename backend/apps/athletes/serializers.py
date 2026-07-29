@@ -11,14 +11,22 @@ PASSWORD_HELP = "أقل شيء حرف واحد"
 
 class AthleteListSerializer(serializers.ModelSerializer):
     department_name = serializers.CharField(source="department.name_ar", read_only=True)
+    subscription_end_date = serializers.SerializerMethodField()
 
     class Meta:
         model = Athlete
         fields = [
             "id", "membership_number", "full_name", "phone",
             "gender", "department", "department_name",
-            "photo", "is_active", "created_at",
+            "photo", "is_active", "created_at", "subscription_end_date",
         ]
+
+    def get_subscription_end_date(self, obj):
+        sub = obj.subscriptions.filter(status="active").order_by("-end_date").first()
+        if sub:
+            return str(sub.end_date)
+        sub = obj.subscriptions.order_by("-end_date").first()
+        return str(sub.end_date) if sub else None
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
@@ -146,22 +154,31 @@ class RegisterSerializer(serializers.Serializer):
     role = serializers.ChoiceField(choices=["athlete", "parent"])
     full_name = serializers.CharField(max_length=100)
     phone = serializers.CharField(max_length=20, validators=[validate_libyan_phone])
-    password = serializers.CharField(write_only=True, min_length=1)
-    photo = serializers.CharField(required=False, allow_null=True, help_text="Base64 camera capture")
-    birth_day = serializers.IntegerField(min_value=1, max_value=31)
-    birth_month = serializers.IntegerField(min_value=1, max_value=12)
-    birth_year = serializers.IntegerField(min_value=1900)
+    whatsapp_phone = serializers.CharField(max_length=20, required=False, allow_blank=True, default="")
+    password = serializers.CharField(write_only=True, required=False, allow_blank=True, default="")
+    photo = serializers.CharField(required=False, allow_null=True, help_text="Base64 camera capture or file upload")
+    birth_day = serializers.IntegerField(required=False, allow_null=True, default=None)
+    birth_month = serializers.IntegerField(required=False, allow_null=True, default=None)
+    birth_year = serializers.IntegerField(required=False, allow_null=True, default=None)
     department = serializers.IntegerField(required=False, allow_null=True, help_text="Department ID for the athlete")
+    residence = serializers.CharField(max_length=200, required=False, allow_blank=True, default="")
+    health_status = serializers.CharField(required=False, allow_blank=True, default="")
+    parent_name = serializers.CharField(max_length=100, required=False, allow_blank=True, default="")
+    parent_phone = serializers.CharField(max_length=20, required=False, allow_blank=True, default="")
 
     def validate_birth_date(self, attrs):
         import datetime
         day = attrs.get("birth_day")
         month = attrs.get("birth_month")
         year = attrs.get("birth_year")
+        if day is None or month is None or year is None:
+            # Default fallback date for parent role
+            return datetime.date(1990, 1, 1)
         try:
             return datetime.date(year, month, day)
         except ValueError as e:
             raise serializers.ValidationError({"birth_date": str(e)})
+
 
     def validate_phone(self, value):
         from django.contrib.auth import get_user_model
@@ -178,7 +195,7 @@ class RegisterSerializer(serializers.Serializer):
     def validate(self, attrs):
         if attrs["role"] == "athlete":
             if not attrs.get("photo"):
-                raise serializers.ValidationError({"photo": "الصورة مطلوبة للاعبين"})
+                raise serializers.ValidationError({"photo": "الصورة مطلوبة للرياضيين"})
         else:
             attrs.pop("photo", None)
 

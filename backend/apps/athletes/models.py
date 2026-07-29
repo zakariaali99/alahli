@@ -23,9 +23,12 @@ class Athlete(models.Model):
     )
     full_name = models.CharField(max_length=100, db_index=True)
     phone = models.CharField(max_length=20, unique=True, db_index=True)
-    parent_phone = models.CharField(max_length=20, blank=True)
+    parent_name = models.CharField(max_length=100, blank=True, default="", help_text="اسم ولي الأمر")
+    parent_phone = models.CharField(max_length=20, blank=True, default="")
+    residence = models.CharField(max_length=200, blank=True, default="", help_text="السكن / العنوان")
+    health_status = models.TextField(blank=True, default="", help_text="الحالة الصحية / ملاحظات طبية")
     birth_date = models.DateField()
-    gender = models.CharField(max_length=10, choices=Gender.choices)
+    gender = models.CharField(max_length=10, choices=Gender.choices, default=Gender.MALE)
     department = models.ForeignKey(
         "departments.Department", on_delete=models.SET_NULL, null=True, related_name="athletes"
     )
@@ -82,6 +85,8 @@ class RegistrationRequest(models.Model):
         "accounts.User", on_delete=models.CASCADE, related_name="registration_requests",
     )
     role_choice = models.CharField(max_length=10, choices=RoleChoice.choices)
+    residence = models.CharField(max_length=200, blank=True, default="")
+    health_status = models.TextField(blank=True, default="")
     status = models.CharField(max_length=10, choices=Status.choices, default=Status.PENDING, db_index=True)
     reviewed_by = models.ForeignKey(
         "accounts.User", on_delete=models.SET_NULL, null=True, blank=True,

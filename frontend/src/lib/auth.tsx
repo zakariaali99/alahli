@@ -11,6 +11,8 @@ export interface User {
   is_superuser: boolean
   is_active: boolean
   photo: string | null
+  residence?: string | null
+  whatsapp_phone?: string | null
   academy?: number | null
   academy_name?: string | null
   athlete_detail?: {
@@ -23,6 +25,8 @@ export interface User {
     department: number | null
     department_name: string | null
     photo: string | null
+    residence?: string | null
+    health_status?: string | null
   } | null
   registration_status?: "pending" | "approved" | "rejected" | null
   registration_rejection_reason?: string | null
@@ -36,7 +40,7 @@ interface AuthContextType {
   user: User | null
   isLoading: boolean
   isAuthenticated: boolean
-  login: (phone: string, password: string) => Promise<User>
+  login: (phone: string, password?: string) => Promise<User>
   logout: () => Promise<void>
 }
 
@@ -64,10 +68,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     fetchUser().finally(() => setIsLoading(false))
   }, [fetchUser])
 
-  const login = useCallback(async (phone: string, password: string) => {
+  const login = useCallback(async (phone: string, password?: string) => {
     const data = await api.post<{ access: string; refresh: string; user: User }>(
       "/auth/login/",
-      { phone, password },
+      { phone, password: password || "" },
       { skipAuth: true },
     )
     api.setTokens(data.access, data.refresh)

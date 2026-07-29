@@ -27,6 +27,8 @@ import AcademyManagement from "@/pages/admin/AcademyManagement"
 import AdminNotifications from "@/pages/admin/AdminNotifications"
 import StaffManagement from "@/pages/admin/StaffManagement"
 import CoachesManagement from "@/pages/admin/CoachesManagement"
+import Accounts from "@/pages/Accounts"
+import ExpiredMemberships from "@/pages/ExpiredMemberships"
 import { ToastProvider } from "@/lib/toast"
 import { ErrorBoundary } from "@/components/ui/error-boundary"
 import OfflineBar from "@/components/ui/offline-bar"
@@ -62,6 +64,7 @@ export default function App() {
                   <Route path="athletes/:id/edit" element={<AddAthlete />} />
                   <Route path="athletes/:id" element={<AthleteProfile />} />
                   <Route path="memberships" element={<Memberships />} />
+                  <Route path="expired-memberships" element={<ExpiredMemberships />} />
                   <Route path="verify" element={<Verify />} />
                   <Route path="reports" element={<Reports />} />
                   <Route path="settings" element={<Settings />} />
@@ -69,6 +72,7 @@ export default function App() {
                   <Route path="academies" element={<AcademyManagement />} />
                   <Route path="staff" element={<StaffManagement />} />
                   <Route path="coaches" element={<CoachesManagement />} />
+                  <Route path="accounts" element={<Accounts />} />
                   <Route path="notifications" element={<AdminNotifications />} />
                   <Route path="notification-preferences" element={<Notifications />} />
                   <Route path="admin-notifications" element={<Navigate to="/dashboard/notifications" replace />} />

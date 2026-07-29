@@ -72,8 +72,8 @@ const roleGradient: Record<string, string> = {
 }
 
 const notificationItems = [
-  { label: "انتهاء الاشتراكات", desc: "تنبيه عند اقتراب موعد انتهاء اشتراك أي لاعب", icon: AlertTriangle, field: "notifications_enabled" as const },
-  { label: "التسجيلات الجديدة", desc: "تنبيه عند تسجيل لاعب جديد في النظام", icon: UserPlus, field: "notifications_enabled" as const },
+  { label: "انتهاء الاشتراكات", desc: "تنبيه عند اقتراب موعد انتهاء اشتراك أي رياضي", icon: AlertTriangle, field: "notifications_enabled" as const },
+  { label: "التسجيلات الجديدة", desc: "تنبيه عند تسجيل رياضي جديد في النظام", icon: UserPlus, field: "notifications_enabled" as const },
   { label: "المدفوعات", desc: "تنبيه عند تأكيد عملية دفع أو تجديد", icon: CreditCard, field: "email_enabled" as const },
   { label: "النظام", desc: "تنبيهات الصيانة والتحديثات الأسبوعية", icon: Smartphone, field: "sms_enabled" as const },
 ]

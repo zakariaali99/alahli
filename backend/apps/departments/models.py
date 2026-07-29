@@ -59,6 +59,7 @@ class Group(models.Model):
     days = models.JSONField(default=list, blank=True)
     start_time = models.TimeField()
     end_time = models.TimeField()
+    shifts = models.JSONField(default=list, blank=True, help_text="List of shifts e.g. [{'name': 'الفترة الأولى', 'start_time': '14:00', 'end_time': '15:00'}]")
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 

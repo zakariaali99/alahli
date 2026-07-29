@@ -127,7 +127,7 @@ export function roleLabel(role: Role): string {
     reception: "موظف استقبال",
     trainer: "مدرب",
     viewer: "مشاهد",
-    athlete: "لاعب",
+    athlete: "رياضي",
     parent: "ولي أمر",
   }
   return labels[role] || role

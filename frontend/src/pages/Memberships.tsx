@@ -242,12 +242,12 @@ export default function MembershipsPage() {
       setQuickRenewSubId(preferred ? String(preferred.id) : "")
 
       if (!preferred) {
-        setQuickRenewError("لا توجد اشتراكات سابقة لهذا اللاعب لتجديدها")
+        setQuickRenewError("لا توجد اشتراكات سابقة لهذا الرياضي لتجديدها")
       }
     } catch (err: any) {
       setQuickRenewSubs([])
       setQuickRenewSubId("")
-      setQuickRenewError(err?.message || "تعذر تحميل اشتراكات اللاعب")
+      setQuickRenewError(err?.message || "تعذر تحميل اشتراكات الرياضي")
     } finally {
       setQuickRenewLoadingSubs(false)
     }
@@ -257,7 +257,7 @@ export default function MembershipsPage() {
     e.preventDefault()
     if (!quickRenewPackage) return
     if (!quickRenewAthlete) {
-      setQuickRenewError("يرجى اختيار اللاعب")
+      setQuickRenewError("يرجى اختيار الرياضي")
       return
     }
     if (!quickRenewSubId) {
@@ -555,7 +555,7 @@ export default function MembershipsPage() {
       <motion.div variants={itemVariants} className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
           <h1 className="text-3xl font-extrabold gradient-text">إدارة الاشتراكات</h1>
-          <p className="text-muted-foreground mt-1 text-sm">تجديد، متابعة، وإدارة الباقات المالية للاعبين.</p>
+          <p className="text-muted-foreground mt-1 text-sm">تجديد، متابعة، وإدارة الباقات المالية للرياضيين.</p>
         </div>
         <Can action="subscriptions:create">
           <Button size="lg" className="w-full md:w-auto bg-primary text-primary-foreground hover:bg-primary/90 shadow-lg shadow-primary/20 hover:shadow-xl hover:shadow-primary/25" onClick={() => void openCreateSubscriptionModal()}>
@@ -695,7 +695,7 @@ export default function MembershipsPage() {
                 value={search}
                 onChange={(e) => { setSearch(e.target.value); setPage(1) }}
                 icon={<Search className="w-4 h-4 text-muted-foreground" />}
-                placeholder="بحث باسم اللاعب أو رقم الهوية..."
+                placeholder="بحث باسم الرياضي أو رقم الهوية..."
               />
             </div>
             <div className="relative w-full lg:w-auto">
@@ -719,7 +719,7 @@ export default function MembershipsPage() {
             <table className="w-full min-w-[680px] text-right text-sm">
               <thead>
                 <tr className="bg-surface-container-high/50 border-b border-outline-variant/30 text-muted-foreground text-xs font-bold">
-                  <th scope="col" className="px-6 py-4">اسم اللاعب</th>
+                  <th scope="col" className="px-6 py-4">اسم الرياضي</th>
                   <th scope="col" className="px-6 py-4">تاريخ البدء</th>
                   <th scope="col" className="px-6 py-4">تاريخ الانتهاء</th>
                   <th scope="col" className="px-6 py-4">المبلغ</th>
@@ -1127,7 +1127,7 @@ export default function MembershipsPage() {
               <button type="button" onClick={() => setDetailsSub(null)}><X className="w-5 h-5 text-muted-foreground" /></button>
             </div>
             <div className="grid grid-cols-2 gap-3 text-sm">
-              <div><p className="text-muted-foreground">اللاعب</p><p className="font-semibold">{detailsSub.athlete_name}</p></div>
+              <div><p className="text-muted-foreground">الرياضي</p><p className="font-semibold">{detailsSub.athlete_name}</p></div>
               <div><p className="text-muted-foreground">رقم العضوية</p><p className="font-semibold">{detailsSub.membership_number}</p></div>
               <div><p className="text-muted-foreground">الباقة</p><p className="font-semibold">{detailsSub.package_name}</p></div>
               <div><p className="text-muted-foreground">طريقة الدفع</p><p className="font-semibold">{detailsSub.payment_method === "bank_transfer" ? "تحويل بنكي" : "نقدي"}</p></div>
@@ -1157,7 +1157,7 @@ export default function MembershipsPage() {
                 to={`/dashboard/athletes/${detailsSub.athlete}`}
                 className="inline-flex items-center gap-2 rounded-lg border border-border px-3 py-2 text-xs font-semibold text-foreground hover:bg-surface-container"
               >
-                <Eye className="w-4 h-4" /> فتح ملف اللاعب
+                <Eye className="w-4 h-4" /> فتح ملف الرياضي
               </Link>
             </div>
           </div>
@@ -1173,14 +1173,14 @@ export default function MembershipsPage() {
             </div>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
-                <label className="mb-1 block text-xs text-muted-foreground">اللاعب</label>
+                <label className="mb-1 block text-xs text-muted-foreground">الرياضي</label>
                 <select
                   className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2 text-sm"
                   value={manualSubForm.athlete}
                   onChange={(e) => setManualSubForm((p) => ({ ...p, athlete: e.target.value }))}
                   required
                 >
-                  <option value="">اختر لاعب</option>
+                  <option value="">اختر رياضي</option>
                   {athleteOptions.map((athlete) => (
                     <option key={athlete.id} value={String(athlete.id)}>{athlete.full_name} ({athlete.membership_number})</option>
                   ))}
@@ -1307,7 +1307,7 @@ export default function MembershipsPage() {
             </div>
 
             <div>
-              <label className="mb-1 block text-xs text-muted-foreground">اختر اللاعب</label>
+              <label className="mb-1 block text-xs text-muted-foreground">اختر الرياضي</label>
               <select
                 className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2 text-sm"
                 value={quickRenewAthlete}
@@ -1317,7 +1317,7 @@ export default function MembershipsPage() {
                 }}
                 required
               >
-                <option value="">اختر لاعب</option>
+                <option value="">اختر رياضي</option>
                 {athleteOptions.map((athlete) => (
                   <option key={athlete.id} value={String(athlete.id)}>
                     {athlete.full_name} ({athlete.membership_number})

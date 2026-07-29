@@ -37,7 +37,7 @@ export default function AthleteProfilePage() {
   if (isNaN(id) || id <= 0) {
     return (
       <div className="text-center py-20 text-muted-foreground">
-        لم يتم العثور على اللاعب
+        لم يتم العثور على الرياضي
       </div>
     )
   }
@@ -53,7 +53,7 @@ export default function AthleteProfilePage() {
   if (!athlete) {
     return (
       <div className="text-center py-20 text-muted-foreground">
-        لم يتم العثور على اللاعب
+        لم يتم العثور على الرياضي
       </div>
     )
   }
@@ -104,9 +104,9 @@ export default function AthleteProfilePage() {
 
       <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 mb-2 print:hidden">
         <div className="flex items-center gap-2 text-muted-foreground text-sm font-semibold">
-          <Link to="/dashboard/athletes" className="hover:text-primary transition-colors">اللاعبين</Link>
+          <Link to="/dashboard/athletes" className="hover:text-primary transition-colors">الرياضيين</Link>
           <ChevronLeft className="w-4 h-4" />
-          <span className="text-primary font-bold">ملف اللاعب</span>
+          <span className="text-primary font-bold">ملف الرياضي</span>
         </div>
         <div className="flex items-center gap-3 w-full md:w-auto">
           <Can action="athletes:update">

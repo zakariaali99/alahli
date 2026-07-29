@@ -22,7 +22,12 @@ class UserSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = User
-        fields = ["id", "phone", "first_name_ar", "last_name_ar", "full_name_ar", "role", "is_superuser", "is_active", "photo", "athlete_detail", "academy", "academy_name", "registration_status", "registration_rejection_reason"]
+        fields = [
+            "id", "phone", "first_name_ar", "last_name_ar", "full_name_ar", "role",
+            "is_superuser", "is_active", "photo", "athlete_detail", "academy",
+            "academy_name", "residence", "whatsapp_phone", "registration_status",
+            "registration_rejection_reason"
+        ]
         read_only_fields = ["id"]
 
     def get_athlete_detail(self, obj):
@@ -87,9 +92,22 @@ class UserUpdateSerializer(serializers.ModelSerializer):
         return _build_photo_url(self, super().to_representation(instance))
 
 
+class UserProfileUpdateSerializer(serializers.ModelSerializer):
+    phone = serializers.CharField(max_length=20, validators=[validate_libyan_phone], required=False)
+    whatsapp_phone = serializers.CharField(max_length=20, required=False, allow_blank=True)
+    residence = serializers.CharField(max_length=200, required=False, allow_blank=True)
+
+    class Meta:
+        model = User
+        fields = ["first_name_ar", "last_name_ar", "phone", "whatsapp_phone", "residence", "photo"]
+
+    def to_representation(self, instance):
+        return _build_photo_url(self, super().to_representation(instance))
+
+
 class LoginSerializer(serializers.Serializer):
     phone = serializers.CharField(max_length=20, validators=[validate_libyan_phone])
-    password = serializers.CharField(max_length=128)
+    password = serializers.CharField(max_length=128, required=False, allow_blank=True, default="")
     remember_me = serializers.BooleanField(default=False)
 
 

@@ -125,7 +125,7 @@ export default function ReportsPage() {
       iconBg: "bg-primary/10 text-primary",
     },
     {
-      label: "اللاعبين النشطين",
+      label: "الرياضيين النشطين",
       value: activeMemberships.toLocaleString("ar-SA-u-nu-latn"),
       icon: Users,
       iconBg: "bg-secondary/10 text-secondary",
@@ -137,7 +137,7 @@ export default function ReportsPage() {
       iconBg: "bg-amber-500/10 text-amber-600",
     },
     {
-      label: "إجمالي اللاعبين",
+      label: "إجمالي الرياضيين",
       value: (stats?.total_athletes ?? 0).toLocaleString("ar-SA-u-nu-latn"),
       icon: Activity,
       iconBg: "bg-primary/10 text-primary",
@@ -155,7 +155,7 @@ export default function ReportsPage() {
       <motion.div className="flex flex-col md:flex-row md:items-end justify-between gap-4" variants={itemVariants}>
         <div>
           <h2 className="text-3xl font-extrabold text-foreground tracking-tight">نظرة عامة على الأداء</h2>
-          <p className="text-muted-foreground mt-1 text-sm">تحليل شامل لبيانات اللاعبين والاشتراكات والإيرادات.</p>
+          <p className="text-muted-foreground mt-1 text-sm">تحليل شامل لبيانات الرياضيين والاشتراكات والإيرادات.</p>
         </div>
 
         <div className="flex flex-wrap items-center gap-3">
@@ -253,7 +253,7 @@ export default function ReportsPage() {
         {/* Donut Distribution Chart */}
         <motion.div variants={itemVariants} className="glass-card rounded-3xl p-6 flex flex-col items-center">
           <div className="w-full flex justify-between items-center mb-6">
-            <h3 className="text-lg font-bold text-foreground">توزيع اللاعبين بالأقسام</h3>
+            <h3 className="text-lg font-bold text-foreground">توزيع الرياضيين بالأقسام</h3>
           </div>
           {deptLoading ? (
             <div className="flex-1 flex items-center justify-center py-12">
@@ -261,7 +261,7 @@ export default function ReportsPage() {
             </div>
           ) : distributionData.length === 0 ? (
             <div className="flex-1 flex items-center justify-center py-12 text-muted-foreground text-sm">
-              لا توجد بيانات توزيع للاعبين
+              لا توجد بيانات توزيع للرياضيين
             </div>
           ) : (
             <div className="w-full flex-1 flex flex-col items-center justify-center">
@@ -328,7 +328,7 @@ export default function ReportsPage() {
             <thead>
               <tr className="border-b border-border text-xs text-muted-foreground">
                 <th className="pb-3 pt-1 px-4">رقم العضوية</th>
-                <th className="pb-3 pt-1 px-4">اللاعب</th>
+                <th className="pb-3 pt-1 px-4">الرياضي</th>
                 <th className="pb-3 pt-1 px-4">الباقة</th>
                 <th className="pb-3 pt-1 px-4">المبلغ</th>
                 <th className="pb-3 pt-1 px-4">طريقة الدفع</th>

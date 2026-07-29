@@ -27,6 +27,8 @@ class _UserAthleteScreenState extends ConsumerState<UserAthleteScreen> {
   final _formKey = GlobalKey<FormState>();
   final _nameController = TextEditingController();
   final _phoneController = TextEditingController();
+  final _residenceController = TextEditingController();
+  final _healthStatusController = TextEditingController();
 
   final _dayController = TextEditingController();
   final _monthController = TextEditingController();
@@ -49,6 +51,8 @@ class _UserAthleteScreenState extends ConsumerState<UserAthleteScreen> {
   void dispose() {
     _nameController.dispose();
     _phoneController.dispose();
+    _residenceController.dispose();
+    _healthStatusController.dispose();
 
     _dayController.dispose();
     _monthController.dispose();
@@ -148,12 +152,12 @@ class _UserAthleteScreenState extends ConsumerState<UserAthleteScreen> {
       }
     } catch (e) {
       setState(() {
-        _submitError = 'تعذر الوصول للكاميرا. جرّب اختيار صورة من الجهاز.';
+        _submitError = 'تعذر اختيار الصورة';
       });
     }
   }
 
-  Future<void> _addAthlete() async {
+  Future<void> _handleAddAthlete() async {
     if (!_formKey.currentState!.validate()) return;
     if (_photoBase64 == null) {
       setState(() {
@@ -169,29 +173,32 @@ class _UserAthleteScreenState extends ConsumerState<UserAthleteScreen> {
 
     try {
       final apiClient = ref.read(apiClientProvider);
-      
       await apiClient.dio.post('/athletes/parent/athletes/', data: {
         'full_name': _nameController.text.trim(),
         'phone': _phoneController.text.trim(),
+        'residence': _residenceController.text.trim(),
+        'health_status': _healthStatusController.text.trim(),
         'birth_day': int.tryParse(_dayController.text),
         'birth_month': int.tryParse(_monthController.text),
         'birth_year': int.tryParse(_yearController.text),
         'photo': _photoBase64,
       });
 
+      _nameController.clear();
+      _phoneController.clear();
+      _residenceController.clear();
+      _healthStatusController.clear();
+      _dayController.clear();
+      _monthController.clear();
+      _yearController.clear();
+      _photoBase64 = null;
+      _pickedFile = null;
+
       setState(() {
         _showAddForm = false;
-        _photoBase64 = null;
-        _pickedFile = null;
-        _nameController.clear();
-        _phoneController.clear();
-
-        _dayController.clear();
-        _monthController.clear();
-        _yearController.clear();
       });
 
-      _fetchData();
+      await _fetchData();
     } catch (e) {
       final parsed = parseApiError(e);
       setState(() {
@@ -202,6 +209,172 @@ class _UserAthleteScreenState extends ConsumerState<UserAthleteScreen> {
         _submitting = false;
       });
     }
+  }
+
+  void _showEditParentDialog() {
+    final user = ref.read(authProvider);
+    final nameCtrl = TextEditingController(text: user?.fullNameAr ?? '');
+    final phoneCtrl = TextEditingController(text: user?.phone ?? '');
+    final whatsappCtrl = TextEditingController(text: user?.whatsappPhone ?? '');
+    final residenceCtrl = TextEditingController(text: user?.residence ?? '');
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('تعديل بيانات ولي الأمر', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold)),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'الاسم بالكامل')),
+              const SizedBox(height: 12),
+              TextField(controller: phoneCtrl, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'رقم الهاتف')),
+              const SizedBox(height: 12),
+              TextField(controller: whatsappCtrl, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'رقم الواتساب')),
+              const SizedBox(height: 12),
+              TextField(controller: residenceCtrl, decoration: const InputDecoration(labelText: 'السكن / العنوان')),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
+          FilledButton(
+            onPressed: () async {
+              try {
+                final authRepo = ref.read(authRepositoryProvider);
+                await authRepo.updateProfile(
+                  name: nameCtrl.text.trim(),
+                  phone: phoneCtrl.text.trim(),
+                  whatsappPhone: whatsappCtrl.text.trim(),
+                  residence: residenceCtrl.text.trim(),
+                );
+                await ref.read(authProvider.notifier).reloadUser();
+                if (!context.mounted) return;
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم حفظ البيانات بنجاح')));
+              } catch (e) {
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+              }
+            },
+            child: const Text('حفظ'),
+          ),
+
+        ],
+      ),
+    );
+  }
+
+  void _showEditChildDialog(int athleteId, String currentName, String? currentResidence, String? currentHealth) {
+    final nameCtrl = TextEditingController(text: currentName);
+    final residenceCtrl = TextEditingController(text: currentResidence ?? '');
+    final healthCtrl = TextEditingController(text: currentHealth ?? '');
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('تعديل بيانات الطفل', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold)),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'الاسم بالكامل')),
+              const SizedBox(height: 12),
+              TextField(controller: residenceCtrl, decoration: const InputDecoration(labelText: 'السكن / العنوان')),
+              const SizedBox(height: 12),
+              TextField(controller: healthCtrl, decoration: const InputDecoration(labelText: 'الحالة الصحية')),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
+          FilledButton(
+            onPressed: () async {
+              try {
+                final repo = ref.read(athleteRepositoryProvider);
+                await repo.updateAthleteJson(athleteId, {
+                  'full_name': nameCtrl.text.trim(),
+                  'residence': residenceCtrl.text.trim(),
+                  'health_status': healthCtrl.text.trim(),
+                });
+                await _fetchData();
+                if (!context.mounted) return;
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم تحديث بيانات الرياضي')));
+              } catch (e) {
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+              }
+            },
+            child: const Text('حفظ'),
+          ),
+
+        ],
+      ),
+    );
+  }
+
+  void _showEditSelfDialog() {
+    final user = ref.read(authProvider);
+    final detail = user?.athleteDetail;
+    final nameCtrl = TextEditingController(text: detail?.fullName ?? user?.fullNameAr ?? '');
+    final phoneCtrl = TextEditingController(text: detail?.phone ?? user?.phone ?? '');
+    final residenceCtrl = TextEditingController(text: detail?.residence ?? user?.residence ?? '');
+    final healthCtrl = TextEditingController(text: detail?.healthStatus ?? '');
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        title: const Text('تعديل بياني الشخصي', textAlign: TextAlign.center, style: TextStyle(fontWeight: FontWeight.bold)),
+        content: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              TextField(controller: nameCtrl, decoration: const InputDecoration(labelText: 'الاسم بالكامل')),
+              const SizedBox(height: 12),
+              TextField(controller: phoneCtrl, keyboardType: TextInputType.phone, decoration: const InputDecoration(labelText: 'رقم الهاتف')),
+              const SizedBox(height: 12),
+              TextField(controller: residenceCtrl, decoration: const InputDecoration(labelText: 'السكن / العنوان')),
+              const SizedBox(height: 12),
+              TextField(controller: healthCtrl, decoration: const InputDecoration(labelText: 'الحالة الصحية')),
+            ],
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.pop(ctx), child: const Text('إلغاء')),
+          FilledButton(
+            onPressed: () async {
+              try {
+                final authRepo = ref.read(authRepositoryProvider);
+                await authRepo.updateProfile(
+                  name: nameCtrl.text.trim(),
+                  phone: phoneCtrl.text.trim(),
+                  residence: residenceCtrl.text.trim(),
+                );
+                if (detail != null) {
+                  final athleteRepo = ref.read(athleteRepositoryProvider);
+                  await athleteRepo.updateAthleteJson(detail.id, {
+                    'full_name': nameCtrl.text.trim(),
+                    'phone': phoneCtrl.text.trim(),
+                    'residence': residenceCtrl.text.trim(),
+                    'health_status': healthCtrl.text.trim(),
+                  });
+                }
+                await ref.read(authProvider.notifier).reloadUser();
+                if (!context.mounted) return;
+                Navigator.pop(ctx);
+                ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('تم حفظ بياناتك بنجاح')));
+              } catch (e) {
+                if (!context.mounted) return;
+                ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(e.toString())));
+              }
+            },
+            child: const Text('حفظ'),
+          ),
+
+        ],
+      ),
+    );
   }
 
   @override
@@ -241,18 +414,46 @@ class _UserAthleteScreenState extends ConsumerState<UserAthleteScreen> {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
+              // Parent Info Card
+              AppCard(
+                child: Row(
+                  children: [
+                    const CircleAvatar(
+                      radius: 24,
+                      backgroundColor: AppColors.primary,
+                      child: Icon(Icons.person, color: Colors.white),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(user?.fullNameAr ?? '', style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
+                          Text('ولي أمر (أكاديمية الأوس)', style: TextStyle(fontSize: 12, color: AppColors.primary, fontWeight: FontWeight.bold)),
+                        ],
+                      ),
+                    ),
+                    IconButton(
+                      icon: const Icon(Icons.edit_outlined, color: AppColors.primary),
+                      onPressed: _showEditParentDialog,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(height: 16),
+
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'الرياضيون المسجلون',
+                    'الأطفال / الرياضيون التابعون لك',
                     style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
                   ),
                   if (!_showAddForm)
                     TextButton.icon(
                       onPressed: () => setState(() => _showAddForm = true),
                       icon: const Icon(Icons.add, size: 18),
-                      label: const Text('إضافة رياضي', style: TextStyle(fontWeight: FontWeight.bold)),
+                      label: const Text('إضافة طفل', style: TextStyle(fontWeight: FontWeight.bold)),
                     ),
                 ],
               ),
@@ -271,7 +472,6 @@ class _UserAthleteScreenState extends ConsumerState<UserAthleteScreen> {
                         ),
                         const SizedBox(height: 16),
 
-                        // Image Pick
                         Center(
                           child: GestureDetector(
                             onTap: _pickImage,
@@ -279,10 +479,10 @@ class _UserAthleteScreenState extends ConsumerState<UserAthleteScreen> {
                               width: 100,
                               height: 100,
                               decoration: BoxDecoration(
-                                color: (isDark ? AppColors.darkPrimary : AppColors.primary).withValues(alpha: 0.05),
+                                color: AppColors.primary.withValues(alpha: 0.05),
                                 borderRadius: BorderRadius.circular(20),
                                 border: Border.all(
-                                  color: (isDark ? AppColors.darkPrimary : AppColors.primary).withValues(alpha: 0.1),
+                                  color: AppColors.primary.withValues(alpha: 0.1),
                                   width: 2,
                                 ),
                               ),
@@ -322,7 +522,18 @@ class _UserAthleteScreenState extends ConsumerState<UserAthleteScreen> {
                         ),
                         const SizedBox(height: 12),
 
-                        // Birth date fields
+                        TextFormField(
+                          controller: _residenceController,
+                          decoration: const InputDecoration(labelText: 'السكن / العنوان'),
+                        ),
+                        const SizedBox(height: 12),
+
+                        TextFormField(
+                          controller: _healthStatusController,
+                          decoration: const InputDecoration(labelText: 'الحالة الصحية'),
+                        ),
+                        const SizedBox(height: 12),
+
                         const Text('تاريخ الميلاد', style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.mutedForeground)),
                         const SizedBox(height: 6),
                         Row(
@@ -361,30 +572,22 @@ class _UserAthleteScreenState extends ConsumerState<UserAthleteScreen> {
                         const SizedBox(height: 16),
 
                         if (_submitError != null) ...[
-                          Text(
-                            _submitError!,
-                            style: const TextStyle(color: AppColors.destructive, fontSize: 12, fontWeight: FontWeight.bold),
-                            textAlign: TextAlign.center,
-                          ),
+                          Text(_submitError!, style: const TextStyle(color: AppColors.destructive, fontSize: 12)),
                           const SizedBox(height: 12),
                         ],
 
                         Row(
-                          mainAxisAlignment: MainAxisAlignment.end,
                           children: [
-                            TextButton(
+                            Expanded(
+                              child: FilledButton(
+                                onPressed: _submitting ? null : _handleAddAthlete,
+                                child: _submitting ? const SizedBox(width: 16, height: 16, child: CircularProgressIndicator(strokeWidth: 2, color: Colors.white)) : const Text('حفظ وإضافة'),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            OutlinedButton(
                               onPressed: () => setState(() => _showAddForm = false),
                               child: const Text('إلغاء'),
-                            ),
-                            const SizedBox(width: 12),
-                            FilledButton(
-                              onPressed: _submitting ? null : _addAthlete,
-                              style: FilledButton.styleFrom(
-                                backgroundColor: const Color(0xFF0F4C81),
-                              ),
-                              child: _submitting
-                                  ? const SizedBox(width: 20, height: 20, child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2))
-                                  : const Text('حفظ'),
                             ),
                           ],
                         ),
@@ -395,15 +598,15 @@ class _UserAthleteScreenState extends ConsumerState<UserAthleteScreen> {
                 const SizedBox(height: 16),
               ],
 
-              if (_athletes.isEmpty)
-                Center(
+              if (_athletes.isEmpty && !_showAddForm)
+                AppCard(
                   child: Padding(
                     padding: const EdgeInsets.symmetric(vertical: 48.0),
                     child: Column(
                       children: [
                         Icon(Icons.people_outline, size: 48, color: Colors.grey.withValues(alpha: 0.5)),
                         const SizedBox(height: 12),
-                        const Text('لم تقم بإضافة أي رياضي بعد', style: TextStyle(color: AppColors.mutedForeground)),
+                        const Text('لم تقم بإضافة أي طفل بعد', style: TextStyle(color: AppColors.mutedForeground)),
                       ],
                     ),
                   ),
@@ -415,6 +618,7 @@ class _UserAthleteScreenState extends ConsumerState<UserAthleteScreen> {
                   itemCount: _athletes.length,
                   itemBuilder: (context, index) {
                     final athlete = _athletes[index];
+                    final athleteId = athlete['athlete'] as int? ?? 0;
                     return AppCard(
                       child: Row(
                         children: [
@@ -446,6 +650,15 @@ class _UserAthleteScreenState extends ConsumerState<UserAthleteScreen> {
                               ],
                             ),
                           ),
+                          IconButton(
+                            icon: const Icon(Icons.edit_outlined, color: AppColors.primary, size: 20),
+                            onPressed: () => _showEditChildDialog(
+                              athleteId,
+                              athlete['athlete_name'] ?? '',
+                              athlete['residence'],
+                              athlete['health_status'],
+                            ),
+                          ),
                         ],
                       ),
                     );
@@ -465,9 +678,18 @@ class _UserAthleteScreenState extends ConsumerState<UserAthleteScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            Text(
-              'بياناتي الرياضية',
-              style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  'بياناتي الرياضية (مركز الأهلي)',
+                  style: theme.textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
+                ),
+                IconButton(
+                  icon: const Icon(Icons.edit_outlined, color: AppColors.primary),
+                  onPressed: _showEditSelfDialog,
+                ),
+              ],
             ),
             const SizedBox(height: 16),
             AppCard(

@@ -22,6 +22,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   bool _rememberMe = false;
   bool _isLoading = false;
+  bool _isStaffLogin = false;
   String? _errorMessage;
   bool _obscurePassword = true;
 
@@ -42,7 +43,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
 
     try {
       final phone = _phoneController.text.trim().toWesternDigits();
-      final password = _passwordController.text;
+      final password = _isStaffLogin ? _passwordController.text : '';
 
       await ref.read(authProvider.notifier).login(phone, password, _rememberMe);
     } catch (e) {
@@ -58,6 +59,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
       }
     }
   }
+
 
   @override
   Widget build(BuildContext context) {
@@ -188,25 +190,39 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                             ),
                             const SizedBox(height: 16),
 
-                            // Password
-                            TextFormField(
-                              controller: _passwordController,
-                              obscureText: _obscurePassword,
-                              textAlign: TextAlign.right,
-                              decoration: InputDecoration(
-                                labelText: 'كلمة المرور',
-                                prefixIcon: const Icon(Icons.lock_outline),
-                                suffixIcon: IconButton(
-                                  icon: Icon(
-                                    _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
-                                    size: 20,
+                            if (_isStaffLogin) ...[
+                              TextFormField(
+                                controller: _passwordController,
+                                obscureText: _obscurePassword,
+                                textAlign: TextAlign.right,
+                                decoration: InputDecoration(
+                                  labelText: 'كلمة المرور للإدارة',
+                                  prefixIcon: const Icon(Icons.lock_outline),
+                                  suffixIcon: IconButton(
+                                    icon: Icon(
+                                      _obscurePassword ? Icons.visibility_off_outlined : Icons.visibility_outlined,
+                                      size: 20,
+                                    ),
+                                    onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                                   ),
-                                  onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                                ),
+                                validator: (val) => _isStaffLogin && (val == null || val.isEmpty) ? 'يرجى إدخال كلمة المرور' : null,
+                              ),
+                              const SizedBox(height: 12),
+                            ],
+
+                            Align(
+                              alignment: Alignment.centerLeft,
+                              child: TextButton(
+                                onPressed: () => setState(() => _isStaffLogin = !_isStaffLogin),
+                                child: Text(
+                                  _isStaffLogin ? '← دخول الرياضيين وأولياء الأمور' : 'دخول الإدارة والموظفين',
+                                  style: const TextStyle(fontSize: 12, fontWeight: FontWeight.bold, color: AppColors.primary),
                                 ),
                               ),
-                              validator: (val) => val == null || val.isEmpty ? 'يرجى إدخال كلمة المرور' : null,
                             ),
                             const SizedBox(height: 12),
+
 
                             // Remember Me
                             Row(

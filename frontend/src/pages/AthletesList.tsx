@@ -63,7 +63,7 @@ export default function AthletesPage() {
       api.patch(`/athletes/${id}/`, { is_active }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["athletes"] })
-      toast.success("تم تحديث حالة اللاعب بنجاح")
+      toast.success("تم تحديث حالة الرياضي بنجاح")
     },
     onError: (err: any) => {
       toast.error(`فشل التحديث: ${err.message || err}`)
@@ -74,7 +74,7 @@ export default function AthletesPage() {
     mutationFn: (id: number) => api.delete(`/athletes/${id}/`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["athletes"] })
-      toast.success("تم حذف اللاعب بنجاح")
+      toast.success("تم حذف الرياضي بنجاح")
     },
     onError: (err: any) => {
       toast.error(`فشل الحذف: ${err.message || err}`)
@@ -86,7 +86,7 @@ export default function AthletesPage() {
   }
 
   const handleDeleteAthlete = (athlete: any) => {
-    if (window.confirm(`هل أنت متأكد من حذف اللاعب "${athlete.full_name}" نهائياً؟`)) {
+    if (window.confirm(`هل أنت متأكد من ${athlete.full_name}" ${athlete.full_name}" نهائياً؟`)) {
       deleteMutation.mutate(athlete.id)
     }
   }
@@ -152,7 +152,7 @@ export default function AthletesPage() {
       <motion.div variants={itemVariants} className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
         <div>
           <div className="flex items-center gap-3 mb-1">
-            <h1 className="section-header text-3xl font-extrabold">إدارة اللاعبين</h1>
+            <h1 className="section-header text-3xl font-extrabold">إدارة الرياضيين</h1>
           </div>
           <p className="text-sm text-muted-foreground mt-4">
             عرض وإدارة بيانات جميع الرياضيين المسجلين في النظام.
@@ -259,7 +259,7 @@ export default function AthletesPage() {
                   <th className="py-4 px-4 font-semibold">رقم الهاتف</th>
                   <th className="py-4 px-4 font-semibold">القسم</th>
                   <th className="py-4 px-4 font-semibold">الحالة</th>
-                  <th className="py-4 px-4 font-semibold">تاريخ الانضمام</th>
+                  <th className="py-4 px-4 font-semibold">انتهاء الاشتراك</th>
                   <th className="py-4 px-4 font-semibold text-left">الإجراءات</th>
                 </tr>
               </thead>
@@ -305,7 +305,11 @@ export default function AthletesPage() {
                         <DepartmentDisplay name={athlete.department_name} />
                       </td>
                       <td className="py-3 px-4">{statusBadge(athlete.is_active)}</td>
-                      <td className="py-3 px-4 text-muted-foreground text-xs">{formatDate(athlete.created_at)}</td>
+                      <td className="py-3 px-4 text-muted-foreground text-xs">
+                        {(athlete as any).subscription_end_date
+                          ? formatDate((athlete as any).subscription_end_date)
+                          : <span className="text-muted-foreground/50">—</span>}
+                      </td>
                       <td className="py-3 px-4 text-left">
                         <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-all duration-200">
                           <Link to={`/dashboard/athletes/${athlete.id}`}>
@@ -376,7 +380,7 @@ export default function AthletesPage() {
                                       className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-error/10 text-error hover:text-error transition-colors w-full text-right cursor-pointer"
                                     >
                                       <Trash2 className="w-3.5 h-3.5" />
-                                      <span>حذف اللاعب</span>
+                                      <span>حذف الرياضي</span>
                                     </button>
                                   </Can>
                                 </div>
@@ -394,7 +398,7 @@ export default function AthletesPage() {
                         <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center">
                           <UserX className="w-8 h-8 text-muted-foreground" />
                         </div>
-                        <p className="text-muted-foreground text-sm font-medium">لا يوجد لاعبين مطابقين للبحث</p>
+                        <p className="text-muted-foreground text-sm font-medium">لا يوجد رياضيين مطابقين للبحث</p>
                         <p className="text-muted-foreground text-xs">حاول تغيير معايير البحث أو تصفية الحالة</p>
                       </div>
                     </td>
@@ -406,7 +410,7 @@ export default function AthletesPage() {
 
           {/* ── Pagination ── */}
           <div className="border-t border-outline-variant/20 p-4 flex flex-col sm:flex-row items-center justify-between gap-3 text-xs text-muted-foreground">
-            <span>عرض {athletes.length} من أصل {data?.count || 0} لاعب</span>
+            <span>عرض {athletes.length} من أصل {data?.count || 0} رياضي</span>
             {totalPages > 0 && (
               <div className="flex items-center gap-1">
                 <Button
@@ -492,8 +496,12 @@ export default function AthletesPage() {
                     <span className="text-foreground font-semibold">{athlete.department_name || "—"}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="font-medium">تاريخ الانضمام:</span>
-                    <span className="text-foreground">{formatDate(athlete.created_at)}</span>
+                    <span className="font-medium">انتهاء الاشتراك:</span>
+                    <span className="text-foreground">
+                      {(athlete as any).subscription_end_date
+                        ? formatDate((athlete as any).subscription_end_date)
+                        : "—"}
+                    </span>
                   </div>
                 </div>
 
@@ -553,7 +561,7 @@ export default function AthletesPage() {
                               className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-error/10 text-error hover:text-error transition-colors w-full text-right cursor-pointer"
                             >
                               <Trash2 className="w-3.5 h-3.5" />
-                              <span>حذف اللاعب</span>
+                              <span>حذف الرياضي</span>
                             </button>
                           </Can>
                         </div>
@@ -568,7 +576,7 @@ export default function AthletesPage() {
               <div className="w-20 h-20 rounded-[1.25rem] bg-muted flex items-center justify-center">
                 <Users className="w-10 h-10 text-muted-foreground/60" />
               </div>
-              <p className="text-muted-foreground text-sm font-medium">لا يوجد لاعبين مطابقين للبحث</p>
+              <p className="text-muted-foreground text-sm font-medium">لا يوجد رياضيين مطابقين للبحث</p>
               <p className="text-muted-foreground text-xs">حاول تغيير معايير البحث أو تصفية الحالة</p>
             </div>
           )}

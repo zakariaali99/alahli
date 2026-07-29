@@ -46,6 +46,18 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
             return base.filter(athlete_id__in=athlete_ids)
         return base
 
+    def perform_create(self, serializer):
+        user = self.request.user
+        is_staff = is_super_admin(user) or user.role in ["reception", "academy_manager"]
+        if is_staff:
+            serializer.save(
+                status=Subscription.Status.ACTIVE,
+                approved_by=user,
+                approved_at=timezone.now(),
+            )
+        else:
+            serializer.save()
+
     def perform_update(self, serializer):
         instance = serializer.instance
         old_status = instance.status
@@ -77,13 +89,13 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
             if hasattr(user, "athlete") and user.athlete is not None:
                 if subscription.athlete != user.athlete:
                     return Response(
-                        {"detail": "لا يمكنك تجديد اشتراك لاعب آخر"},
+                        {"detail": "لا يمكنك تجديد اشتراك رياضي آخر"},
                         status=status.HTTP_403_FORBIDDEN,
                     )
             elif user.role == "parent":
                 if not ParentAthlete.objects.filter(parent=user, athlete=subscription.athlete).exists():
                     return Response(
-                        {"detail": "لا يمكنك تجديد اشتراك هذا اللاعب"},
+                        {"detail": "لا يمكنك تجديد اشتراك هذا الرياضي"},
                         status=status.HTTP_403_FORBIDDEN,
                     )
             else:
@@ -158,7 +170,7 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
                 )
             if not ParentAthlete.objects.filter(parent=user, athlete_id=athlete_id).exists():
                 return Response(
-                    {"athlete_id": "اللاعب غير موجود ضمن حسابك"},
+                    {"athlete_id": "الرياضي غير موجود ضمن حسابك"},
                     status=status.HTTP_403_FORBIDDEN,
                 )
             athlete = Athlete.objects.get(id=athlete_id)
@@ -170,7 +182,7 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
             ).count()
             if active_subs_count >= package.max_athletes:
                 return Response(
-                    {"detail": f"هذه الباقة تسمح بحد أقصى {package.max_athletes} لاعبين فقط. لقد وصلت للحد الأقصى بالفعل."},
+                    {"detail": f"هذه الباقة تسمح بحد أقصى {package.max_athletes} رياضيين فقط. لقد وصلت للحد الأقصى بالفعل."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
         else:
@@ -210,33 +222,49 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
         else:
             end = now + relativedelta(months=package.duration_value)
 
+        has_previous_sub = Subscription.objects.filter(athlete=athlete).exists()
+        if has_previous_sub and package.renewal_price > 0:
+            sub_amount = package.renewal_price
+        elif package.new_price > 0:
+            sub_amount = package.new_price
+        else:
+            sub_amount = package.price
+
+        # Instant activation if initiated by management staff
+        is_staff = is_super_admin(user) or user.role in ["reception", "academy_manager"]
+        sub_status = Subscription.Status.ACTIVE if is_staff else Subscription.Status.PENDING
+
         subscription = Subscription.objects.create(
             athlete=athlete,
             package_name=package.name,
             start_date=now,
             end_date=end,
-            amount=package.price,
+            amount=sub_amount,
             payment_method=data["payment_method"],
             group=group,
-            status=Subscription.Status.PENDING,
+            shift_name=data.get("shift_name", ""),
+            status=sub_status,
+            approved_by=user if is_staff else None,
+            approved_at=timezone.now() if is_staff else None,
         )
 
         if data.get("invoice_pdf"):
             subscription.invoice_pdf = data["invoice_pdf"]
             subscription.save(update_fields=["invoice_pdf"])
 
-        try:
-            from apps.notifications.services import send_admin_push_sync
+        if not is_staff:
+            try:
+                from apps.notifications.services import send_admin_push_sync
 
-            send_admin_push_sync(
-                title="اشتراك جديد بانتظار الموافقة",
-                body=f"طلب اشتراك جديد لـ {athlete.full_name} - باقة {package.name}",
-                notification_type="new_subscription",
-                entity_id=subscription.id,
-            )
-        except Exception:
-            import logging
-            logging.getLogger(__name__).exception("Failed to send push notification for subscription")
+                send_admin_push_sync(
+                    title="اشتراك جديد بانتظار الموافقة",
+                    body=f"طلب اشتراك جديد لـ {athlete.full_name} - باقة {package.name}",
+                    notification_type="new_subscription",
+                    entity_id=subscription.id,
+                )
+            except Exception:
+                import logging
+                logging.getLogger(__name__).exception("Failed to send push notification for subscription")
 
         bank_details = None
         if data["payment_method"] == "bank_transfer":
@@ -247,7 +275,7 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
             }
 
         response_data = {
-            "status": "pending",
+            "status": subscription.status,
             "subscription_id": subscription.id,
             "message": "تم إرسال طلب الاشتراك، يرجى انتظار التأكيد على هاتفك.",
         }

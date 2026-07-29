@@ -36,7 +36,9 @@ export default function SubscriptionPage() {
   const { user } = useAuth()
   const isParent = user?.role === "parent"
   const athleteDeptId = user?.athlete_detail?.department ?? null
-  const hasLockedAcademy = !isParent && athleteDeptId !== null
+  const staffAcademyId = !athleteDeptId && ["reception", "academy_manager", "super_admin"].includes(user?.role ?? "") ? (user?.academy ?? null) : null
+  const lockedAcademyId = athleteDeptId ?? staffAcademyId
+  const hasLockedAcademy = !isParent && lockedAcademyId !== null
 
   const [step, setStep] = useState(0)
   const [data, setData] = useState<StepData>({
@@ -66,7 +68,7 @@ export default function SubscriptionPage() {
     if (isParent) {
       fetchAthletes()
     } else if (hasLockedAcademy) {
-      const deptId = user?.athlete_detail?.department
+      const deptId = lockedAcademyId
       setData((prev) => ({ ...prev, athleteId: user?.athlete_detail?.id ?? null }))
       setLoading(true)
       api.get<{ results: Department[] } | Department[]>("/departments/")
@@ -346,7 +348,7 @@ export default function SubscriptionPage() {
               {loading ? <LoadingSpinner /> : (
                 <div className="space-y-3">
                   {safeAthletes.length === 0 ? (
-                    <p className="text-sm text-muted-foreground text-center">يرجى إضافة لاعب أولاً في صفحة "الرياضيون".</p>
+                    <p className="text-sm text-muted-foreground text-center">يرجى إضافة رياضي أولاً في صفحة "الرياضيون".</p>
                   ) : (
                     safeAthletes.map((a) => (
                       <button key={a.id} onClick={() => selectAthlete(a.athlete)}

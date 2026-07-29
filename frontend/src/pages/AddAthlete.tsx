@@ -1,239 +1,111 @@
-import { useEffect, useRef, useState, type FormEvent } from "react"
-import { Link, useNavigate, useParams, useSearchParams } from "react-router-dom"
+import { useState } from "react"
+import { Link, useNavigate } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
-import { ArrowRight, Dumbbell, Users, Camera, X, CheckCircle, AlertCircle, Loader2 } from "lucide-react"
+import { ArrowRight, Dumbbell, Users, CheckCircle, AlertCircle, Loader2, Building2, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { api } from "@/lib/api"
 import { useToast } from "@/lib/toast"
-import { extractResults } from "@/lib/response"
-import type { Department, RegistrationRequest } from "@/lib/types"
 import { validateLibyanPhone } from "@/lib/utils"
 import CameraCapture from "@/components/ui/camera-capture"
-import { LoadingSpinner } from "@/components/ui/loading-spinner"
-import { Can } from "@/components/ui/can"
-import { useCan } from "@/lib/hooks/useCan"
+import type { Department } from "@/lib/types"
 
-type Scenario = "choose" | "athlete" | "parent"
+type Step = "choose" | "form"
 
-type AthleteForm = {
-  full_name: string
-  phone: string
-  password: string
-  gender: "male" | "female"
-  department: string
-  birth_day: string
-  birth_month: string
-  birth_year: string
-}
+const ACADEMIES: Department[] = [
+  {
+    id: 4,
+    name: "Al Ahli Sports Center",
+    name_ar: "مركز الأهلي الرياضي",
+    color: "#0F4C81",
+    logo: null,
+    bank_account_number: "",
+    iban: "",
+    is_active: true,
+    created_at: "",
+  },
+  {
+    id: 5,
+    name: "Al Aws Academy",
+    name_ar: "أكاديمية الأوس",
+    color: "#136F63",
+    logo: null,
+    bank_account_number: "",
+    iban: "",
+    is_active: true,
+    created_at: "",
+  },
+]
 
-type ParentForm = {
-  full_name: string
-  phone: string
-  password: string
-  birth_day: string
-  birth_month: string
-  birth_year: string
-}
-
-const defaultAthleteForm: AthleteForm = {
-  full_name: "", phone: "", password: "",
-  gender: "male", department: "",
-  birth_day: "", birth_month: "", birth_year: "",
-}
-
-const defaultParentForm: ParentForm = {
-  full_name: "", phone: "", password: "",
-  birth_day: "", birth_month: "", birth_year: "",
+const defaultForm = {
+  full_name: "",
+  phone: "",
+  whatsapp_phone: "",
+  residence: "",
+  health_status: "",
+  birth_day: "",
+  birth_month: "",
+  birth_year: "",
 }
 
 export default function AddAthletePage() {
   const navigate = useNavigate()
-  const { id: editId } = useParams()
-  const [searchParams] = useSearchParams()
-  const registrationId = searchParams.get("registration")
   const toast = useToast()
-  const isEditing = !!editId
 
-  const [scenario, setScenario] = useState<Scenario>("choose")
-  const [registration, setRegistration] = useState<RegistrationRequest | null>(null)
-  const [loadingRegistration, setLoadingRegistration] = useState(false)
-  const [loadingEdit, setLoadingEdit] = useState(isEditing)
-  const [departments, setDepartments] = useState<Department[]>([])
+  const [step, setStep] = useState<Step>("choose")
+  const [selectedAcademy, setSelectedAcademy] = useState<Department | null>(null)
+  const [form, setForm] = useState(defaultForm)
+  const [photo, setPhoto] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState(false)
 
-  const [athleteForm, setAthleteForm] = useState<AthleteForm>(defaultAthleteForm)
-  const [parentForm, setParentForm] = useState<ParentForm>(defaultParentForm)
-  const [photo, setPhoto] = useState<string | null>(null)
+  const isParent = selectedAcademy?.id === 5
 
-  useEffect(() => {
-    const fetchDepartments = async () => {
-      try {
-        const res = await api.get<{ results: Department[] } | Department[]>("/departments/")
-        setDepartments(extractResults(res))
-      } catch {
-        setDepartments([])
-      }
-    }
-
-    void fetchDepartments()
-  }, [])
-
-  useEffect(() => {
-    if (!registrationId) return
-    const fetchRegistration = async () => {
-      try {
-        setLoadingRegistration(true)
-        const data = await api.get<RegistrationRequest>(`/athletes/registrations/${registrationId}/`)
-        setRegistration(data)
-        if (data.user_name) {
-          setAthleteForm((prev) => ({ ...prev, full_name: data.user_name, phone: data.user_phone }))
-        }
-      } catch (err: any) {
-        setError(api.getErrorMessage(err, "تعذر تحميل طلب التسجيل"))
-      } finally {
-        setLoadingRegistration(false)
-      }
-    }
-    void fetchRegistration()
-  }, [registrationId])
-
-  useEffect(() => {
-    if (!isEditing || !editId) return
-    const fetchAthlete = async () => {
-      try {
-        setLoadingEdit(true)
-        const data = await api.get<any>(`/athletes/${editId}/`)
-        const bd = data.birth_date ? data.birth_date.split("-") : []
-        setAthleteForm({
-          full_name: data.full_name || "",
-          phone: data.phone || "",
-          password: "",
-          gender: data.gender || "male",
-          department: data.department ? String(data.department) : "",
-          birth_day: bd[2] || "",
-          birth_month: bd[1] || "",
-          birth_year: bd[0] || "",
-        })
-        if (data.photo) setPhoto(data.photo)
-        setScenario("athlete")
-      } catch (err: any) {
-        setError(api.getErrorMessage(err, "تعذر تحميل بيانات الرياضي"))
-      } finally {
-        setLoadingEdit(false)
-      }
-    }
-    void fetchAthlete()
-  }, [isEditing, editId])
-
-  const handleSubmitAthlete = async (e: FormEvent) => {
-    e.preventDefault()
+  const handleSelectAcademy = (academy: Department) => {
+    setSelectedAcademy(academy)
+    setForm(defaultForm)
+    setPhoto(null)
     setError("")
-
-    if (!athleteForm.full_name.trim() || !athleteForm.phone.trim()) {
-      setError("يرجى تعبئة الاسم ورقم الهاتف")
-      return
-    }
-
-    const phoneErr = validateLibyanPhone(athleteForm.phone)
-    if (phoneErr) { setError(phoneErr); return }
-
-    if (!registrationId && !isEditing && !athleteForm.password.trim()) {
-      setError("يرجى تعبئة كلمة المرور")
-      return
-    }
-    if (!athleteForm.birth_day || !athleteForm.birth_month || !athleteForm.birth_year) {
-      setError("يرجى تعبئة تاريخ الميلاد")
-      return
-    }
-    if (!isEditing && !photo && !registration?.athlete_photo) {
-      setError("يرجى التقاط أو رفع صورة شخصية للرياضي")
-      return
-    }
-
-    try {
-      setSubmitting(true)
-
-      if (registrationId) {
-        const fd = new FormData()
-        fd.append("full_name", athleteForm.full_name.trim())
-        fd.append("phone", athleteForm.phone.trim())
-        fd.append("gender", athleteForm.gender)
-        if (athleteForm.department) {
-          fd.append("department", athleteForm.department)
-        }
-        fd.append("birth_date", `${athleteForm.birth_year}-${athleteForm.birth_month.padStart(2, "0")}-${athleteForm.birth_day.padStart(2, "0")}`)
-        const created = await api.post<{ id: number }>(
-          `/athletes/registrations/${registrationId}/create-athlete/`,
-          fd,
-          { formData: true },
-        )
-        toast.success("تم إنشاء ملف الرياضي بنجاح")
-        navigate(`/dashboard/athletes/${created.id}`)
-        return
-      }
-
-      if (isEditing) {
-        const body: Record<string, any> = {
-          full_name: athleteForm.full_name.trim(),
-          phone: athleteForm.phone.trim(),
-          gender: athleteForm.gender,
-          birth_date: `${athleteForm.birth_year}-${athleteForm.birth_month.padStart(2, "0")}-${athleteForm.birth_day.padStart(2, "0")}`,
-        }
-        if (athleteForm.department) body.department = parseInt(athleteForm.department)
-        await api.patch(`/athletes/${editId}/`, body)
-        toast.success("تم تحديث بيانات الرياضي بنجاح")
-        navigate(`/dashboard/athletes/${editId}`)
-        return
-      }
-
-      const fd = new FormData()
-      fd.append("full_name", athleteForm.full_name.trim())
-      fd.append("phone", athleteForm.phone.trim())
-      fd.append("password", athleteForm.password.trim())
-      fd.append("gender", athleteForm.gender)
-      if (athleteForm.department) {
-        fd.append("department", athleteForm.department)
-      }
-      fd.append("is_active", "true")
-      fd.append("birth_date", `${athleteForm.birth_year}-${athleteForm.birth_month.padStart(2, "0")}-${athleteForm.birth_day.padStart(2, "0")}`)
-
-      const createdAthlete = await api.post<{ id: number }>("/athletes/", fd, { formData: true })
-      toast.success("تم إنشاء الرياضي وربطه بحسابه بنجاح")
-      navigate(`/dashboard/athletes/${createdAthlete.id}`)
-    } catch (err: any) {
-      setError(api.getErrorMessage(err, "حدث خطأ أثناء التسجيل"))
-    } finally {
-      setSubmitting(false)
-    }
+    setStep("form")
   }
 
-  const handleSubmitParent = async (e: FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setError("")
 
-    if (!parentForm.full_name.trim() || !parentForm.phone.trim() || !parentForm.password.trim()) {
-      setError("يرجى تعبئة الاسم ورقم الهاتف وكلمة المرور")
+    if (!selectedAcademy) { setStep("choose"); return }
+
+    if (!isParent && !photo) {
+      setError("صورة السيلفي أو الصورة الشخصية مطلوبة لإتمام التسجيل")
       return
     }
 
-    const parentPhoneErr = validateLibyanPhone(parentForm.phone)
-    if (parentPhoneErr) { setError(parentPhoneErr); return }
+    const phoneErr = validateLibyanPhone(form.phone)
+    if (phoneErr) { setError(phoneErr); return }
+
+    const body: Record<string, any> = {
+      role: isParent ? "parent" : "athlete",
+      full_name: form.full_name.trim(),
+      phone: form.phone.trim(),
+      residence: form.residence.trim(),
+      department: selectedAcademy.id,
+    }
+
+    if (isParent) {
+      body.whatsapp_phone = form.whatsapp_phone.trim() || form.phone.trim()
+    } else {
+      body.photo = photo
+      body.health_status = form.health_status
+      body.birth_day = parseInt(form.birth_day)
+      body.birth_month = parseInt(form.birth_month)
+      body.birth_year = parseInt(form.birth_year)
+    }
 
     try {
       setSubmitting(true)
-      await api.post("/auth/register/", {
-        role: "parent",
-        full_name: parentForm.full_name.trim(),
-        phone: parentForm.phone.trim(),
-        password: parentForm.password,
-        birth_day: parseInt(parentForm.birth_day),
-        birth_month: parseInt(parentForm.birth_month),
-        birth_year: parseInt(parentForm.birth_year),
-      })
+      await api.post("/auth/register/", body)
       setSuccess(true)
-      toast.success("تم تسجيل ولي الأمر بنجاح")
+      toast.success("تم إنشاء الحساب بنجاح")
     } catch (err: any) {
       setError(api.getErrorMessage(err, "حدث خطأ أثناء التسجيل"))
     } finally {
@@ -244,45 +116,35 @@ export default function AddAthletePage() {
   if (success) {
     return (
       <div className="flex min-h-[60vh] items-center justify-center">
-        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center">
+        <motion.div initial={{ opacity: 0, scale: 0.9 }} animate={{ opacity: 1, scale: 1 }} className="text-center max-w-sm">
           <CheckCircle className="mx-auto mb-4 h-16 w-16 text-primary" />
-          <h2 className="mb-2 text-2xl font-bold">تم التسجيل بنجاح</h2>
-          <p className="mb-6 text-muted-foreground">
-              {registrationId
-                ? "تم إنشاء ملف الرياضي وربطه بالطلب. يمكنك الآن مراجعته واعتماده."
-                : isEditing
-                  ? "تم تحديث بيانات الرياضي بنجاح."
-                  : "تم إنشاء الحساب. يمكن للمستخدم الآن تسجيل الدخول."}
+          <h2 className="mb-2 text-2xl font-bold">تم إنشاء الحساب بنجاح</h2>
+          <p className="mb-6 text-muted-foreground text-sm">
+            تم تسجيل{" "}
+            <span className="font-bold">{form.full_name}</span>{" "}
+            في{" "}
+            <span className="font-bold">{selectedAcademy?.name_ar}</span>.
+            الحساب مفعّل ويمكن تسجيل الدخول مباشرة.
           </p>
           <div className="flex justify-center gap-3">
-            <Button onClick={() => navigate("/dashboard/registrations")}>الطلبات الجديدة</Button>
-            <Button variant="outline" onClick={() => navigate("/dashboard/athletes")}>قائمة الرياضيين</Button>
+            <Button onClick={() => { setSuccess(false); setStep("choose"); setSelectedAcademy(null); setForm(defaultForm); setPhoto(null) }}>
+              إضافة حساب آخر
+            </Button>
+            <Button variant="outline" onClick={() => navigate("/dashboard/athletes")}>
+              قائمة الرياضيين
+            </Button>
           </div>
         </motion.div>
       </div>
     )
   }
 
-  const canAction = useCan()
-
-  if (loadingEdit) {
-    return (
-      <div className="flex items-center justify-center py-20">
-        <LoadingSpinner size="lg" />
-      </div>
-    )
-  }
-
   return (
-    <div className="space-y-6">
+    <div className="max-w-2xl mx-auto space-y-6">
       <div>
-        <h1 className="text-2xl font-extrabold gradient-text">{isEditing ? "تعديل بيانات الرياضي" : "إضافة مستخدم جديد"}</h1>
+        <h1 className="text-2xl font-extrabold gradient-text">إضافة مستخدم جديد</h1>
         <p className="mt-1 text-xs text-muted-foreground">
-          {registrationId
-            ? `إنشاء ملف رياضي لطلب التسجيل: ${registration?.user_name || "..."}`
-            : isEditing
-              ? `تعديل بيانات ${athleteForm.full_name || "الرياضي"}`
-              : "أنشئ حساب رياضي أو ولي أمر مباشرة من لوحة الإدارة."}
+          أنشئ حساب رياضي أو ولي أمر مباشرة من لوحة الإدارة. الحساب يُفعَّل تلقائياً.
         </p>
       </div>
 
@@ -293,8 +155,20 @@ export default function AddAthletePage() {
         </div>
       )}
 
+      {/* Step indicators */}
+      <div className="flex items-center gap-3 text-xs font-bold">
+        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-colors ${step === "choose" ? "bg-primary text-primary-foreground" : "bg-card border border-border text-muted-foreground"}`}>
+          <Building2 className="w-3.5 h-3.5" /> 1. اختيار الأكاديمية
+        </div>
+        <span className="text-muted-foreground">←</span>
+        <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full transition-colors ${step === "form" ? "bg-primary text-primary-foreground" : "bg-card border border-border text-muted-foreground"}`}>
+          {isParent ? <Users className="w-3.5 h-3.5" /> : <Dumbbell className="w-3.5 h-3.5" />}
+          2. البيانات الشخصية
+        </div>
+      </div>
+
       <AnimatePresence mode="wait">
-          {scenario === "choose" && (
+        {step === "choose" && (
           <motion.div
             key="choose"
             initial={{ opacity: 0, y: 8 }}
@@ -302,172 +176,184 @@ export default function AddAthletePage() {
             exit={{ opacity: 0, y: -8 }}
             className="grid gap-4 sm:grid-cols-2"
           >
-            <Can action="athletes:create">
+            {ACADEMIES.map((academy) => (
               <button
-                onClick={() => setScenario("athlete")}
-                className="group rounded-2xl border-2 border-border bg-card p-8 text-center transition hover:border-primary hover:bg-primary/5"
+                key={academy.id}
+                type="button"
+                onClick={() => handleSelectAcademy(academy)}
+                className="group rounded-2xl border-2 border-border bg-card p-8 text-right transition-all hover:shadow-lg hover:-translate-y-0.5 flex flex-col justify-between"
+                style={{ borderColor: undefined }}
+                onMouseEnter={(e) => (e.currentTarget.style.borderColor = academy.color ?? "")}
+                onMouseLeave={(e) => (e.currentTarget.style.borderColor = "")}
               >
-                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-primary/10 transition group-hover:scale-110">
-                  <Dumbbell className="h-8 w-8 text-primary" />
+                <div className="flex items-center justify-between mb-4">
+                  <span className="p-2.5 rounded-xl text-white" style={{ backgroundColor: academy.color ?? "#0F4C81" }}>
+                    <Building2 className="w-5 h-5" />
+                  </span>
+                  <Sparkles className="w-4 h-4 text-amber-500" />
                 </div>
-                <h3 className="text-lg font-bold">تسجيل رياضي</h3>
-                <p className="mt-1 text-xs text-muted-foreground">أنشئ حساب رياضي مع صورة وبيانات بدنية</p>
-              </button>
-            </Can>
-
-            <Can action="athletes:create">
-              <button
-                onClick={() => setScenario("parent")}
-                className="group rounded-2xl border-2 border-border bg-card p-8 text-center transition hover:border-primary hover:bg-primary/5"
-              >
-                <div className="mx-auto mb-4 flex h-16 w-16 items-center justify-center rounded-2xl bg-secondary/10 transition group-hover:scale-110">
-                  <Users className="h-8 w-8 text-secondary" />
+                <div>
+                  <h3 className="text-lg font-black">{academy.name_ar}</h3>
+                  <p className="text-xs text-muted-foreground mt-1">
+                    {academy.id === 5 ? "حساب ولي أمر — إدارة الأبناء الرياضيين" : "حساب رياضي — التحاق بالتمارين والمجموعات"}
+                  </p>
                 </div>
-                <h3 className="text-lg font-bold">تسجيل ولي أمر</h3>
-                <p className="mt-1 text-xs text-muted-foreground">أنشئ حساب ولي أمر لإدارة الرياضيين</p>
               </button>
-            </Can>
+            ))}
           </motion.div>
         )}
 
-        {scenario === "athlete" && (
+        {step === "form" && selectedAcademy && (
           <motion.div
-            key="athlete"
+            key="form"
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             exit={{ opacity: 0, x: -20 }}
           >
-            <form onSubmit={handleSubmitAthlete} className="mx-auto max-w-md space-y-4 rounded-2xl border border-border bg-card p-6">
-              <div className="text-center">
-                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10">
-                  <Dumbbell className="h-6 w-6 text-primary" />
+            {/* Selected academy badge */}
+            <div className="flex items-center justify-between bg-card px-4 py-3 rounded-2xl border border-border mb-4">
+              <div className="flex items-center gap-2">
+                <span className="w-3 h-3 rounded-full" style={{ backgroundColor: selectedAcademy.color ?? "#0F4C81" }} />
+                <span className="text-xs font-black">الأكاديمية: {selectedAcademy.name_ar}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setStep("choose")}
+                className="text-xs text-primary hover:underline font-bold"
+              >
+                تغيير
+              </button>
+            </div>
+
+            <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl border border-border bg-card p-6 max-w-md">
+              <div className="text-center mb-2">
+                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl" style={{ backgroundColor: (selectedAcademy.color ?? "#0F4C81") + "1A" }}>
+                  {isParent
+                    ? <Users className="h-6 w-6" style={{ color: selectedAcademy.color ?? "#0F4C81" }} />
+                    : <Dumbbell className="h-6 w-6" style={{ color: selectedAcademy.color ?? "#0F4C81" }} />
+                  }
                 </div>
-                <h2 className="text-lg font-bold">تسجيل رياضي جديد</h2>
+                <h2 className="text-lg font-bold">
+                  {isParent ? "تسجيل ولي أمر جديد" : "تسجيل رياضي جديد"}
+                </h2>
               </div>
 
-              <CameraCapture onCapture={setPhoto} preview={photo || registration?.athlete_photo || undefined} />
-
-              <FormField label="الاسم الكامل" required>
-                <input className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors" value={athleteForm.full_name} onChange={(e) => setAthleteForm((p) => ({ ...p, full_name: e.target.value }))} required />
-              </FormField>
-
-              <FormField label="رقم الهاتف" required>
-                <input readOnly onFocus={(e) => e.target.removeAttribute("readonly")} autoComplete="off" className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors" dir="ltr" value={athleteForm.phone} onChange={(e) => setAthleteForm((p) => ({ ...p, phone: e.target.value }))} required />
-              </FormField>
-
-              {!registrationId && !isEditing && (
-                <FormField label="كلمة المرور" required>
-                  <input readOnly onFocus={(e) => e.target.removeAttribute("readonly")} autoComplete="new-password" className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors" type="password" value={athleteForm.password} onChange={(e) => setAthleteForm((p) => ({ ...p, password: e.target.value }))} required />
-                </FormField>
+              {/* Selfie — athletes only */}
+              {!isParent && (
+                <div>
+                  <label className="mb-1.5 block text-sm font-medium">
+                    صورة شخصية / سيلفي <span className="text-error">*</span>
+                  </label>
+                  <CameraCapture onCapture={setPhoto} preview={photo || undefined} />
+                </div>
               )}
 
-              {(!registrationId || isEditing) && (
+              {/* Full name */}
+              <Field label={isParent ? "اسم ولي الأمر بالكامل" : "اسم الرياضي بالكامل"} required>
+                <input
+                  className={inputCls}
+                  value={form.full_name}
+                  onChange={(e) => setForm({ ...form, full_name: e.target.value })}
+                  placeholder={isParent ? "أدخل الاسم الثلاثي أو الرباعي" : "أدخل الاسم الرباعي للرياضي"}
+                  required
+                />
+              </Field>
+
+              {/* Phone */}
+              {isParent ? (
                 <div className="grid grid-cols-2 gap-3">
-                  <FormField label="الجنس" required>
-                    <select
-                      className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
-                      value={athleteForm.gender}
-                      onChange={(e) => setAthleteForm((p) => ({ ...p, gender: e.target.value as "male" | "female" }))}
-                    >
-                      <option value="male">ذكر</option>
-                      <option value="female">أنثى</option>
-                    </select>
-                  </FormField>
-                  <FormField label="الأكاديمية/القسم">
-                    <select
-                      className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
-                      value={athleteForm.department}
-                      onChange={(e) => setAthleteForm((p) => ({ ...p, department: e.target.value }))}
-                    >
-                      <option value="">بدون قسم</option>
-                      {departments.map((dept) => (
-                        <option key={dept.id} value={String(dept.id)}>{dept.name_ar}</option>
-                      ))}
-                    </select>
-                  </FormField>
+                  <Field label="رقم الهاتف" required>
+                    <input
+                      className={inputCls}
+                      dir="ltr"
+                      value={form.phone}
+                      onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                      placeholder="0910000000"
+                      required
+                    />
+                  </Field>
+                  <Field label="رقم الواتساب">
+                    <input
+                      className={inputCls}
+                      dir="ltr"
+                      value={form.whatsapp_phone}
+                      onChange={(e) => setForm({ ...form, whatsapp_phone: e.target.value })}
+                      placeholder="0920000000"
+                    />
+                  </Field>
                 </div>
-              )}
-
-              {registrationId && (
-                <FormField label="الأكاديمية/القسم" required>
-                  <select
-                    className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
-                    value={athleteForm.department}
-                    onChange={(e) => setAthleteForm((p) => ({ ...p, department: e.target.value }))}
+              ) : (
+                <Field label="رقم هاتف الرياضي" required>
+                  <input
+                    className={inputCls}
+                    dir="ltr"
+                    value={form.phone}
+                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
+                    placeholder="0910000000"
                     required
-                  >
-                    <option value="">اختر القسم</option>
-                    {departments.map((dept) => (
-                      <option key={dept.id} value={String(dept.id)}>{dept.name_ar}</option>
-                    ))}
-                  </select>
-                </FormField>
+                  />
+                </Field>
               )}
 
-              <FormField label="تاريخ الميلاد" required>
-                <div className="grid grid-cols-3 gap-2">
-                  <input className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors" type="number" min={1} max={31} placeholder="DD" value={athleteForm.birth_day} onChange={(e) => setAthleteForm((p) => ({ ...p, birth_day: e.target.value }))} required />
-                  <input className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors" type="number" min={1} max={12} placeholder="MM" value={athleteForm.birth_month} onChange={(e) => setAthleteForm((p) => ({ ...p, birth_month: e.target.value }))} required />
-                  <input className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors" type="number" min={1900} max={2026} placeholder="YY" value={athleteForm.birth_year} onChange={(e) => setAthleteForm((p) => ({ ...p, birth_year: e.target.value }))} required />
-                </div>
-              </FormField>
+              {/* Residence */}
+              <Field label="السكن / العنوان">
+                <input
+                  className={inputCls}
+                  value={form.residence}
+                  onChange={(e) => setForm({ ...form, residence: e.target.value })}
+                  placeholder="مثال: مصراتة - بالقرب من..."
+                />
+              </Field>
 
+              {/* Athlete-only fields */}
+              {!isParent && (
+                <>
+                  <Field label="الحالة الصحية / ملاحظات طبية">
+                    <textarea
+                      rows={2}
+                      className={inputCls}
+                      value={form.health_status}
+                      onChange={(e) => setForm({ ...form, health_status: e.target.value })}
+                      placeholder="أدخل أي حالة صحية أو ملاحظات طبية خاصة..."
+                    />
+                  </Field>
 
-
-              <div className="flex justify-between gap-2 pt-2">
-                <Button type="button" variant="ghost" onClick={() => isEditing ? navigate(`/dashboard/athletes/${editId}`) : setScenario("choose")}>رجوع</Button>
-                {canAction(isEditing ? "athletes:update" : "athletes:create") && (
-                  <Button type="submit" disabled={submitting || loadingRegistration}>
-                    {submitting ? <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> جاري...</span> : <>{registrationId ? "إنشاء الملف الرياضي" : isEditing ? "حفظ التعديلات" : "إنشاء الرياضي"} <ArrowRight className="mr-1 h-4 w-4" /></>}
-                  </Button>
-                )}
-              </div>
-            </form>
-          </motion.div>
-        )}
-
-        {scenario === "parent" && (
-          <motion.div
-            key="parent"
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            exit={{ opacity: 0, x: -20 }}
-          >
-            <form onSubmit={handleSubmitParent} className="mx-auto max-w-md space-y-4 rounded-2xl border border-border bg-card p-6">
-              <div className="text-center">
-                <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-xl bg-secondary/10">
-                  <Users className="h-6 w-6 text-secondary" />
-                </div>
-                <h2 className="text-lg font-bold">تسجيل ولي أمر</h2>
-              </div>
-
-              <FormField label="الاسم الكامل" required>
-                <input className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors" value={parentForm.full_name} onChange={(e) => setParentForm((p) => ({ ...p, full_name: e.target.value }))} required />
-              </FormField>
-
-              <FormField label="رقم الهاتف" required>
-                <input readOnly onFocus={(e) => e.target.removeAttribute("readonly")} autoComplete="off" className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors" dir="ltr" value={parentForm.phone} onChange={(e) => setParentForm((p) => ({ ...p, phone: e.target.value }))} required />
-              </FormField>
-
-              <FormField label="كلمة المرور" required>
-                <input readOnly onFocus={(e) => e.target.removeAttribute("readonly")} autoComplete="new-password" className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors" type="password" value={parentForm.password} onChange={(e) => setParentForm((p) => ({ ...p, password: e.target.value }))} required />
-              </FormField>
-
-              <FormField label="تاريخ الميلاد" required>
-                <div className="grid grid-cols-3 gap-2">
-                  <input className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors" type="number" min={1} max={31} placeholder="DD" value={parentForm.birth_day} onChange={(e) => setParentForm((p) => ({ ...p, birth_day: e.target.value }))} required />
-                  <input className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors" type="number" min={1} max={12} placeholder="MM" value={parentForm.birth_month} onChange={(e) => setParentForm((p) => ({ ...p, birth_month: e.target.value }))} required />
-                  <input className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors" type="number" min={1900} max={2026} placeholder="YY" value={parentForm.birth_year} onChange={(e) => setParentForm((p) => ({ ...p, birth_year: e.target.value }))} required />
-                </div>
-              </FormField>
+                  <Field label="تاريخ الميلاد" required>
+                    <div className="grid grid-cols-3 gap-2">
+                      <input
+                        type="number" min={1} max={31} placeholder="اليوم"
+                        className={inputCls + " text-center"}
+                        value={form.birth_day}
+                        onChange={(e) => setForm({ ...form, birth_day: e.target.value })}
+                        required
+                      />
+                      <input
+                        type="number" min={1} max={12} placeholder="الشهر"
+                        className={inputCls + " text-center"}
+                        value={form.birth_month}
+                        onChange={(e) => setForm({ ...form, birth_month: e.target.value })}
+                        required
+                      />
+                      <input
+                        type="number" min={1900} max={2026} placeholder="السنة"
+                        className={inputCls + " text-center"}
+                        value={form.birth_year}
+                        onChange={(e) => setForm({ ...form, birth_year: e.target.value })}
+                        required
+                      />
+                    </div>
+                  </Field>
+                </>
+              )}
 
               <div className="flex justify-between gap-2 pt-2">
-                <Button type="button" variant="ghost" onClick={() => setScenario("choose")}>رجوع</Button>
-                {canAction("athletes:create") && (
-                  <Button type="submit" disabled={submitting}>
-                    {submitting ? <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> جاري...</span> : <>تسجيل <ArrowRight className="mr-1 h-4 w-4" /></>}
-                  </Button>
-                )}
+                <Button type="button" variant="ghost" onClick={() => setStep("choose")}>رجوع</Button>
+                <Button type="submit" disabled={submitting}>
+                  {submitting
+                    ? <span className="flex items-center gap-2"><Loader2 className="h-4 w-4 animate-spin" /> جاري...</span>
+                    : <>{isParent ? "إنشاء حساب ولي الأمر" : "إنشاء حساب الرياضي"} <ArrowRight className="mr-1 h-4 w-4" /></>
+                  }
+                </Button>
               </div>
             </form>
           </motion.div>
@@ -477,7 +363,9 @@ export default function AddAthletePage() {
   )
 }
 
-function FormField({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
+const inputCls = "w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
+
+function Field({ label, required, children }: { label: string; required?: boolean; children: React.ReactNode }) {
   return (
     <div>
       <label className="mb-1 block text-sm font-medium">

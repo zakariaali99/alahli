@@ -5,7 +5,10 @@ class AthleteModel {
   final String membershipNumber;
   final String fullName;
   final String phone;
+  final String? parentName;
   final String? parentPhone;
+  final String? residence;
+  final String? healthStatus;
   final String? birthDate;
   final String gender;
   final int? department;
@@ -23,7 +26,10 @@ class AthleteModel {
     required this.membershipNumber,
     required this.fullName,
     required this.phone,
+    this.parentName,
     this.parentPhone,
+    this.residence,
+    this.healthStatus,
     this.birthDate,
     required this.gender,
     this.department,
@@ -43,7 +49,10 @@ class AthleteModel {
       membershipNumber: asString(json['membership_number']) ?? '',
       fullName: asString(json['full_name']) ?? '',
       phone: asString(json['phone']) ?? '',
+      parentName: asString(json['parent_name']),
       parentPhone: asString(json['parent_phone']),
+      residence: asString(json['residence']),
+      healthStatus: asString(json['health_status']),
       birthDate: asString(json['birth_date']),
       gender: asString(json['gender']) ?? 'male',
       department: asInt(json['department']),
@@ -57,6 +66,7 @@ class AthleteModel {
       registrationId: asInt(json['registration']),
     );
   }
+
 
   Map<String, dynamic> toJson() {
     return {

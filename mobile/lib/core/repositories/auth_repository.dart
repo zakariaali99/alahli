@@ -16,7 +16,7 @@ class AuthRepository {
 
   Future<UserModel> login({
     required String phone,
-    required String password,
+    String password = '',
     bool rememberMe = false,
   }) async {
     try {
@@ -51,6 +51,29 @@ class AuthRepository {
       throw dioToAppApiException(e, fallback: 'خطأ في الاتصال بالخادم');
     }
   }
+
+  Future<UserModel> updateProfile({
+    String? name,
+    String? phone,
+    String? whatsappPhone,
+    String? residence,
+  }) async {
+    try {
+      final body = <String, dynamic>{};
+      if (name != null && name.isNotEmpty) body['first_name_ar'] = name;
+      if (phone != null && phone.isNotEmpty) body['phone'] = phone;
+      if (whatsappPhone != null) body['whatsapp_phone'] = whatsappPhone;
+      if (residence != null) body['residence'] = residence;
+
+      final res = await apiClient.dio.patch(ApiEndpoints.profile, data: body);
+      final data = asMap(res.data);
+      if (data == null) throw _appEx('فشل تحديث البيانات');
+      return UserModel.fromJson(data);
+    } on DioException catch (e) {
+      throw dioToAppApiException(e, fallback: 'فشل تحديث البيانات الشخصية');
+    }
+  }
+
 
   Future<UserModel> getMe() async {
     try {

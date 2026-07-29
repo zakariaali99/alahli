@@ -12,6 +12,7 @@ export default function LoginPage() {
   const navigate = useNavigate()
   const { login } = useAuth()
 
+  const [isStaffLogin, setIsStaffLogin] = useState(false)
   const [phone, setPhone] = useState(() => {
     try {
       return localStorage.getItem("remembered_phone") || ""
@@ -33,8 +34,13 @@ export default function LoginPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    if (!phone.trim() || !password.trim()) {
-      setErrorMessage("يرجى إدخال رقم الهاتف وكلمة المرور")
+    if (!phone.trim()) {
+      setErrorMessage("يرجى إدخال رقم الهاتف")
+      return
+    }
+
+    if (isStaffLogin && !password.trim()) {
+      setErrorMessage("يرجى إدخال كلمة المرور لحساب الإدارة")
       return
     }
 
@@ -53,7 +59,7 @@ export default function LoginPage() {
         localStorage.setItem("remember_me", "false")
       }
 
-      const loggedInUser = await login(phone.trim(), password)
+      const loggedInUser = await login(phone.trim(), isStaffLogin ? password : "")
       if (loggedInUser.role === "athlete" || loggedInUser.role === "parent") {
         navigate("/user")
       } else {
@@ -83,12 +89,12 @@ export default function LoginPage() {
             <span className="block text-[#0F4C81] mt-1">تسجيل دخول آمن</span>
           </h1>
           <p className="text-sm leading-7 text-[#4d6178]">
-            سجّل الدخول للوصول إلى لوحة الإدارة أو لوحة المستخدم حسب صلاحية الحساب.
+            سجّل الدخول برقم هاتفك للوصول لحسابك، أو اختر دخول الإدارة للموظفين.
           </p>
           <div className="space-y-2 text-xs text-[#4d6178] border-t border-border/20 pt-4">
-            <p>• تسجيل ذاتي للرياضي وولي الأمر</p>
-            <p>• مسار اشتراك متعدد الخطوات</p>
-            <p>• مراجعة واعتماد الطلبات عبر الإدارة</p>
+            <p>• دخول مباشر برقم الهاتف للرياضيين وأولياء الأمور</p>
+            <p>• اختيار الأكاديمية والتسجيل الذاتي السريع</p>
+            <p>• تتبع الحضور ومتابعة الاشتراكات</p>
           </div>
         </Card>
 
@@ -102,7 +108,7 @@ export default function LoginPage() {
             className="p-6 md:p-8 border border-white/80 shadow-[0_20px_60px_-28px_rgba(16,32,51,0.45)] backdrop-blur-md"
           >
             <h2 className="text-xl font-extrabold text-[#102033]">تسجيل الدخول</h2>
-            <p className="mt-1 text-xs text-[#5f7288]">أدخل بياناتك للوصول إلى حسابك</p>
+            <p className="mt-1 text-xs text-[#5f7288]">أدخل رقم هاتفك للوصول لحسابك</p>
 
             {errorMessage && (
               <div className="mt-4 flex items-center gap-2 rounded-xl border border-[#A63F3F]/25 bg-[#A63F3F]/8 px-3 py-2 text-xs text-[#A63F3F]">
@@ -124,42 +130,55 @@ export default function LoginPage() {
                 />
               </div>
 
-              <div>
-                <label className="mb-1.5 block text-xs font-bold text-[#102033]" htmlFor="password">كلمة المرور</label>
-                <div className="relative">
-                  <Input
-                    id="password"
-                    autoComplete="current-password"
-                    type={showPassword ? "text" : "password"}
-                    value={password}
-                    onChange={(e) => setPassword(e.target.value)}
-                    icon={<Lock className="h-4 w-4 text-muted-foreground" />}
-                    className="pl-10"
-                  />
-                  <button
-                    className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                    type="button"
-                    onClick={() => setShowPassword((v) => !v)}
-                  >
-                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                  </button>
+              {isStaffLogin && (
+                <div>
+                  <label className="mb-1.5 block text-xs font-bold text-[#102033]" htmlFor="password">كلمة المرور للإدارة</label>
+                  <div className="relative">
+                    <Input
+                      id="password"
+                      autoComplete="current-password"
+                      type={showPassword ? "text" : "password"}
+                      value={password}
+                      onChange={(e) => setPassword(e.target.value)}
+                      icon={<Lock className="h-4 w-4 text-muted-foreground" />}
+                      className="pl-10"
+                    />
+                    <button
+                      className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
+                      type="button"
+                      onClick={() => setShowPassword((v) => !v)}
+                    >
+                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </button>
+                  </div>
                 </div>
-              </div>
+              )}
 
-              <label className="flex cursor-pointer items-center gap-2 text-xs text-[#102033] select-none">
-                <input
-                  type="checkbox"
-                  checked={rememberMe}
-                  onChange={(e) => setRememberMe(e.target.checked)}
-                  className="w-4 h-4 rounded border-border text-primary focus:ring-primary/30"
-                />
-                تذكرني
-              </label>
+              <div className="flex items-center justify-between gap-2 pt-1">
+                <label className="flex cursor-pointer items-center gap-2 text-xs text-[#102033] select-none">
+                  <input
+                    type="checkbox"
+                    checked={rememberMe}
+                    onChange={(e) => setRememberMe(e.target.checked)}
+                    className="w-4 h-4 rounded border-border text-primary focus:ring-primary/30"
+                  />
+                  تذكرني
+                </label>
+
+                <button
+                  type="button"
+                  onClick={() => setIsStaffLogin(!isStaffLogin)}
+                  className="text-xs text-[#0F4C81] hover:underline font-semibold"
+                >
+                  {isStaffLogin ? "← دخول الرياضيين وأولياء الأمور" : "دخول الإدارة والموظفين"}
+                </button>
+              </div>
 
               <Button className="h-10 w-full rounded-xl text-sm font-bold mt-2" disabled={isLoading} type="submit">
                 {isLoading ? "جاري تسجيل الدخول..." : "دخول"}
               </Button>
             </form>
+
 
             <div className="mt-5 flex flex-wrap items-center gap-3 text-xs text-[#5f7288] border-t border-border/10 pt-4">
               <Link className="text-[#0F4C81] underline-offset-2 hover:underline font-medium" to="/register/athlete">تسجيل رياضي</Link>
