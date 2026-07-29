@@ -167,7 +167,7 @@ export default function AthletesPage() {
       {deptParam && (
         <div className="bg-primary/10 border border-primary/20 rounded-2xl p-4 flex items-center justify-between text-primary">
           <span className="font-extrabold text-sm">
-            عرض رياضيي {deptParam === "4" ? "مركز الأهلي الرياضي" : "أكاديمية الأوس"}
+            عرض رياضيي {deptParam === "4" || deptParam === "2" ? "مركز الأهلي الرياضي" : "أكاديمية الأوس"}
           </span>
         </div>
       )}

@@ -22,11 +22,11 @@ export default function Landing() {
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-sm transition-all duration-300">
         <div className="mx-auto flex h-20 w-full max-w-7xl items-center justify-between px-3 sm:px-6 lg:px-8">
           
-          {/* Logo & Branding */}
           <div className="flex items-center gap-2 sm:gap-3 cursor-pointer" onClick={() => scrollToSection("hero")}>
             <img src="/logo.png" alt="Logo" className="h-9 w-9 sm:h-12 sm:w-12 object-contain" />
             <div className="flex flex-col">
-              <span className="text-[11px] sm:text-base font-extrabold text-[#0f2942] leading-tight">مركز الأهلي الرياضي & أكاديمية الأوس</span>
+              <span className="text-xs sm:text-base font-extrabold text-[#0f2942] leading-tight block md:hidden">الأهلي & الأوس</span>
+              <span className="text-base font-extrabold text-[#0f2942] leading-tight hidden md:block">مركز الأهلي الرياضي & أكاديمية الأوس</span>
               <span className="text-[9px] sm:text-xs text-[#5f7288] font-semibold">مصراتة - ليبيا</span>
             </div>
           </div>

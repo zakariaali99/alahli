@@ -58,6 +58,30 @@ export default function AddAthletePage() {
   const [selectedSport, setSelectedSport] = useState<Sport | null>(null)
   const [loadingSports, setLoadingSports] = useState(false)
 
+  const [departments, setDepartments] = useState<Department[]>(ACADEMIES)
+
+  useEffect(() => {
+    const loadDepts = async () => {
+      try {
+        const res = await api.get("/departments/")
+        const list = extractResults<Department>(res)
+        if (list.length > 0) {
+          setDepartments(list)
+        }
+      } catch (err) {
+        console.error("Failed to load departments:", err)
+      }
+    }
+    loadDepts()
+  }, [])
+
+  const isAcademyParent = (academy: Department | null) => {
+    if (!academy) return false
+    const name = (academy.name || "").toLowerCase()
+    const nameAr = academy.name_ar || ""
+    return name.includes("aws") || nameAr.includes("أوس") || academy.id === 5 || academy.id === 3
+  }
+
   const [form, setForm] = useState(defaultForm)
   const [photo, setPhoto] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -65,7 +89,7 @@ export default function AddAthletePage() {
   const [success, setSuccess] = useState(false)
   const [searchParams] = useSearchParams()
   const deptParam = searchParams.get("department")
-  const isParent = selectedAcademy?.id === 5
+  const isParent = isAcademyParent(selectedAcademy)
 
   const handleSelectAcademy = async (academy: Department) => {
     setSelectedAcademy(academy)
@@ -92,12 +116,12 @@ export default function AddAthletePage() {
 
   useEffect(() => {
     if (deptParam) {
-      const match = ACADEMIES.find((a) => a.id === Number(deptParam))
+      const match = departments.find((a) => a.id === Number(deptParam))
       if (match) {
         void handleSelectAcademy(match)
       }
     }
-  }, [deptParam])
+  }, [deptParam, departments])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
@@ -215,7 +239,7 @@ export default function AddAthletePage() {
             exit={{ opacity: 0, y: -8 }}
             className="grid gap-4 sm:grid-cols-2"
           >
-            {ACADEMIES.map((academy) => (
+            {departments.map((academy) => (
               <button
                 key={academy.id}
                 type="button"

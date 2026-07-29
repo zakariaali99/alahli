@@ -44,6 +44,28 @@ export default function RegisterAthlete() {
 
   const [departments, setDepartments] = useState<Department[]>(HARDCODED_DEPARTMENTS)
   
+  useEffect(() => {
+    const loadDepts = async () => {
+      try {
+        const res = await api.get("/departments/")
+        const list = extractResults<Department>(res)
+        if (list.length > 0) {
+          setDepartments(list)
+        }
+      } catch (err) {
+        console.error("Failed to load departments:", err)
+      }
+    }
+    loadDepts()
+  }, [])
+
+  const isAcademyParent = (academy: Department | null) => {
+    if (!academy) return false
+    const name = (academy.name || "").toLowerCase()
+    const nameAr = academy.name_ar || ""
+    return name.includes("aws") || nameAr.includes("أوس") || academy.id === 5 || academy.id === 3
+  }
+
   const [form, setForm] = useState({
     full_name: "",
     phone: "",
@@ -93,7 +115,7 @@ export default function RegisterAthlete() {
       return
     }
 
-    const isParent = selectedAcademy.id === 5
+    const isParent = isAcademyParent(selectedAcademy)
 
     if (!isParent && !photo) {
       setError("صورة السيلفي أو الصورة الشخصية مطلوبة لإتمام التسجيل")
@@ -153,7 +175,7 @@ export default function RegisterAthlete() {
     )
   }
 
-  const isParent = selectedAcademy?.id === 5
+  const isParent = isAcademyParent(selectedAcademy)
 
   return (
     <div className="min-h-screen bg-[#f4f7fb] py-8 px-4" dir="rtl">

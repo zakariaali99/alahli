@@ -40,13 +40,15 @@ export default function ManagerDashboard() {
         console.error("Error fetching department details:", err)
         // Fallback names in case of API failure
         const fallbacks: Record<string, Partial<Department>> = {
+          "2": { id: 2, name_ar: "مركز الأهلي الرياضي", color: "#0F4C81", logo: "/logo.png" },
+          "3": { id: 3, name_ar: "أكاديمية الأوس", color: "#136F63", logo: "/alaws_logo.png" },
           "4": { id: 4, name_ar: "مركز الأهلي الرياضي", color: "#0F4C81", logo: "/logo.png" },
           "5": { id: 5, name_ar: "أكاديمية الأوس", color: "#136F63", logo: "/alaws_logo.png" }
         }
         if (fallbacks[academyId]) {
           setDepartment({
             id: Number(academyId),
-            name: academyId === "4" ? "Al Ahli" : "Al Aws",
+            name: (academyId === "4" || academyId === "2") ? "Al Ahli" : "Al Aws",
             name_ar: fallbacks[academyId].name_ar!,
             color: fallbacks[academyId].color!,
             logo: fallbacks[academyId].logo!,

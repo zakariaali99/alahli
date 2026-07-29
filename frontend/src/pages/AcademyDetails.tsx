@@ -130,7 +130,8 @@ export default function AcademyDetails() {
           <Link to="/" className="flex items-center gap-2 sm:gap-3">
             <img src={academy.logo || "/logo.png"} alt="Logo" className="h-9 w-9 sm:h-11 sm:w-11 object-contain rounded-full shadow-sm" />
             <div>
-              <span className="text-[11px] sm:text-base font-extrabold text-[#0f2942] block leading-tight">مركز الأهلي الرياضي & أكاديمية الأوس</span>
+              <span className="text-xs sm:text-base font-extrabold text-[#0f2942] block leading-tight md:hidden">الأهلي & الأوس</span>
+              <span className="text-base font-extrabold text-[#0f2942] hidden md:block leading-tight">مركز الأهلي الرياضي & أكاديمية الأوس</span>
               <span className="text-[9px] sm:text-xs text-[#5f7288] font-bold">مصراتة - ليبيا</span>
             </div>
           </Link>
