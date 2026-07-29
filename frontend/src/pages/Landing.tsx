@@ -121,15 +121,17 @@ export default function Landing() {
                 transition={{ duration: 0.5 }}
                 className="group bg-white rounded-3xl border border-gray-150 p-6 flex flex-col hover:shadow-xl transition-all duration-300 cursor-pointer"
               >
-                <div className="relative aspect-[16/10] w-full rounded-2xl overflow-hidden shadow-inner bg-gray-50">
-                  <img 
-                    src="/alahli_center.png" 
-                    alt="Al Ahly Sports Center" 
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
-                  />
+                <div className="relative aspect-[16/10] w-full">
+                  <div className="w-full h-full rounded-2xl overflow-hidden shadow-inner bg-gray-50">
+                    <img 
+                      src="/alahli_center.png" 
+                      alt="Al Ahly Sports Center" 
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                    />
+                  </div>
                   
                   {/* Logo Overlay */}
-                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-16 h-16 rounded-full border-4 border-white bg-white shadow-md flex items-center justify-center overflow-hidden z-10">
+                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-16 h-16 rounded-full border-4 border-white bg-white shadow-md flex items-center justify-center overflow-hidden z-20">
                     <img src="/logo.png" alt="Logo" className="w-12 h-12 object-contain" />
                   </div>
                 </div>
@@ -150,16 +152,18 @@ export default function Landing() {
                 transition={{ duration: 0.5, delay: 0.15 }}
                 className="group bg-white rounded-3xl border border-gray-150 p-6 flex flex-col hover:shadow-xl transition-all duration-300 cursor-pointer"
               >
-                <div className="relative aspect-[16/10] w-full rounded-2xl overflow-hidden shadow-inner bg-gray-50">
-                  <img 
-                    src="/alaws_academy.png" 
-                    alt="Al Aws Academy" 
-                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
-                  />
+                <div className="relative aspect-[16/10] w-full">
+                  <div className="w-full h-full rounded-2xl overflow-hidden shadow-inner bg-gray-50">
+                    <img 
+                      src="/alaws_academy.png" 
+                      alt="Al Aws Academy" 
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                    />
+                  </div>
                   
                   {/* Logo Overlay */}
-                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-16 h-16 rounded-full border-4 border-white bg-white shadow-md flex items-center justify-center overflow-hidden z-10">
-                    <img src="/logo.png" alt="Logo" className="w-12 h-12 object-contain" />
+                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-16 h-16 rounded-full border-4 border-white bg-white shadow-md flex items-center justify-center overflow-hidden z-20">
+                    <img src="/alaws_logo.png" alt="Logo" className="w-full h-full object-cover" />
                   </div>
                 </div>
 

@@ -18,6 +18,7 @@ interface AcademyData {
   nameAr: string
   subtitle: string
   color: string
+  logo?: string
   heroImage: string
   description: string
   programs: {
@@ -39,6 +40,7 @@ const ACADEMIES_DATA: Record<string, AcademyData> = {
     nameAr: "مركز الأهلي الرياضي",
     subtitle: "مصراتة - ليبيا",
     color: "#0F4C81",
+    logo: "/logo.png",
     heroImage: "/alahli_center.png",
     description: "مركز رياضي متكامل مخصص لبناء الأجيال الرياضية الواعدة وتطوير مهارات القوة والمرونة والدفاع عن النفس في بيئة تربوية ورياضية آمنة ومجهزة بأحدث الصالات والمعدات.",
     programs: [
@@ -77,6 +79,7 @@ const ACADEMIES_DATA: Record<string, AcademyData> = {
     nameAr: "أكاديمية الأوس",
     subtitle: "مصراتة - ليبيا",
     color: "#136F63",
+    logo: "/alaws_logo.png",
     heroImage: "/alaws_academy.png",
     description: "أكاديمية متخصصة في اكتشاف وصقل مواهب كرة القدم والرياضات الجماعية، تهدف لتوفير بيئة تدريبية احترافية تجمع بين الانضباط والرياضة والترفيه.",
     programs: [
@@ -125,7 +128,7 @@ export default function AcademyDetails() {
         <div className="mx-auto flex h-20 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           
           <Link to="/" className="flex items-center gap-3">
-            <img src="/logo.png" alt="Logo" className="h-11 w-11 object-contain" />
+            <img src={academy.logo || "/logo.png"} alt="Logo" className="h-11 w-11 object-contain rounded-full shadow-sm" />
             <div>
               <span className="text-base font-extrabold text-[#0f2942] block leading-tight">مركز الأهلي الرياضي & أكاديمية الأوس</span>
               <span className="text-xs text-[#5f7288] font-bold">مصراتة - ليبيا</span>
