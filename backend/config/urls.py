@@ -45,7 +45,8 @@ urlpatterns += [url for url in router.urls if getattr(url, "name", None) != "api
 # SPA catch-all — must be last so it doesn't hijack api/ or router routes
 urlpatterns += [
     re_path(r"^media/(?P<path>.*)$", serve_media),
-    re_path(r"^(?P<path>logo\.\w+)$", serve_frontend_assets),
+    re_path(r"^(?P<path>[\w-]+\.(png|svg|ico|webp))$", serve_frontend_assets),
     re_path(r"^(?P<path>assets/.*)$", serve_frontend_assets),
+    re_path(r"^(?P<path>logo\.\w+)$", serve_frontend_assets),
     re_path(r"^(?!api/|admin/|static/|media/).*$", serve_spa),
 ]
