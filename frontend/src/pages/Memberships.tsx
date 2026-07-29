@@ -162,6 +162,7 @@ export default function MembershipsPage() {
   }, [])
 
   const [searchParams] = useSearchParams()
+  const deptParam = searchParams.get("department")
 
   useEffect(() => {
     const athleteId = searchParams.get("athlete_id")
@@ -193,6 +194,7 @@ export default function MembershipsPage() {
     page_size: 20,
     search: search || undefined,
     status: statusFilter || undefined,
+    athlete__department: deptParam || undefined,
   })
 
   const { data: packagesData } = usePackages()
@@ -326,6 +328,7 @@ export default function MembershipsPage() {
       const athletesRes = await api.get<{ results: Array<{ id: number; full_name: string; membership_number: string }> } | Array<{ id: number; full_name: string; membership_number: string }>>("/athletes/", {
         page_size: "300",
         ordering: "-created_at",
+        ...(deptParam ? { department: deptParam } : {}),
       })
       const items = (athletesRes as any).results || athletesRes
       setAthleteOptions(Array.isArray(items) ? items : [])
@@ -460,7 +463,10 @@ export default function MembershipsPage() {
   }
 
   const resetPackageForm = () => {
-    setPackageForm(DEFAULT_PACKAGE_FORM)
+    setPackageForm({
+      ...DEFAULT_PACKAGE_FORM,
+      department: deptParam ? Number(deptParam) : null
+    })
     setEditingPackageId(null)
     setPackageError(null)
     setPackageFieldErrors({})
@@ -1053,7 +1059,8 @@ export default function MembershipsPage() {
                     id="package-department"
                     value={packageForm.department ?? ""}
                     onChange={(e) => setPackageForm((prev) => ({ ...prev, department: e.target.value ? Number(e.target.value) : null }))}
-                    className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer"
+                    disabled={!!deptParam}
+                    className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
                   >
                     <option value="">جميع الأكاديميات (باقة عامة)</option>
                     {departments.map((d) => (

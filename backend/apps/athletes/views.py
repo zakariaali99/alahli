@@ -309,6 +309,13 @@ class RegistrationRequestViewSet(viewsets.ReadOnlyModelViewSet):
                 Q(athlete__department=user.academy) |
                 Q(athlete__isnull=True, user__academy=user.academy)
             )
+        if getattr(user, "role", None) == "special_manager":
+            dept_id = self.request.query_params.get("department")
+            if dept_id:
+                return qs.filter(
+                    Q(athlete__department=dept_id) |
+                    Q(athlete__isnull=True, user__academy=dept_id)
+                )
         return qs
 
 

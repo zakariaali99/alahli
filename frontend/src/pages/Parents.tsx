@@ -1,4 +1,5 @@
 import { useState } from "react"
+import { useSearchParams } from "react-router-dom"
 import { motion, type Variants } from "framer-motion"
 import {
   Users, Search, Filter, CheckCircle2,
@@ -60,6 +61,8 @@ function RegistrationStatusBadge({ status }: { status: Parent["registration_stat
 export default function ParentsPage() {
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
+  const [searchParams] = useSearchParams()
+  const deptParam = searchParams.get("department")
   const [page, setPage] = useState(1)
   const PAGE_SIZE = 20
 
@@ -67,6 +70,7 @@ export default function ParentsPage() {
     page: String(page),
     page_size: String(PAGE_SIZE),
     role_choice: "parent",
+    ...(deptParam ? { department: deptParam } : {}),
   }
   if (statusFilter !== "all") params.status = statusFilter
 
