@@ -1,12 +1,13 @@
 import React from "react"
-import { useQueryClient } from "@tanstack/react-query"
+import { useQueryClient, useMutation } from "@tanstack/react-query"
+import { api } from "@/lib/api"
 import { motion, type Variants } from "framer-motion"
-import { useParams, Link } from "react-router-dom"
+import { useParams, Link, useNavigate } from "react-router-dom"
 import {
   ChevronLeft, Edit, RefreshCw, Printer, Shield,
   Calendar, Award, Receipt, Users,
   CreditCard, Hash, Clock, BadgeCheck,
-  Phone, User, Briefcase, Activity, X,
+  Phone, User, Briefcase, Activity, X, Trash2,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
@@ -32,6 +33,7 @@ export default function AthleteProfilePage() {
   const params = useParams()
   const id = Number(params.id)
   const isValidId = !isNaN(id) && id > 0
+  const navigate = useNavigate()
   const { data: athlete, isLoading, refetch: refetchAthlete } = useAthlete(isValidId ? id : 0)
   const { data: subsData, refetch: refetchSubs } = useSubscriptions(isValidId ? { athlete: String(id) } : {})
   const [showSyncModal, setShowSyncModal] = React.useState(false)
@@ -58,6 +60,24 @@ export default function AthleteProfilePage() {
   const [renewalMonths, setRenewalMonths] = React.useState(1)
   const [renewError, setRenewError] = React.useState<string | null>(null)
   const [priceType, setPriceType] = React.useState<"new" | "renewal">("renewal")
+
+  const deleteMutation = useMutation({
+    mutationFn: () => api.delete(`/athletes/${id}/`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["athletes"] })
+      toast.success("تم حذف الحساب بنجاح")
+      navigate("/dashboard/athletes")
+    },
+    onError: (err: any) => {
+      toast.error(`فشل الحذف: ${err.message || err}`)
+    }
+  })
+
+  const handleDelete = () => {
+    if (window.confirm(`هل أنت متأكد من حذف حساب الرياضي "${athlete?.full_name}" نهائياً؟ سيتم حذف بيانات الدخول والاشتراكات بشكل كامل، وسيكون رقم الهاتف متاحاً للتسجيل مرة أخرى.`)) {
+      deleteMutation.mutate()
+    }
+  }
 
   const normalizeRenewMonths = (durationType: "weeks" | "months", durationValue: number) => {
     const estimated = durationType === "weeks" ? Math.max(1, Math.ceil(durationValue / 4)) : Math.max(1, durationValue)
@@ -218,6 +238,12 @@ export default function AthleteProfilePage() {
                 تعديل البيانات
               </Button>
             </Link>
+          </Can>
+          <Can action="athletes:delete">
+            <Button variant="destructive" size="lg" onClick={handleDelete} disabled={deleteMutation.isPending}>
+              <Trash2 className="w-4 h-4" />
+              {deleteMutation.isPending ? "جاري الحذف..." : "حذف الحساب"}
+            </Button>
           </Can>
           <Can action="subscriptions:renew">
             <Button

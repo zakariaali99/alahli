@@ -54,7 +54,7 @@ const PERMISSIONS: Record<Action, Role[]> = {
   "athletes:read": ["super_admin", "academy_manager", "special_manager", "reception", "trainer", "viewer"],
   "athletes:create": ["super_admin", "academy_manager", "special_manager"],
   "athletes:update": ["super_admin", "academy_manager", "special_manager"],
-  "athletes:delete": ["super_admin"],
+  "athletes:delete": ["super_admin", "academy_manager", "special_manager"],
 
   "subscriptions:read": ["super_admin", "academy_manager", "special_manager", "reception", "trainer", "viewer", "athlete", "parent"],
   "subscriptions:create": ["super_admin", "academy_manager", "special_manager"],

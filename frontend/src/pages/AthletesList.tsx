@@ -88,7 +88,7 @@ export default function AthletesPage() {
   }
 
   const handleDeleteAthlete = (athlete: any) => {
-    if (window.confirm(`هل أنت متأكد من ${athlete.full_name}" ${athlete.full_name}" نهائياً؟`)) {
+    if (window.confirm(`هل أنت متأكد من حذف حساب الرياضي "${athlete.full_name}" نهائياً؟ سيتم حذف بيانات الدخول والاشتراكات بشكل كامل، وسيكون رقم الهاتف متاحاً للتسجيل مرة أخرى.`)) {
       deleteMutation.mutate(athlete.id)
     }
   }
@@ -401,7 +401,18 @@ export default function AthletesPage() {
                                       <span>{athlete.is_active ? "تجميد الحساب" : "تنشيط الحساب"}</span>
                                     </button>
                                   </Can>
-
+                                  <Can action="athletes:delete">
+                                    <button
+                                      onClick={() => {
+                                        setActiveMenuId(null);
+                                        handleDeleteAthlete(athlete);
+                                      }}
+                                      className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-red-50 text-error transition-colors w-full text-right cursor-pointer"
+                                    >
+                                      <Trash2 className="w-3.5 h-3.5" />
+                                      <span>حذف الحساب نهائياً</span>
+                                    </button>
+                                  </Can>
                                 </div>
                               </>
                             )}
@@ -571,7 +582,18 @@ export default function AthletesPage() {
                               <span>{athlete.is_active ? "تجميد الحساب" : "تنشيط الحساب"}</span>
                             </button>
                           </Can>
-
+                          <Can action="athletes:delete">
+                            <button
+                              onClick={() => {
+                                setActiveMenuId(null);
+                                handleDeleteAthlete(athlete);
+                              }}
+                              className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-red-50 text-error transition-colors w-full text-right cursor-pointer"
+                            >
+                              <Trash2 className="w-3.5 h-3.5" />
+                              <span>حذف الحساب نهائياً</span>
+                            </button>
+                          </Can>
                         </div>
                       </>
                     )}

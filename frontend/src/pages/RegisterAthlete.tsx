@@ -75,7 +75,8 @@ export default function RegisterAthlete() {
       } else {
         setStep(3)
       }
-    } catch {
+    } catch (err) {
+      console.error("Failed to load sports:", err)
       setStep(3)
     } finally {
       setLoadingSports(false)

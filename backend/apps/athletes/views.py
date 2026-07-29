@@ -14,6 +14,7 @@ from rest_framework.response import Response
 from apps.accounts.models import User
 from apps.accounts.permissions import (
     IsManagementOrAbove,
+    IsManagerOrAbove,
     IsStaffOrAbove,
     IsSuperAdmin,
     is_management_staff,
@@ -90,10 +91,14 @@ def register_view(request):
     parent_phone = serializer.validated_data.get("parent_phone", "")
 
     # Auto-approve when a staff/management user creates the account
-    is_staff_creator = (
+    is_staff_creator = bool(
         request.user
         and request.user.is_authenticated
-        and request.user.role in ["super_admin", "academy_manager", "special_manager", "reception"]
+        and (
+            request.user.role in ["super_admin", "academy_manager", "special_manager", "reception", "trainer", "viewer"]
+            or request.user.is_staff
+            or request.user.is_superuser
+        )
     )
 
     sport_id = serializer.validated_data.get("sport")
@@ -197,7 +202,7 @@ class AthleteViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action == "destroy":
-            return [IsSuperAdmin()]
+            return [IsManagerOrAbove()]
         if self.action == "create":
             return [IsManagementOrAbove()]
         if self.action in ["update", "partial_update", "me"]:
@@ -215,6 +220,14 @@ class AthleteViewSet(viewsets.ModelViewSet):
             if user.role == "parent" and ParentAthlete.objects.filter(parent=user, athlete=obj).exists():
                 return
             self.permission_denied(request, message="ليس لديك صلاحية لتعديل بيانات هذا الرياضي")
+
+    @transaction.atomic
+    def perform_destroy(self, instance):
+        # Delete user credentials to free up the phone number
+        user = getattr(instance, "user_account", None)
+        if user:
+            user.delete()
+        instance.delete()
 
     @transaction.atomic
     def create(self, request, *args, **kwargs):

@@ -25,9 +25,9 @@ def is_recognition_staff(user):
 def scope_by_academy(user, queryset, academy_field="department", request=None):
     if is_super_admin(user):
         return queryset
-    if user.academy:
+    if user and user.is_authenticated and getattr(user, "academy", None):
         return queryset.filter(**{academy_field: user.academy})
-    if request and getattr(user, "role", None) == "special_manager":
+    if request and user and user.is_authenticated and getattr(user, "role", None) == "special_manager":
         dept_id = request.query_params.get("department")
         if dept_id:
             return queryset.filter(**{academy_field: dept_id})
@@ -42,6 +42,12 @@ class IsSuperAdmin(BasePermission):
 class IsStaffOrAbove(BasePermission):
     def has_permission(self, request, view):
         return is_staff_user(request.user)
+
+
+class IsManagerOrAbove(BasePermission):
+    def has_permission(self, request, view):
+        user = request.user
+        return bool(user and user.is_authenticated and user.role in ["super_admin", "academy_manager", "special_manager"])
 
 
 class IsManagementOrAbove(BasePermission):

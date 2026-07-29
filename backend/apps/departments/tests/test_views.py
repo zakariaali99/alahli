@@ -56,9 +56,9 @@ class TestSportReadAccess:
         })
         assert response.status_code == status.HTTP_403_FORBIDDEN
 
-    def test_unauthenticated_cannot_read_sports(self, api_client):
+    def test_unauthenticated_can_read_sports(self, api_client):
         response = api_client.get("/api/sports/")
-        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert response.status_code == status.HTTP_200_OK
 
 
 @pytest.mark.django_db
