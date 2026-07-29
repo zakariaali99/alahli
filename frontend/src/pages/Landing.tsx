@@ -20,14 +20,14 @@ export default function Landing() {
       
       {/* ── Header ── */}
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-sm transition-all duration-300">
-        <div className="mx-auto flex h-20 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto flex h-20 w-full max-w-7xl items-center justify-between px-3 sm:px-6 lg:px-8">
           
           {/* Logo & Branding */}
-          <div className="flex items-center gap-3 cursor-pointer" onClick={() => scrollToSection("hero")}>
-            <img src="/logo.png" alt="Logo" className="h-12 w-12 object-contain" />
+          <div className="flex items-center gap-2 sm:gap-3 cursor-pointer" onClick={() => scrollToSection("hero")}>
+            <img src="/logo.png" alt="Logo" className="h-9 w-9 sm:h-12 sm:w-12 object-contain" />
             <div className="flex flex-col">
-              <span className="text-base font-extrabold text-[#0f2942] leading-tight">مركز الأهلي الرياضي & أكاديمية الأوس</span>
-              <span className="text-xs text-[#5f7288] font-semibold">مصراتة - ليبيا</span>
+              <span className="text-[11px] sm:text-base font-extrabold text-[#0f2942] leading-tight">مركز الأهلي الرياضي & أكاديمية الأوس</span>
+              <span className="text-[9px] sm:text-xs text-[#5f7288] font-semibold">مصراتة - ليبيا</span>
             </div>
           </div>
 
@@ -54,17 +54,17 @@ export default function Landing() {
           </nav>
 
           {/* Header Action Buttons */}
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2">
             <Link to="/login">
               <Button 
-                className="bg-[#0f2942] hover:bg-[#0f2942]/90 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-all cursor-pointer"
+                className="bg-[#0f2942] hover:bg-[#0f2942]/90 text-white font-bold px-2.5 sm:px-5 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-sm transition-all cursor-pointer h-auto"
               >
                 تسجيل الدخول
               </Button>
             </Link>
             <Link to="/register/athlete">
               <Button 
-                className="bg-[#047857] hover:bg-[#047857]/90 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-all cursor-pointer"
+                className="bg-[#047857] hover:bg-[#047857]/90 text-white font-bold px-2.5 sm:px-5 py-1.5 sm:py-2.5 rounded-lg sm:rounded-xl text-[10px] sm:text-sm transition-all cursor-pointer h-auto"
               >
                 تسجيل جديد
               </Button>

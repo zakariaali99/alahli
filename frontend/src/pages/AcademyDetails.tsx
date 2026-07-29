@@ -125,22 +125,22 @@ export default function AcademyDetails() {
       
       {/* ── Header Bar ── */}
       <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-150 shadow-sm transition-all">
-        <div className="mx-auto flex h-20 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto flex h-20 w-full max-w-7xl items-center justify-between px-3 sm:px-6 lg:px-8">
           
-          <Link to="/" className="flex items-center gap-3">
-            <img src={academy.logo || "/logo.png"} alt="Logo" className="h-11 w-11 object-contain rounded-full shadow-sm" />
+          <Link to="/" className="flex items-center gap-2 sm:gap-3">
+            <img src={academy.logo || "/logo.png"} alt="Logo" className="h-9 w-9 sm:h-11 sm:w-11 object-contain rounded-full shadow-sm" />
             <div>
-              <span className="text-base font-extrabold text-[#0f2942] block leading-tight">مركز الأهلي الرياضي & أكاديمية الأوس</span>
-              <span className="text-xs text-[#5f7288] font-bold">مصراتة - ليبيا</span>
+              <span className="text-[11px] sm:text-base font-extrabold text-[#0f2942] block leading-tight">مركز الأهلي الرياضي & أكاديمية الأوس</span>
+              <span className="text-[9px] sm:text-xs text-[#5f7288] font-bold">مصراتة - ليبيا</span>
             </div>
           </Link>
 
           <Button
             onClick={() => navigate("/")}
             variant="ghost"
-            className="flex items-center gap-2 text-xs font-bold text-[#5f7288] hover:text-[#0f2942]"
+            className="flex items-center gap-1 sm:gap-2 text-[10px] sm:text-xs font-bold text-[#5f7288] hover:text-[#0f2942] px-2.5 sm:px-4 py-1.5 sm:py-2 h-auto"
           >
-            <ArrowRight className="w-4 h-4" />
+            <ArrowRight className="w-3.5 h-3.5" />
             العودة للرئيسية
           </Button>
         </div>
