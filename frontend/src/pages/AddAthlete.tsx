@@ -9,6 +9,7 @@ import { validateLibyanPhone } from "@/lib/utils"
 import { extractResults } from "@/lib/response"
 import CameraCapture from "@/components/ui/camera-capture"
 import type { Department, Sport } from "@/lib/types"
+import { isParentAcademy } from "@/lib/departments"
 
 type Step = "choose" | "sport" | "form"
 
@@ -75,13 +76,6 @@ export default function AddAthletePage() {
     loadDepts()
   }, [])
 
-  const isAcademyParent = (academy: Department | null) => {
-    if (!academy) return false
-    const name = (academy.name || "").toLowerCase()
-    const nameAr = academy.name_ar || ""
-    return name.includes("aws") || nameAr.includes("أوس") || academy.id === 5 || academy.id === 3
-  }
-
   const [form, setForm] = useState(defaultForm)
   const [photo, setPhoto] = useState<string | null>(null)
   const [submitting, setSubmitting] = useState(false)
@@ -89,7 +83,7 @@ export default function AddAthletePage() {
   const [success, setSuccess] = useState(false)
   const [searchParams] = useSearchParams()
   const deptParam = searchParams.get("department")
-  const isParent = isAcademyParent(selectedAcademy)
+  const isParent = isParentAcademy(selectedAcademy)
 
   const handleSelectAcademy = async (academy: Department) => {
     setSelectedAcademy(academy)
@@ -258,7 +252,7 @@ export default function AddAthletePage() {
                 <div>
                   <h3 className="text-lg font-black">{academy.name_ar}</h3>
                   <p className="text-xs text-muted-foreground mt-1">
-                    {academy.id === 5 ? "حساب ولي أمر — إدارة الأبناء الرياضيين" : "حساب رياضي — التحاق بالتمارين والمجموعات"}
+                    {isParentAcademy(academy) ? "حساب ولي أمر — إدارة الأبناء الرياضيين" : "حساب رياضي — التحاق بالتمارين والمجموعات"}
                   </p>
                 </div>
               </button>

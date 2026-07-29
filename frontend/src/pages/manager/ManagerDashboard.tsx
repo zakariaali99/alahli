@@ -3,6 +3,7 @@ import { useParams, useNavigate } from "react-router-dom"
 import { motion } from "framer-motion"
 import { api } from "@/lib/api"
 import { type Department } from "@/lib/types"
+import { isParentAcademy } from "@/lib/departments"
 import { 
   UserPlus, 
   Users, 
@@ -22,6 +23,86 @@ interface ActionCard {
   color: string
 }
 
+function buildCards(deptId: number, isParent: boolean): ActionCard[] {
+  if (isParent) {
+    return [
+      {
+        title: "إضافة ولي أمر",
+        desc: "تسجيل حساب ولي أمر جديد لربطه بالرياضيين لاحقاً",
+        icon: UserPlus,
+        url: `/dashboard/athletes/add?department=${deptId}`,
+        color: "from-teal-500/10 to-teal-600/5 hover:border-teal-500 text-teal-600"
+      },
+      {
+        title: "عرض أولياء الأمور",
+        desc: "قائمة أولياء الأمور وحساباتهم المسجلة في الأكاديمية",
+        icon: Users,
+        url: `/dashboard/parents?department=${deptId}`,
+        color: "from-emerald-500/10 to-emerald-600/5 hover:border-emerald-500 text-emerald-600"
+      },
+      {
+        title: "عرض الأبناء (الرياضيين)",
+        desc: "قائمة الرياضيين المسجلين والمستبين للأكاديمية",
+        icon: Heart,
+        url: `/dashboard/athletes?department=${deptId}`,
+        color: "from-sky-500/10 to-sky-600/5 hover:border-sky-500 text-sky-600"
+      },
+      {
+        title: "إدارة الاشتراكات",
+        desc: "عرض، إضافة، وتجديد الباقات للأكاديمية",
+        icon: CreditCard,
+        url: `/dashboard/memberships?department=${deptId}`,
+        color: "from-green-500/10 to-green-600/5 hover:border-green-500 text-green-600"
+      },
+      {
+        title: "طلبات التسجيل المعلقة",
+        desc: "مراجعة واعتماد طلبات الانتساب والتسجيل الجديدة للأكاديمية",
+        icon: ShieldCheck,
+        url: `/dashboard/registrations?department=${deptId}`,
+        color: "from-amber-500/10 to-amber-600/5 hover:border-amber-500 text-amber-600"
+      }
+    ]
+  }
+
+  return [
+    {
+      title: "إضافة رياضي جديد",
+      desc: "تسجيل رياضي جديد وتحديد فئته السنية مباشرة بالمركز",
+      icon: UserPlus,
+      url: `/dashboard/athletes/add?department=${deptId}`,
+      color: "from-blue-500/10 to-blue-600/5 hover:border-blue-500 text-blue-600"
+    },
+    {
+      title: "عرض الرياضيين",
+      desc: "قائمة واستعراض الرياضيين المسجلين في المركز",
+      icon: Users,
+      url: `/dashboard/athletes?department=${deptId}`,
+      color: "from-indigo-500/10 to-indigo-600/5 hover:border-indigo-500 text-indigo-600"
+    },
+    {
+      title: "الاشتراكات المنتهية",
+      desc: "متابعة وإخطار الاشتراكات التي انتهت صلاحيتها بالمركز",
+      icon: BadgeAlert,
+      url: `/dashboard/expired-memberships?department=${deptId}`,
+      color: "from-rose-500/10 to-rose-600/5 hover:border-rose-500 text-rose-600"
+    },
+    {
+      title: "إدارة الاشتراكات",
+      desc: "عرض، إضافة، وتجديد باقات الاشتراكات للمنتسبين",
+      icon: CreditCard,
+      url: `/dashboard/memberships?department=${deptId}`,
+      color: "from-emerald-500/10 to-emerald-600/5 hover:border-emerald-500 text-emerald-600"
+    },
+    {
+      title: "طلبات التسجيل المعلقة",
+      desc: "مراجعة واعتماد طلبات الانتساب والتسجيل الجديدة للمركز",
+      icon: ShieldCheck,
+      url: `/dashboard/registrations?department=${deptId}`,
+      color: "from-amber-500/10 to-amber-600/5 hover:border-amber-500 text-amber-600"
+    }
+  ]
+}
+
 export default function ManagerDashboard() {
   const { academyId } = useParams<{ academyId: string }>()
   const navigate = useNavigate()
@@ -36,28 +117,19 @@ export default function ManagerDashboard() {
       .then((data) => {
         setDepartment(data)
       })
-      .catch((err) => {
-        console.error("Error fetching department details:", err)
-        // Fallback names in case of API failure
-        const fallbacks: Record<string, Partial<Department>> = {
-          "2": { id: 2, name_ar: "مركز الأهلي الرياضي", color: "#0F4C81", logo: "/logo.png" },
-          "3": { id: 3, name_ar: "أكاديمية الأوس", color: "#136F63", logo: "/alaws_logo.png" },
-          "4": { id: 4, name_ar: "مركز الأهلي الرياضي", color: "#0F4C81", logo: "/logo.png" },
-          "5": { id: 5, name_ar: "أكاديمية الأوس", color: "#136F63", logo: "/alaws_logo.png" }
-        }
-        if (fallbacks[academyId]) {
-          setDepartment({
-            id: Number(academyId),
-            name: (academyId === "4" || academyId === "2") ? "Al Ahli" : "Al Aws",
-            name_ar: fallbacks[academyId].name_ar!,
-            color: fallbacks[academyId].color!,
-            logo: fallbacks[academyId].logo!,
-            bank_account_number: "",
-            iban: "",
-            is_active: true,
-            created_at: ""
-          })
-        }
+      .catch(() => {
+        // If API fails, build a minimal department from the ID
+        setDepartment({
+          id: Number(academyId),
+          name: "",
+          name_ar: `أكاديمية رقم ${academyId}`,
+          color: "#0F4C81",
+          logo: null,
+          bank_account_number: "",
+          iban: "",
+          is_active: true,
+          created_at: ""
+        })
       })
       .finally(() => {
         setLoading(false)
@@ -80,85 +152,8 @@ export default function ManagerDashboard() {
     )
   }
 
-  // Cards definitions
-  // Cards definitions
-  const ahliCards: ActionCard[] = [
-    {
-      title: "إضافة رياضي جديد",
-      desc: "تسجيل رياضي جديد وتحديد فئته السنية مباشرة بالمركز",
-      icon: UserPlus,
-      url: `/dashboard/athletes/add?department=4`,
-      color: "from-blue-500/10 to-blue-600/5 hover:border-blue-500 text-blue-600"
-    },
-    {
-      title: "عرض الرياضيين",
-      desc: "قائمة واستعراض الرياضيين المسجلين في مركز الأهلي",
-      icon: Users,
-      url: `/dashboard/athletes?department=4`,
-      color: "from-indigo-500/10 to-indigo-600/5 hover:border-indigo-500 text-indigo-600"
-    },
-    {
-      title: "الاشتراكات المنتهية",
-      desc: "متابعة وإخطار الاشتراكات التي انتهت صلاحيتها بالمركز",
-      icon: BadgeAlert,
-      url: `/dashboard/expired-memberships?department=4`,
-      color: "from-rose-500/10 to-rose-600/5 hover:border-rose-500 text-rose-600"
-    },
-    {
-      title: "إدارة الاشتراكات",
-      desc: "عرض، إضافة، وتجديد باقات الاشتراكات للمنتسبين",
-      icon: CreditCard,
-      url: `/dashboard/memberships?department=4`,
-      color: "from-emerald-500/10 to-emerald-600/5 hover:border-emerald-500 text-emerald-600"
-    },
-    {
-      title: "طلبات التسجيل المعلقة",
-      desc: "مراجعة واعتماد طلبات الانتساب والتسجيل الجديدة للمركز",
-      icon: ShieldCheck,
-      url: `/dashboard/registrations?department=4`,
-      color: "from-amber-500/10 to-amber-600/5 hover:border-amber-500 text-amber-600"
-    }
-  ]
-
-  const awsCards: ActionCard[] = [
-    {
-      title: "إضافة ولي أمر",
-      desc: "تسجيل حساب ولي أمر جديد لربطه بالرياضيين لاحقاً",
-      icon: UserPlus,
-      url: `/dashboard/athletes/add?department=5`,
-      color: "from-teal-500/10 to-teal-600/5 hover:border-teal-500 text-teal-600"
-    },
-    {
-      title: "عرض أولياء الأمور",
-      desc: "قائمة أولياء الأمور وحساباتهم المسجلة في الأكاديمية",
-      icon: Users,
-      url: `/dashboard/parents?department=5`,
-      color: "from-emerald-500/10 to-emerald-600/5 hover:border-emerald-500 text-emerald-600"
-    },
-    {
-      title: "عرض الأبناء (الرياضيين)",
-      desc: "قائمة الرياضيين المسجلين والمستبين لأكاديمية الأوس",
-      icon: Heart,
-      url: `/dashboard/athletes?department=5`,
-      color: "from-sky-500/10 to-sky-600/5 hover:border-sky-500 text-sky-600"
-    },
-    {
-      title: "إدارة الاشتراكات",
-      desc: "عرض، إضافة، وتجديد الباقات لأكاديمية الأوس",
-      icon: CreditCard,
-      url: `/dashboard/memberships?department=5`,
-      color: "from-green-500/10 to-green-600/5 hover:border-green-500 text-green-600"
-    },
-    {
-      title: "طلبات التسجيل المعلقة",
-      desc: "مراجعة واعتماد طلبات الانتساب والتسجيل الجديدة للأكاديمية",
-      icon: ShieldCheck,
-      url: `/dashboard/registrations?department=5`,
-      color: "from-amber-500/10 to-amber-600/5 hover:border-amber-500 text-amber-600"
-    }
-  ]
-
-  const actionCards = academyId === "4" ? ahliCards : awsCards
+  const isParent = isParentAcademy(department)
+  const actionCards = buildCards(department.id, isParent)
   const themeColor = department.color || "#0F4C81"
 
   return (

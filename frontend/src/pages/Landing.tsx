@@ -1,6 +1,10 @@
+import { useState, useEffect } from "react"
 import { Link } from "react-router-dom"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
+import { api } from "@/lib/api"
+import { extractResults } from "@/lib/response"
+import type { Department } from "@/lib/types"
 import {
   Users,
   CreditCard,
@@ -8,6 +12,20 @@ import {
 } from "lucide-react"
 
 export default function Landing() {
+  const [departments, setDepartments] = useState<Department[]>([])
+
+  useEffect(() => {
+    api.get("/departments/")
+      .then((res) => {
+        const list = extractResults<Department>(res)
+        if (list.length >= 2) setDepartments(list)
+      })
+      .catch(() => {})
+  }, [])
+
+  const ahli = departments.length >= 2 ? departments[0] : null
+  const aws = departments.length >= 2 ? departments[1] : null
+
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id)
     if (element) {
@@ -25,9 +43,9 @@ export default function Landing() {
           <div className="flex items-center gap-2 sm:gap-3 cursor-pointer" onClick={() => scrollToSection("hero")}>
             <img src="/logo.png" alt="Logo" className="h-9 w-9 sm:h-12 sm:w-12 object-contain" />
             <div className="flex flex-col">
-              <span className="text-xs sm:text-base font-extrabold text-[#0f2942] leading-tight block md:hidden">الأهلي & الأوس</span>
-              <span className="text-base font-extrabold text-[#0f2942] leading-tight hidden md:block">مركز الأهلي الرياضي & أكاديمية الأوس</span>
-              <span className="text-[9px] sm:text-xs text-[#5f7288] font-semibold">مصراتة - ليبيا</span>
+              <span className="text-sm sm:text-base font-extrabold text-[#0f2942] leading-tight block md:hidden">الأهلي والأوس</span>
+              <span className="text-base font-extrabold text-[#0f2942] leading-tight hidden md:block">مركز الأهلي الرياضي وأكاديمية الأوس</span>
+              <span className="text-[11px] sm:text-xs text-[#5f7288] font-semibold">مصراتة - ليبيا</span>
             </div>
           </div>
 
@@ -81,7 +99,7 @@ export default function Landing() {
 
         <div className="max-w-4xl mx-auto space-y-6">
           <h1 className="text-4xl font-extrabold tracking-tight text-[#0f2942] sm:text-5xl md:text-6xl leading-[1.15] md:leading-[1.15]">
-            منصة مركز الأهلي الرياضي <br className="sm:hidden" /> وأكاديمية الأوس - مصراتة
+            منصة مركز الأهلي الرياضي <br className="sm:hidden" /> وأكاديمية الأوس<br className="sm:hidden" /> - مصراتة
           </h1>
           <p className="max-w-2xl mx-auto text-lg md:text-xl text-[#5f7288] font-medium leading-relaxed">
             الحل المتكامل لإدارة الأكاديميات الرياضية والتدريب
@@ -113,7 +131,7 @@ export default function Landing() {
           <div className="grid gap-10 md:grid-cols-2 max-w-5xl mx-auto">
             
             {/* Card 1: Al Ahly Sports Center */}
-            <Link to="/academy/4" className="block">
+            <Link to={ahli ? `/academy/${ahli.id}` : "#"} className="block">
               <motion.div 
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}
@@ -144,7 +162,7 @@ export default function Landing() {
             </Link>
 
             {/* Card 2: Al Aws Academy */}
-            <Link to="/academy/5" className="block">
+            <Link to={aws ? `/academy/${aws.id}` : "#"} className="block">
               <motion.div 
                 initial={{ opacity: 0, y: 30 }}
                 whileInView={{ opacity: 1, y: 0 }}

@@ -1,4 +1,4 @@
-import React, { useState } from "react"
+import React, { useState, useEffect } from "react"
 import { Link, useSearchParams } from "react-router-dom"
 import { motion, type Variants } from "framer-motion"
 import {
@@ -59,6 +59,15 @@ export default function AthletesPage() {
   const [selectAll, setSelectAll] = useState(false)
   const [searchParams] = useSearchParams()
   const deptParam = searchParams.get("department")
+  const [deptName, setDeptName] = useState("")
+
+  useEffect(() => {
+    if (deptParam) {
+      api.get(`/departments/${deptParam}/`)
+        .then((d: any) => setDeptName(d.name_ar || ""))
+        .catch(() => {})
+    }
+  }, [deptParam])
 
   const toggleActiveMutation = useMutation({
     mutationFn: ({ id, is_active }: { id: number; is_active: boolean }) =>
@@ -167,7 +176,7 @@ export default function AthletesPage() {
       {deptParam && (
         <div className="bg-primary/10 border border-primary/20 rounded-2xl p-4 flex items-center justify-between text-primary">
           <span className="font-extrabold text-sm">
-            عرض رياضيي {deptParam === "4" || deptParam === "2" ? "مركز الأهلي الرياضي" : "أكاديمية الأوس"}
+            عرض رياضيي {deptName || deptParam}
           </span>
         </div>
       )}

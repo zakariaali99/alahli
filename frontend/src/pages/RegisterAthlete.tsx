@@ -8,6 +8,7 @@ import { validateLibyanPhone } from "@/lib/utils"
 import { extractResults } from "@/lib/response"
 import { Trophy, Dumbbell, ArrowRight, CheckCircle, Building2, User, Phone, MapPin, HeartPulse, Sparkles, Loader2 } from "lucide-react"
 import type { Department, Sport } from "@/lib/types"
+import { isParentAcademy } from "@/lib/departments"
 
 export default function RegisterAthlete() {
   const navigate = useNavigate()
@@ -59,13 +60,6 @@ export default function RegisterAthlete() {
     loadDepts()
   }, [])
 
-  const isAcademyParent = (academy: Department | null) => {
-    if (!academy) return false
-    const name = (academy.name || "").toLowerCase()
-    const nameAr = academy.name_ar || ""
-    return name.includes("aws") || nameAr.includes("أوس") || academy.id === 5 || academy.id === 3
-  }
-
   const [form, setForm] = useState({
     full_name: "",
     phone: "",
@@ -115,7 +109,7 @@ export default function RegisterAthlete() {
       return
     }
 
-    const isParent = isAcademyParent(selectedAcademy)
+    const isParent = isParentAcademy(selectedAcademy)
 
     if (!isParent && !photo) {
       setError("صورة السيلفي أو الصورة الشخصية مطلوبة لإتمام التسجيل")
@@ -175,7 +169,7 @@ export default function RegisterAthlete() {
     )
   }
 
-  const isParent = isAcademyParent(selectedAcademy)
+  const isParent = isParentAcademy(selectedAcademy)
 
   return (
     <div className="min-h-screen bg-[#f4f7fb] py-8 px-4" dir="rtl">
