@@ -20,6 +20,7 @@ class SubscriptionSerializer(serializers.ModelSerializer):
     group_name = serializers.CharField(source="group.name_ar", read_only=True, default="")
     invoice_pdf_url = serializers.SerializerMethodField()
     package_id = serializers.IntegerField(write_only=True, required=False)
+    amount = serializers.DecimalField(max_digits=10, decimal_places=2, required=False)
 
     class Meta:
         model = Subscription
@@ -46,9 +47,29 @@ class SubscriptionSerializer(serializers.ModelSerializer):
             try:
                 package = SubscriptionPackage.objects.get(id=package_id)
                 validated_data["package_name"] = package.name
-                validated_data["amount"] = package.price
+                
+                # Check if amount was already provided. If not, auto-calculate new vs renewal pricing.
+                if "amount" not in validated_data:
+                    athlete = validated_data.get("athlete")
+                    has_previous = False
+                    if athlete:
+                        has_previous = Subscription.objects.filter(
+                            athlete=athlete
+                        ).exclude(status=Subscription.Status.REJECTED).exists()
+                    
+                    if has_previous and package.renewal_price > 0:
+                        validated_data["amount"] = package.renewal_price
+                    elif package.new_price > 0:
+                        validated_data["amount"] = package.new_price
+                    else:
+                        validated_data["amount"] = package.price
             except SubscriptionPackage.DoesNotExist:
                 raise serializers.ValidationError({"package_id": "Package not found"})
+        
+        # If amount is still not provided and package_id wasn't passed, raise a validation error
+        if "amount" not in validated_data:
+            raise serializers.ValidationError({"amount": "المبلغ مطلوب"})
+            
         return super().create(validated_data)
 
 

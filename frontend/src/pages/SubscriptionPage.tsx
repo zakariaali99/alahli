@@ -62,6 +62,25 @@ export default function SubscriptionPage() {
   const [success, setSuccess] = useState(false)
   const [bankInfo, setBankInfo] = useState<{ account_number?: string; iban?: string } | null>(null)
   const [bankLoading, setBankLoading] = useState(false)
+  const [hasPreviousSub, setHasPreviousSub] = useState(false)
+
+  useEffect(() => {
+    const athleteId = data.athleteId
+    if (!athleteId) {
+      setHasPreviousSub(false)
+      return
+    }
+
+    api.get<{ count: number }>(`/subscriptions/?athlete=${athleteId}`)
+      .then((res) => {
+        const raw = res as any
+        const hasPrev = raw && (Array.isArray(raw) ? raw.length > 0 : raw.count > 0)
+        setHasPreviousSub(hasPrev)
+      })
+      .catch(() => {
+        setHasPreviousSub(false)
+      })
+  }, [data.athleteId])
 
   useEffect(() => {
     setError("")
@@ -468,15 +487,40 @@ export default function SubscriptionPage() {
                   {safePackages.map((p) => {
                     const tagColors: Record<string, string> = { discount: "border-green-500 bg-green-50", special: "border-amber-500 bg-amber-50", normal: "border-border" }
                     const tagLabels: Record<string, string> = { discount: "خصم", special: "خاص", normal: "" }
+                    
+                    const newPrice = Number(p.new_price || p.price || 0)
+                    const renewalPrice = Number(p.renewal_price || p.price || 0)
+                    const finalPrice = hasPreviousSub && renewalPrice > 0 ? renewalPrice : newPrice
+
+                    let planTypeLabel = "شهري"
+                    if (p.package_type === "multi_month") planTypeLabel = "متعدد الأشهر"
+                    else if (p.package_type === "single_session") planTypeLabel = "حصة واحدة"
+
                     return (
                       <button key={p.id} onClick={() => selectPackage(p)}
                         className={`w-full text-right bg-card border-2 rounded-2xl p-4 hover:border-primary transition-colors ${tagColors[p.tag] || "border-border"}`}
                       >
                         <div className="flex items-center justify-between mb-2">
                           <p className="font-bold text-lg">{p.name}</p>
-                          {tagLabels[p.tag] && <span className="px-2 py-0.5 bg-primary text-white text-xs rounded-full">{tagLabels[p.tag]}</span>}
+                          <div className="flex gap-1.5 items-center">
+                            <span className="px-2 py-0.5 bg-primary/10 text-primary text-[10px] rounded-full font-bold">{planTypeLabel}</span>
+                            {tagLabels[p.tag] && <span className="px-2 py-0.5 bg-primary text-white text-xs rounded-full">{tagLabels[p.tag]}</span>}
+                          </div>
                         </div>
-                        <p className="text-2xl font-bold text-primary mb-2">{latinNumber(p.price)} د.ل</p>
+                        <p className="text-2xl font-bold text-primary mb-1">
+                          {latinNumber(finalPrice)} د.ل
+                        </p>
+                        
+                        {renewalPrice > 0 && renewalPrice !== newPrice && (
+                          <p className="text-xs text-muted-foreground mb-2">
+                            {hasPreviousSub ? (
+                              <span className="text-secondary font-semibold">تطبيق سعر التجديد المخفض (وفرت {latinNumber(newPrice - renewalPrice)} د.ل)</span>
+                            ) : (
+                              <span>سعر التجديد مستقبلاً: {latinNumber(renewalPrice)} د.ل</span>
+                            )}
+                          </p>
+                        )}
+                        
                         <p className="text-xs text-muted-foreground">{latinNumber(p.duration_value)} {p.duration_type === "months" ? "شهر" : "أسبوع"}</p>
                         <p className="text-xs text-muted-foreground">الحد الأقصى للرياضيين: {latinNumber(p.max_athletes)}</p>
                       </button>

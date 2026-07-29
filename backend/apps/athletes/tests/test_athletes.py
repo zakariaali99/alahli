@@ -179,8 +179,8 @@ class TestRegistrationAPI:
         })
         assert response.status_code == status.HTTP_201_CREATED
         mock_send.assert_called_with(
-            title="تسجيل لاعب جديد",
-            body="طلب تسجيل جديد من لاعب لاعب جديد - 0912222222",
+            title="تسجيل رياضي جديد",
+            body="طلب تسجيل جديد من رياضي لاعب جديد - 0912222222",
             notification_type="new_registration",
             entity_id=response.data["registration_id"]
         )

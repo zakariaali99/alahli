@@ -47,6 +47,9 @@ export interface Package {
   name: string
   description: string
   price: string
+  new_price: string
+  renewal_price: string
+  package_type: "monthly" | "multi_month" | "single_session"
   duration_type: "weeks" | "months"
   duration_value: number
   max_athletes: number

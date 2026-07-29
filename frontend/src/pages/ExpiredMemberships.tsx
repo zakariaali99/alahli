@@ -94,7 +94,7 @@ export default function ExpiredMembershipsPage() {
     staleTime: 60_000,
   })
 
-  const raw = data ? extractResults(data as any) : []
+  const raw = (data ? extractResults(data as any) : []) as ExpiredSub[]
   const subs: ExpiredSub[] = deptFilter === "all"
     ? raw
     : raw.filter((s: ExpiredSub) => s.department_name === deptFilter)

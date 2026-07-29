@@ -61,6 +61,9 @@ type PackageFormState = {
   name: string
   description: string
   price: string
+  new_price: string
+  renewal_price: string
+  package_type: "monthly" | "multi_month" | "single_session"
   duration_type: "weeks" | "months"
   duration_value: number
   max_athletes: number
@@ -88,6 +91,9 @@ const DEFAULT_PACKAGE_FORM: PackageFormState = {
   name: "",
   description: "",
   price: "",
+  new_price: "",
+  renewal_price: "",
+  package_type: "monthly",
   duration_type: "months",
   duration_value: 1,
   max_athletes: 1,
@@ -191,6 +197,39 @@ export default function MembershipsPage() {
 
   const { data: packagesData } = usePackages()
   const packages = packagesData?.results ?? []
+
+  useEffect(() => {
+    const athleteId = manualSubForm.athlete
+    const pkgId = manualSubForm.package_id
+    if (!athleteId || !pkgId) return
+
+    const pkg = packages.find((p) => p.id === Number(pkgId))
+    if (!pkg) return
+
+    const updateAmount = async () => {
+      try {
+        const res = await api.get<{ count: number }>(`/subscriptions/?athlete=${athleteId}`)
+        const raw = res as any
+        const hasPrev = raw && (Array.isArray(raw) ? raw.length > 0 : raw.count > 0)
+        
+        const newPrice = pkg.new_price || pkg.price
+        const renewalPrice = pkg.renewal_price || pkg.price
+        const finalPrice = hasPrev && Number(renewalPrice) > 0 ? renewalPrice : newPrice
+        
+        setManualSubForm((prev) => ({
+          ...prev,
+          amount: finalPrice,
+        }))
+      } catch {
+        setManualSubForm((prev) => ({
+          ...prev,
+          amount: pkg.new_price || pkg.price,
+        }))
+      }
+    }
+
+    void updateAmount()
+  }, [manualSubForm.athlete, manualSubForm.package_id, packages])
 
   const updateSubscriptionMut = useUpdateSubscription()
   const renewSubscriptionMut = useRenewSubscription()
@@ -383,15 +422,21 @@ export default function MembershipsPage() {
 
   const pkgList = (packages || []).map((pkg) => {
     const Icon = iconMap[pkg.icon_name || "CalendarDays"] || CalendarDays
-    const priceNum = Number(pkg.price)
+    const newPriceNum = Number(pkg.new_price || pkg.price)
+    const renewalPriceNum = Number(pkg.renewal_price || pkg.price)
     const durationDays = pkg.duration_type === "weeks" ? pkg.duration_value * 7 : pkg.duration_value * 30
-    const monthly = Math.round(priceNum / (durationDays / 30))
     const isFeatured = pkg.color_class?.includes("featured") || pkg.id === 2
+    
+    let typeLabel = "شهري"
+    if (pkg.package_type === "multi_month") typeLabel = "متعدد الأشهر"
+    else if (pkg.package_type === "single_session") typeLabel = "حصة واحدة"
+
     return {
       id: pkg.id,
       title: pkg.name,
-      price: priceNum.toLocaleString("ar-SA-u-nu-latn"),
-      perMonth: monthly.toLocaleString("ar-SA-u-nu-latn"),
+      newPrice: newPriceNum.toLocaleString("ar-SA-u-nu-latn"),
+      renewalPrice: renewalPriceNum.toLocaleString("ar-SA-u-nu-latn"),
+      typeLabel,
       icon: Icon,
       badge: isFeatured ? "الأكثر طلباً" : "شائع",
       badgeCls: isFeatured
@@ -435,6 +480,9 @@ export default function MembershipsPage() {
       name: pkg.name,
       description: pkg.description || "",
       price: pkg.price,
+      new_price: pkg.new_price || pkg.price,
+      renewal_price: pkg.renewal_price || "",
+      package_type: pkg.package_type || "monthly",
       duration_type: pkg.duration_type,
       duration_value: pkg.duration_value,
       max_athletes: pkg.max_athletes,
@@ -462,7 +510,10 @@ export default function MembershipsPage() {
     return {
       name: packageForm.name.trim(),
       description: packageForm.description.trim(),
-      price: packageForm.price,
+      price: packageForm.price || packageForm.new_price,
+      new_price: packageForm.new_price || packageForm.price,
+      renewal_price: packageForm.renewal_price || "0.00",
+      package_type: packageForm.package_type,
       duration_type: packageForm.duration_type,
       duration_value: packageForm.duration_value,
       max_athletes: packageForm.max_athletes,
@@ -478,7 +529,18 @@ export default function MembershipsPage() {
     e.preventDefault()
     const nextFieldErrors: Record<string, string> = {}
     if (!packageForm.name.trim()) nextFieldErrors.name = "اسم الباقة مطلوب"
-    if (!packageForm.price || Number(packageForm.price) <= 0) nextFieldErrors.price = "السعر يجب أن يكون أكبر من صفر"
+    
+    const priceVal = packageForm.price || packageForm.new_price
+    if (!priceVal || Number(priceVal) <= 0) {
+      nextFieldErrors.price = "السعر الأساسي مطلوب ويجب أن يكون أكبر من صفر"
+    }
+    if (packageForm.new_price && Number(packageForm.new_price) < 0) {
+      nextFieldErrors.new_price = "سعر الاشتراك الجديد لا يمكن أن يكون سالباً"
+    }
+    if (packageForm.renewal_price && Number(packageForm.renewal_price) < 0) {
+      nextFieldErrors.renewal_price = "سعر التجديد لا يمكن أن يكون سالباً"
+    }
+
     if (!packageForm.duration_value || packageForm.duration_value < 1) nextFieldErrors.duration_value = "المدة يجب أن تكون 1 أو أكثر"
     if (!packageForm.max_athletes || packageForm.max_athletes < 1) nextFieldErrors.max_athletes = "أقصى عدد يجب أن يكون 1 أو أكثر"
     if (packageForm.order < 0) nextFieldErrors.order = "الترتيب لا يمكن أن يكون سالباً"
@@ -606,13 +668,33 @@ export default function MembershipsPage() {
                     {pkg.title}
                   </h4>
 
-                  <div className="mt-2 mb-1">
-                    <span className={`text-3xl font-extrabold ${pkg.featured ? "text-primary" : "text-foreground"}`}>
-                      {pkg.price}
+                  <div className="flex items-center gap-2 mt-1">
+                    <span className="text-[10px] px-2 py-0.5 rounded-full bg-primary/10 text-primary font-bold">
+                      {pkg.typeLabel}
                     </span>
-                    <span className={`text-sm mr-1 ${pkg.featured ? "text-primary/70" : "text-muted-foreground"}`}>
-                      د.ل
-                    </span>
+                  </div>
+
+                  <div className="mt-3 mb-2 space-y-1">
+                    <div>
+                      <span className="text-[10px] text-muted-foreground block">اشتراك جديد:</span>
+                      <span className={`text-2xl font-extrabold ${pkg.featured ? "text-primary" : "text-foreground"}`}>
+                        {pkg.newPrice}
+                      </span>
+                      <span className={`text-xs mr-1 ${pkg.featured ? "text-primary/70" : "text-muted-foreground"}`}>
+                        د.ل
+                      </span>
+                    </div>
+                    {pkg.renewalPrice && pkg.renewalPrice !== pkg.newPrice && (
+                      <div>
+                        <span className="text-[10px] text-muted-foreground block">تجديد:</span>
+                        <span className={`text-lg font-bold ${pkg.featured ? "text-primary/80" : "text-foreground/80"}`}>
+                          {pkg.renewalPrice}
+                        </span>
+                        <span className={`text-xs mr-1 ${pkg.featured ? "text-primary/70" : "text-muted-foreground"}`}>
+                          د.ل
+                        </span>
+                      </div>
+                    )}
                   </div>
 
                   <ul className="space-y-2.5 mb-6 flex-1">
@@ -642,7 +724,7 @@ export default function MembershipsPage() {
                       onClick={() => openQuickRenew({
                         id: pkg.id,
                         title: pkg.title,
-                        amount: Number(pkg.raw.price),
+                        amount: Number(pkg.raw.renewal_price || pkg.raw.price || 0),
                         durationType: pkg.raw.duration_type,
                         durationValue: pkg.raw.duration_value,
                       })}
@@ -949,34 +1031,81 @@ export default function MembershipsPage() {
             <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
               <div>
                 <label htmlFor="package-name" className="mb-1 block text-xs text-muted-foreground">اسم الباقة</label>
-              <input
-                id="package-name"
-                value={packageForm.name}
-                onChange={(e) => {
-                  setPackageForm((prev) => ({ ...prev, name: e.target.value }))
-                  setPackageFieldErrors((prev) => ({ ...prev, name: "" }))
-                }}
-                placeholder="اسم الباقة"
-                className="bg-surface-container-low border border-border rounded-xl px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
-              />
+                <input
+                  id="package-name"
+                  value={packageForm.name}
+                  onChange={(e) => {
+                    setPackageForm((prev) => ({ ...prev, name: e.target.value }))
+                    setPackageFieldErrors((prev) => ({ ...prev, name: "" }))
+                  }}
+                  placeholder="اسم الباقة"
+                  className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
+                />
                 {packageFieldErrors.name && <p className="mt-1 text-[11px] text-error">{packageFieldErrors.name}</p>}
               </div>
               <div>
-                <label htmlFor="package-price" className="mb-1 block text-xs text-muted-foreground">السعر</label>
-              <input
-                id="package-price"
-                value={packageForm.price}
-                onChange={(e) => {
-                  setPackageForm((prev) => ({ ...prev, price: e.target.value }))
-                  setPackageFieldErrors((prev) => ({ ...prev, price: "" }))
-                }}
-                type="number"
-                min="0"
-                step="0.01"
-                placeholder="السعر"
-                className="bg-surface-container-low border border-border rounded-xl px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
-              />
+                <label htmlFor="package-type" className="mb-1 block text-xs text-muted-foreground">نوع الباقة</label>
+                <select
+                  id="package-type"
+                  value={packageForm.package_type}
+                  onChange={(e) => {
+                    const val = e.target.value as "monthly" | "multi_month" | "single_session"
+                    setPackageForm((prev) => {
+                      if (val === "single_session") {
+                        return {
+                          ...prev,
+                          package_type: val,
+                          duration_type: "weeks",
+                          duration_value: 1,
+                        }
+                      }
+                      return { ...prev, package_type: val }
+                    })
+                  }}
+                  className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
+                >
+                  <option value="monthly">شهري (Monthly)</option>
+                  <option value="multi_month">متعدد الأشهر (Multi-Month)</option>
+                  <option value="single_session">حصة واحدة (Single Session)</option>
+                </select>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+              <div>
+                <label htmlFor="package-new-price" className="mb-1 block text-xs text-muted-foreground">سعر الاشتراك الجديد (أول مرة)</label>
+                <input
+                  id="package-new-price"
+                  value={packageForm.new_price}
+                  onChange={(e) => {
+                    const val = e.target.value
+                    setPackageForm((prev) => ({ ...prev, new_price: val, price: val }))
+                    setPackageFieldErrors((prev) => ({ ...prev, price: "" }))
+                  }}
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="سعر الاشتراك الجديد"
+                  className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
+                />
                 {packageFieldErrors.price && <p className="mt-1 text-[11px] text-error">{packageFieldErrors.price}</p>}
+              </div>
+              <div>
+                <label htmlFor="package-renewal-price" className="mb-1 block text-xs text-muted-foreground">سعر التجديد (اختياري)</label>
+                <input
+                  id="package-renewal-price"
+                  value={packageForm.renewal_price}
+                  onChange={(e) => {
+                    setPackageForm((prev) => ({ ...prev, renewal_price: e.target.value }))
+                    setPackageFieldErrors((prev) => ({ ...prev, renewal_price: "" }))
+                  }}
+                  type="number"
+                  min="0"
+                  step="0.01"
+                  placeholder="سعر التجديد"
+                  className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary focus:border-primary transition-colors"
+                />
+                {packageFieldErrors.renewal_price && <p className="mt-1 text-[11px] text-error">{packageFieldErrors.renewal_price}</p>}
               </div>
             </div>
 
