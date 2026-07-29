@@ -27,7 +27,7 @@ import AcademyManagement from "@/pages/admin/AcademyManagement"
 import AdminNotifications from "@/pages/admin/AdminNotifications"
 import StaffManagement from "@/pages/admin/StaffManagement"
 import CoachesManagement from "@/pages/admin/CoachesManagement"
-import Accounts from "@/pages/Accounts"
+import Parents from "@/pages/Parents"
 import ExpiredMemberships from "@/pages/ExpiredMemberships"
 import { ToastProvider } from "@/lib/toast"
 import { ErrorBoundary } from "@/components/ui/error-boundary"
@@ -72,7 +72,7 @@ export default function App() {
                   <Route path="academies" element={<AcademyManagement />} />
                   <Route path="staff" element={<StaffManagement />} />
                   <Route path="coaches" element={<CoachesManagement />} />
-                  <Route path="accounts" element={<Accounts />} />
+                  <Route path="parents" element={<Parents />} />
                   <Route path="notifications" element={<AdminNotifications />} />
                   <Route path="notification-preferences" element={<Notifications />} />
                   <Route path="admin-notifications" element={<Navigate to="/dashboard/notifications" replace />} />

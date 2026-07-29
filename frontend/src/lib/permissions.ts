@@ -51,67 +51,67 @@ export type Action =
   | "verify:read"
 
 const PERMISSIONS: Record<Action, Role[]> = {
-  "athletes:read": ["super_admin", "academy_manager", "reception", "trainer", "viewer"],
-  "athletes:create": ["super_admin", "academy_manager"],
-  "athletes:update": ["super_admin", "academy_manager"],
+  "athletes:read": ["super_admin", "academy_manager", "special_manager", "reception", "trainer", "viewer"],
+  "athletes:create": ["super_admin", "academy_manager", "special_manager"],
+  "athletes:update": ["super_admin", "academy_manager", "special_manager"],
   "athletes:delete": ["super_admin"],
 
-  "subscriptions:read": ["super_admin", "academy_manager", "reception", "trainer", "viewer", "athlete", "parent"],
-  "subscriptions:create": ["super_admin", "academy_manager"],
-  "subscriptions:update": ["super_admin", "academy_manager"],
+  "subscriptions:read": ["super_admin", "academy_manager", "special_manager", "reception", "trainer", "viewer", "athlete", "parent"],
+  "subscriptions:create": ["super_admin", "academy_manager", "special_manager"],
+  "subscriptions:update": ["super_admin", "academy_manager", "special_manager"],
   "subscriptions:delete": ["super_admin"],
-  "subscriptions:renew": ["super_admin", "academy_manager"],
+  "subscriptions:renew": ["super_admin", "academy_manager", "special_manager"],
 
-  "packages:create": ["super_admin", "academy_manager"],
+  "packages:create": ["super_admin", "academy_manager", "special_manager"],
   "packages:update": ["super_admin"],
   "packages:delete": ["super_admin"],
 
-  "departments:read": ["super_admin", "academy_manager", "reception", "trainer", "viewer"],
+  "departments:read": ["super_admin", "academy_manager", "special_manager", "reception", "trainer", "viewer"],
   "departments:create": ["super_admin"],
   "departments:update": ["super_admin"],
   "departments:delete": ["super_admin"],
 
-  "sports:create": ["super_admin", "academy_manager"],
-  "sports:update": ["super_admin", "academy_manager"],
+  "sports:create": ["super_admin", "academy_manager", "special_manager"],
+  "sports:update": ["super_admin", "academy_manager", "special_manager"],
   "sports:delete": ["super_admin"],
 
-  "groups:create": ["super_admin", "academy_manager"],
-  "groups:update": ["super_admin", "academy_manager"],
+  "groups:create": ["super_admin", "academy_manager", "special_manager"],
+  "groups:update": ["super_admin", "academy_manager", "special_manager"],
   "groups:delete": ["super_admin"],
 
-  "staff:read": ["super_admin", "academy_manager"],
+  "staff:read": ["super_admin", "academy_manager", "special_manager"],
   "staff:create": ["super_admin"],
   "staff:update": ["super_admin"],
   "staff:delete": ["super_admin"],
 
-  "coaches:read": ["super_admin", "academy_manager", "reception", "trainer", "viewer"],
-  "coaches:create": ["super_admin", "academy_manager"],
-  "coaches:update": ["super_admin", "academy_manager"],
+  "coaches:read": ["super_admin", "academy_manager", "special_manager", "reception", "trainer", "viewer"],
+  "coaches:create": ["super_admin", "academy_manager", "special_manager"],
+  "coaches:update": ["super_admin", "academy_manager", "special_manager"],
   "coaches:delete": ["super_admin"],
 
-  "products:read": ["super_admin", "academy_manager", "reception", "trainer", "viewer"],
+  "products:read": ["super_admin", "academy_manager", "special_manager", "reception", "trainer", "viewer"],
   "products:create": ["super_admin"],
   "products:update": ["super_admin"],
   "products:delete": ["super_admin"],
 
-  "registrations:read": ["super_admin", "academy_manager"],
-  "registrations:approve": ["super_admin", "academy_manager"],
-  "registrations:reject": ["super_admin", "academy_manager"],
+  "registrations:read": ["super_admin", "academy_manager", "special_manager"],
+  "registrations:approve": ["super_admin", "academy_manager", "special_manager"],
+  "registrations:reject": ["super_admin", "academy_manager", "special_manager"],
 
-  "settings:read": ["super_admin", "academy_manager", "reception", "trainer", "viewer"],
+  "settings:read": ["super_admin", "academy_manager", "special_manager", "reception", "trainer", "viewer"],
   "settings:update": ["super_admin"],
 
-  "reports:read": ["super_admin", "academy_manager"],
+  "reports:read": ["super_admin", "academy_manager", "special_manager"],
 
-  "notifications:read": ["super_admin", "academy_manager", "reception", "trainer", "viewer"],
+  "notifications:read": ["super_admin", "academy_manager", "special_manager", "reception", "trainer", "viewer"],
   "notifications:create": ["super_admin"],
   "notifications:delete": ["super_admin"],
 
-  "analytics:read": ["super_admin", "academy_manager", "reception", "trainer", "viewer"],
+  "analytics:read": ["super_admin", "academy_manager", "special_manager", "reception", "trainer", "viewer"],
 
-  "attendance:create": ["super_admin", "academy_manager", "reception", "trainer", "viewer"],
+  "attendance:create": ["super_admin", "academy_manager", "special_manager", "reception", "trainer", "viewer"],
 
-  "verify:read": ["super_admin", "academy_manager", "reception", "trainer", "viewer"],
+  "verify:read": ["super_admin", "academy_manager", "special_manager", "reception", "trainer", "viewer"],
 }
 
 export function can(user: User | null, action: Action): boolean {
@@ -124,6 +124,7 @@ export function roleLabel(role: Role): string {
   const labels: Record<Role, string> = {
     super_admin: "مدير النظام",
     academy_manager: "مدير الأكاديمية",
+    special_manager: "مدير خاص",
     reception: "موظف استقبال",
     trainer: "مدرب",
     viewer: "مشاهد",

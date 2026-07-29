@@ -32,6 +32,7 @@ const ROLE_LABELS: Record<string, string> = {
   super_admin: "مدير عام",
   reception: "موظف استقبال",
   academy_manager: "مدير أكاديمية",
+  special_manager: "مدير خاص",
   trainer: "مدرب",
   viewer: "مشاهد",
 }
@@ -40,6 +41,7 @@ const ROLE_COLORS: Record<string, string> = {
   super_admin: "bg-primary/10 text-primary",
   reception: "bg-secondary/10 text-secondary",
   academy_manager: "bg-purple-500/10 text-purple-600",
+  special_manager: "bg-indigo-500/10 text-indigo-600",
   trainer: "bg-amber-500/10 text-amber-600",
   viewer: "bg-muted text-muted-foreground",
 }
@@ -213,6 +215,7 @@ export default function StaffManagement() {
           <option value="super_admin">مدير عام</option>
           <option value="reception">موظف استقبال</option>
           <option value="academy_manager">مدير أكاديمية</option>
+          <option value="special_manager">مدير خاص</option>
           <option value="trainer">مدرب</option>
           <option value="viewer">مشاهد</option>
         </select>
@@ -250,7 +253,6 @@ export default function StaffManagement() {
                 <td className="px-4 py-3 text-center">
                   <div className="flex justify-center gap-1">
                     <Can action="staff:update"><Button size="sm" variant="ghost" onClick={() => openEditModal(user)}><Pencil className="h-4 w-4" /></Button></Can>
-                    <Can action="staff:delete"><Button size="sm" variant="ghost" className="text-error hover:bg-error/10" onClick={() => handleDelete(user)}><Trash2 className="h-4 w-4" /></Button></Can>
                   </div>
                 </td>
               </tr>
@@ -282,6 +284,7 @@ export default function StaffManagement() {
                       <option value="super_admin">مدير عام</option>
                       <option value="reception">موظف استقبال</option>
                       <option value="academy_manager">مدير أكاديمية</option>
+                      <option value="special_manager">مدير خاص</option>
                       <option value="trainer">مدرب</option>
                       <option value="viewer">مشاهد</option>
                     </select>

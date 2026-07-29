@@ -1,236 +1,251 @@
-import { useState } from "react"
-import { Link, useNavigate } from "react-router-dom"
+import { Link } from "react-router-dom"
 import { motion } from "framer-motion"
-import { Card } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
-import { useAuth } from "@/lib/auth"
-import { validateLibyanPhone } from "@/lib/utils"
 import {
-  AlertCircle,
-  Eye,
-  EyeOff,
-  Lock,
-  Phone,
-  UserPlus,
   Users,
+  CreditCard,
+  Smartphone,
 } from "lucide-react"
 
 export default function Landing() {
-  const navigate = useNavigate()
-  const { login } = useAuth()
-
-  const [phone, setPhone] = useState(() => {
-    try {
-      return localStorage.getItem("remembered_phone") || ""
-    } catch {
-      return ""
-    }
-  })
-  const [password, setPassword] = useState("")
-  const [showPassword, setShowPassword] = useState(false)
-  const [rememberMe, setRememberMe] = useState(() => {
-    try {
-      return localStorage.getItem("remember_me") === "true"
-    } catch {
-      return false
-    }
-  })
-  const [isLoading, setIsLoading] = useState(false)
-  const [errorMessage, setErrorMessage] = useState<string | null>(null)
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    if (!phone.trim() || !password.trim()) {
-      setErrorMessage("يرجى إدخال رقم الهاتف وكلمة المرور")
-      return
-    }
-
-    const phoneErr = validateLibyanPhone(phone)
-    if (phoneErr) {
-      setErrorMessage(phoneErr)
-      return
-    }
-
-    setIsLoading(true)
-    setErrorMessage(null)
-
-    try {
-      if (rememberMe) {
-        localStorage.setItem("remembered_phone", phone.trim())
-        localStorage.setItem("remember_me", "true")
-      } else {
-        localStorage.removeItem("remembered_phone")
-        localStorage.setItem("remember_me", "false")
-      }
-
-      const loggedInUser = await login(phone.trim(), password)
-      if (loggedInUser.role === "athlete" || loggedInUser.role === "parent") {
-        navigate("/user")
-      } else {
-        navigate("/dashboard")
-      }
-    } catch (err: any) {
-      setErrorMessage(err.message || "فشل تسجيل الدخول")
-    } finally {
-      setIsLoading(false)
+  const scrollToSection = (id: string) => {
+    const element = document.getElementById(id)
+    if (element) {
+      element.scrollIntoView({ behavior: "smooth" })
     }
   }
 
   return (
-    <div className="min-h-screen bg-[#fafafb] text-[#102033] flex flex-col justify-between" dir="rtl">
-      {/* Decorative ambient blurs with Al Ahly branding colors (Theme primary / Dark Gray) */}
-      <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
-        <div className="absolute -top-40 right-[-10%] h-[45vw] w-[45vw] rounded-full bg-primary/8 blur-[130px]" />
-        <div className="absolute -bottom-40 left-[-12%] h-[50vw] w-[50vw] rounded-full bg-[#102033]/8 blur-[140px]" />
-      </div>
-
-      {/* Header */}
-      <header className="border-b border-white/70 bg-white/80 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-4 md:px-6">
-          <div className="flex items-center gap-3">
-            <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-primary text-primary-foreground shadow-md shadow-primary/20 overflow-hidden">
-              <img src="/logo.svg" alt="Logo" className="h-7 w-7 object-contain brightness-0 invert" />
-            </div>
-            <div>
-              <p className="text-sm font-black leading-none text-[#102033]">أكاديمية النادي الأهلي الرياضي</p>
-              <p className="mt-1 text-[10px] font-medium text-[#5f7288]">بوابة الإدارة والتسجيل الإلكتروني</p>
+    <div className="min-h-screen bg-white text-[#0f2942] flex flex-col font-sans selection:bg-[#047857]/10 selection:text-[#047857]" dir="rtl">
+      
+      {/* ── Header ── */}
+      <header className="sticky top-0 z-40 bg-white/95 backdrop-blur-md border-b border-gray-100 shadow-sm transition-all duration-300">
+        <div className="mx-auto flex h-20 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
+          
+          {/* Logo & Branding */}
+          <div className="flex items-center gap-3 cursor-pointer" onClick={() => scrollToSection("hero")}>
+            <img src="/logo.png" alt="Logo" className="h-12 w-12 object-contain" />
+            <div className="flex flex-col">
+              <span className="text-base font-extrabold text-[#0f2942] leading-tight">مركز الأهلي الرياضي & أكاديمية الأوس</span>
+              <span className="text-xs text-[#5f7288] font-semibold">مصراتة - ليبيا</span>
             </div>
           </div>
-          <div className="text-xs font-bold text-primary bg-primary/5 px-3 py-1.5 rounded-full border border-primary/10">
-            المنصة الرسمية
+
+          {/* Navigation Links */}
+          <nav className="hidden md:flex items-center gap-8 text-sm font-bold">
+            <button 
+              onClick={() => scrollToSection("hero")} 
+              className="text-[#047857] hover:text-[#047857]/80 transition-colors cursor-pointer"
+            >
+              الرئيسية
+            </button>
+            <button 
+              onClick={() => scrollToSection("academies")} 
+              className="text-[#0f2942] hover:text-[#047857] transition-colors cursor-pointer"
+            >
+              الأكاديميات
+            </button>
+            <button 
+              onClick={() => scrollToSection("contact")} 
+              className="text-[#0f2942] hover:text-[#047857] transition-colors cursor-pointer"
+            >
+              تواصل معنا
+            </button>
+          </nav>
+
+          {/* Header Action Buttons */}
+          <div className="flex items-center gap-2">
+            <Link to="/login">
+              <Button 
+                className="bg-[#0f2942] hover:bg-[#0f2942]/90 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-all cursor-pointer"
+              >
+                تسجيل الدخول
+              </Button>
+            </Link>
+            <Link to="/register/athlete">
+              <Button 
+                className="bg-[#047857] hover:bg-[#047857]/90 text-white font-bold px-5 py-2.5 rounded-xl text-sm transition-all cursor-pointer"
+              >
+                تسجيل جديد
+              </Button>
+            </Link>
           </div>
         </div>
       </header>
 
-      {/* Main Portal Container */}
-      <main className="flex-1 flex items-center justify-center px-4 py-8 md:py-16">
-        <div className="mx-auto grid w-full max-w-5xl items-center gap-8 lg:grid-cols-12">
-          
-          {/* Welcome and Action Side */}
-          <div className="space-y-6 lg:col-span-7">
-            <div className="space-y-4">
-              <h1 className="text-3xl font-black leading-tight text-[#102033] md:text-5xl tracking-tight">
-                أهلاً بك في أكاديمية
-                <span className="block text-primary mt-2 font-black">النادي الأهلي الرياضي</span>
-              </h1>
-              <p className="max-w-lg text-sm leading-7 text-[#5f7288] md:text-base font-medium">
-                بوابتك الرقمية المتكاملة للاشتراك في الأنشطة الرياضية، إدارة الحسابات، ومتابعة الحضور والتقييمات بكل سهولة.
-              </p>
-            </div>
+      {/* ── Hero Section ── */}
+      <section id="hero" className="relative flex flex-col items-center justify-center text-center px-4 py-20 md:py-32 overflow-hidden bg-gradient-to-b from-[#fafafb] to-white">
+        
+        {/* Soft Background Blurs */}
+        <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[70vw] h-[70vw] rounded-full bg-gradient-to-br from-[#047857]/5 to-[#0f2942]/5 blur-[120px] -z-10 pointer-events-none" />
 
-            {/* Single Registration Portal Card */}
-            <div className="max-w-xl">
-              <Link to="/register/athlete" className="group block">
-                <Card className="p-6 border border-primary/20 bg-gradient-to-r from-primary/5 via-white/80 to-white/90 backdrop-blur-md transition-all duration-300 hover:-translate-y-1 hover:border-primary/50 hover:shadow-xl hover:shadow-primary/10 cursor-pointer">
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex items-center gap-4">
-                      <div className="flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-2xl bg-primary text-primary-foreground shadow-md shadow-primary/25 group-hover:scale-105 transition-transform">
-                        <UserPlus className="h-6 w-6" />
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-black text-[#102033] group-hover:text-primary transition-colors">انضم إلينا</h3>
-                        <p className="mt-1 text-xs leading-5 text-[#5f7288] font-medium">سجل حسابك كلاعب أو كولي أمر للالتحاق بمركز الأهلي الرياضي وأكاديمية الأوس</p>
-                      </div>
-                    </div>
-                  </div>
-                </Card>
-              </Link>
-            </div>
+        <div className="max-w-4xl mx-auto space-y-6">
+          <h1 className="text-4xl font-extrabold tracking-tight text-[#0f2942] sm:text-5xl md:text-6xl leading-[1.15] md:leading-[1.15]">
+            منصة مركز الأهلي الرياضي <br className="sm:hidden" /> وأكاديمية الأوس - مصراتة
+          </h1>
+          <p className="max-w-2xl mx-auto text-lg md:text-xl text-[#5f7288] font-medium leading-relaxed">
+            الحل المتكامل لإدارة الأكاديميات الرياضية والتدريب
+          </p>
 
-          </div>
-
-          {/* Login Form Side */}
-          <div className="lg:col-span-5">
-            <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, ease: [0.22, 1, 0.36, 1] }}
-            >
-              <Card
-                variant="spotlight"
-                className="p-6 md:p-8 border border-white/80 shadow-[0_20px_50px_-24px_rgba(16,32,51,0.25)] bg-white/90 backdrop-blur-md"
+          <div className="flex flex-wrap items-center justify-center gap-4 pt-4">
+            <Link to="/login">
+              <Button 
+                className="bg-[#0f2942] hover:bg-[#0f2942]/90 text-white font-extrabold px-8 py-3.5 rounded-xl text-base shadow-lg shadow-[#0f2942]/10 transition-all cursor-pointer"
               >
-                <h2 className="text-xl font-black text-[#102033]">تسجيل الدخول</h2>
-                <p className="mt-1 text-xs text-[#5f7288] font-medium">أدخل رقم الهاتف وكلمة المرور للوصول للحساب</p>
-
-                {errorMessage && (
-                  <div className="mt-4 flex items-center gap-2 rounded-xl border border-[#A63F3F]/25 bg-[#A63F3F]/8 px-3 py-2.5 text-xs text-[#A63F3F] font-bold">
-                    <AlertCircle className="h-4.5 w-4.5 flex-shrink-0" /> {errorMessage}
-                  </div>
-                )}
-
-                <form className="mt-5 space-y-4" onSubmit={handleSubmit}>
-                  <div>
-                    <label className="mb-1.5 block text-xs font-bold text-[#102033]" htmlFor="phone">رقم الهاتف</label>
-                    <Input
-                      id="phone"
-                      autoComplete="username"
-                      dir="ltr"
-                      value={phone}
-                      onChange={(e) => setPhone(e.target.value)}
-                      placeholder="0910000000"
-                      icon={<Phone className="h-4 w-4 text-muted-foreground" />}
-                      className="rounded-xl"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="mb-1.5 block text-xs font-bold text-[#102033]" htmlFor="password">كلمة المرور</label>
-                    <div className="relative">
-                      <Input
-                        id="password"
-                        autoComplete="current-password"
-                        type={showPassword ? "text" : "password"}
-                        value={password}
-                        onChange={(e) => setPassword(e.target.value)}
-                        icon={<Lock className="h-4 w-4 text-muted-foreground" />}
-                        className="pl-10 rounded-xl"
-                      />
-                      <button
-                        className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                        type="button"
-                        onClick={() => setShowPassword((v) => !v)}
-                      >
-                        {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                      </button>
-                    </div>
-                  </div>
-
-                  <div className="flex items-center justify-between">
-                    <label className="flex cursor-pointer items-center gap-2 text-xs font-bold text-[#102033] select-none">
-                      <input
-                        type="checkbox"
-                        checked={rememberMe}
-                        onChange={(e) => setRememberMe(e.target.checked)}
-                        className="w-4.5 h-4.5 rounded border-border text-primary focus:ring-primary/30"
-                      />
-                      تذكرني في المرة القادمة
-                    </label>
-                  </div>
-
-                  <Button className="h-11 w-full rounded-xl text-sm font-extrabold mt-3 bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg shadow-primary/15 transition-all" disabled={isLoading} type="submit">
-                    {isLoading ? "جاري تسجيل الدخول..." : "دخول"}
-                  </Button>
-                </form>
-              </Card>
-            </motion.div>
+                تسجيل الدخول
+              </Button>
+            </Link>
+            <Link to="/register/athlete">
+              <Button 
+                className="bg-[#047857] hover:bg-[#047857]/90 text-white font-extrabold px-8 py-3.5 rounded-xl text-base shadow-lg shadow-[#047857]/10 transition-all cursor-pointer"
+              >
+                تسجيل جديد
+              </Button>
+            </Link>
           </div>
-
         </div>
-      </main>
+      </section>
 
-      {/* Footer */}
-      <footer className="py-6 border-t border-white/60 bg-white/40 backdrop-blur-md">
-        <div className="mx-auto w-full max-w-6xl px-4 md:px-6 flex flex-col sm:flex-row items-center justify-between gap-3 text-[11px] font-semibold text-[#5f7288]">
-          <p>© {new Date().getFullYear()} أكاديمية النادي الأهلي الرياضي. جميع الحقوق محفوظة.</p>
-          <div className="flex items-center gap-4">
-            <span className="cursor-pointer hover:text-primary">الدعم الفني</span>
-            <span>•</span>
-            <span className="cursor-pointer hover:text-primary">الشروط والأحكام</span>
+      {/* ── Academies Cards Section ── */}
+      <section id="academies" className="py-20 bg-white border-t border-gray-50">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          
+          <div className="grid gap-10 md:grid-cols-2 max-w-5xl mx-auto">
+            
+            {/* Card 1: Al Ahly Sports Center */}
+            <motion.div 
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5 }}
+              className="group bg-white rounded-3xl border border-gray-150 p-6 flex flex-col hover:shadow-xl transition-all duration-300"
+            >
+              <div className="relative aspect-[16/10] w-full rounded-2xl overflow-hidden shadow-inner bg-gray-50">
+                <img 
+                  src="/alahli_center.png" 
+                  alt="Al Ahly Sports Center" 
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                />
+                
+                {/* Logo Overlay */}
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-16 h-16 rounded-full border-4 border-white bg-white shadow-md flex items-center justify-center overflow-hidden z-10">
+                  <img src="/logo.png" alt="Logo" className="w-12 h-12 object-contain" />
+                </div>
+              </div>
+
+              <div className="mt-10 text-center space-y-2">
+                <h3 className="text-2xl font-extrabold text-[#0f2942]">مركز الأهلي الرياضي</h3>
+                <p className="text-sm font-semibold text-[#5f7288]">مركز الأهلي الرياضي</p>
+              </div>
+            </motion.div>
+
+            {/* Card 2: Al Aws Academy */}
+            <motion.div 
+              initial={{ opacity: 0, y: 30 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.15 }}
+              className="group bg-white rounded-3xl border border-gray-150 p-6 flex flex-col hover:shadow-xl transition-all duration-300"
+            >
+              <div className="relative aspect-[16/10] w-full rounded-2xl overflow-hidden shadow-inner bg-gray-50">
+                <img 
+                  src="/alaws_academy.png" 
+                  alt="Al Aws Academy" 
+                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                />
+                
+                {/* Logo Overlay */}
+                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-16 h-16 rounded-full border-4 border-white bg-white shadow-md flex items-center justify-center overflow-hidden z-10">
+                  <img src="/logo.png" alt="Logo" className="w-12 h-12 object-contain" />
+                </div>
+              </div>
+
+              <div className="mt-10 text-center space-y-2">
+                <h3 className="text-2xl font-extrabold text-[#0f2942]">أكاديمية الأوس</h3>
+                <p className="text-sm font-semibold text-[#5f7288]">أكاديمية الأوس</p>
+              </div>
+            </motion.div>
+
           </div>
+        </div>
+      </section>
+
+      {/* ── System Features Section ── */}
+      <section id="features" className="py-20 bg-[#fafafb] border-t border-gray-100">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          
+          <div className="text-center max-w-3xl mx-auto mb-16 space-y-3">
+            <h2 className="text-3xl font-extrabold text-[#0f2942]">النظام البسيطة باستحقاقات</h2>
+          </div>
+
+          <div className="grid gap-8 md:grid-cols-3 max-w-6xl mx-auto">
+            
+            {/* Feature 1: Phone Login */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              className="bg-white rounded-3xl p-8 border border-gray-100 flex flex-col items-center text-center space-y-4 hover:shadow-md transition-shadow"
+            >
+              <div className="w-14 h-14 rounded-2xl bg-[#047857]/10 flex items-center justify-center text-[#047857]">
+                <Smartphone className="w-7 h-7" />
+              </div>
+              <h3 className="text-xl font-extrabold text-[#0f2942]">الدخول برقم الهاتف فقط</h3>
+              <p className="text-sm font-medium text-[#5f7288] leading-relaxed">
+                الدخول برقم الهاتف فقط لاستخدام التطبيق ولا تحتاج إلى كلمة مرور في كل مرة.
+              </p>
+            </motion.div>
+
+            {/* Feature 2: Parent Portal */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+              className="bg-white rounded-3xl p-8 border border-gray-100 flex flex-col items-center text-center space-y-4 hover:shadow-md transition-shadow"
+            >
+              <div className="w-14 h-14 rounded-2xl bg-[#047857]/10 flex items-center justify-center text-[#047857]">
+                <Users className="w-7 h-7" />
+              </div>
+              <h3 className="text-xl font-extrabold text-[#0f2942]">بوابة أولياء الأمور لعدة أطفال</h3>
+              <p className="text-sm font-medium text-[#5f7288] leading-relaxed">
+                بوابة أولياء الأمور لربط العائلة ومتابعة الأبناء من أولياء الأمور لعدة أطفال.
+              </p>
+            </motion.div>
+
+            {/* Feature 3: Subscription & Payments */}
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.2 }}
+              className="bg-white rounded-3xl p-8 border border-gray-100 flex flex-col items-center text-center space-y-4 hover:shadow-md transition-shadow"
+            >
+              <div className="w-14 h-14 rounded-2xl bg-[#047857]/10 flex items-center justify-center text-[#047857]">
+                <CreditCard className="w-7 h-7" />
+              </div>
+              <h3 className="text-xl font-extrabold text-[#0f2942]">إدارة الاشتراكات والمدفوعات</h3>
+              <p className="text-sm font-medium text-[#5f7288] leading-relaxed">
+                اختيار الباقات المناسبة وتجديد الاشتراكات بسهولة، مع إمكانية رفع إيصال الدفع أو التحويل المصرفي للمراجعة الفورية.
+              </p>
+            </motion.div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* ── Contact & Footer ── */}
+      <footer id="contact" className="bg-[#0f2942] text-white py-16">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center space-y-4">
+          <p className="text-lg md:text-xl font-extrabold tracking-wide">
+            مركز الأهلي الرياضي وأكاديمية الأوس - مصراتة، ليبيا
+          </p>
+          <p className="text-xs text-white/50 font-medium">
+            © {new Date().getFullYear()} جميع الحقوق محفوظة لـ مركز الأهلي الرياضي وأكاديمية الأوس
+          </p>
         </div>
       </footer>
+
     </div>
   )
 }

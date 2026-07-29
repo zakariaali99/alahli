@@ -180,10 +180,9 @@ export default function LoginPage() {
             </form>
 
 
-            <div className="mt-5 flex flex-wrap items-center gap-3 text-xs text-[#5f7288] border-t border-border/10 pt-4">
-              <Link className="text-[#0F4C81] underline-offset-2 hover:underline font-medium" to="/register/athlete">تسجيل رياضي</Link>
-              <span>•</span>
-              <Link className="text-[#0F4C81] underline-offset-2 hover:underline font-medium" to="/register/parent">تسجيل ولي أمر</Link>
+            <div className="mt-5 flex items-center justify-between text-xs text-[#5f7288] border-t border-border/10 pt-4">
+              <span>ليس لديك حساب؟</span>
+              <Link className="text-[#0F4C81] underline-offset-2 hover:underline font-bold" to="/register/athlete">إنشاء حساب جديد</Link>
             </div>
           </Card>
         </motion.div>

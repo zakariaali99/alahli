@@ -371,18 +371,7 @@ export default function AthletesPage() {
                                       <span>{athlete.is_active ? "تجميد الحساب" : "تنشيط الحساب"}</span>
                                     </button>
                                   </Can>
-                                  <Can action="athletes:delete">
-                                    <button
-                                      onClick={() => {
-                                        setActiveMenuId(null);
-                                        handleDeleteAthlete(athlete);
-                                      }}
-                                      className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-error/10 text-error hover:text-error transition-colors w-full text-right cursor-pointer"
-                                    >
-                                      <Trash2 className="w-3.5 h-3.5" />
-                                      <span>حذف الرياضي</span>
-                                    </button>
-                                  </Can>
+
                                 </div>
                               </>
                             )}
@@ -552,18 +541,7 @@ export default function AthletesPage() {
                               <span>{athlete.is_active ? "تجميد الحساب" : "تنشيط الحساب"}</span>
                             </button>
                           </Can>
-                          <Can action="athletes:delete">
-                            <button
-                              onClick={() => {
-                                setActiveMenuId(null);
-                                handleDeleteAthlete(athlete);
-                              }}
-                              className="flex items-center gap-2 px-3 py-2 text-sm hover:bg-error/10 text-error hover:text-error transition-colors w-full text-right cursor-pointer"
-                            >
-                              <Trash2 className="w-3.5 h-3.5" />
-                              <span>حذف الرياضي</span>
-                            </button>
-                          </Can>
+
                         </div>
                       </>
                     )}

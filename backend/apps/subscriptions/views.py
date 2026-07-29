@@ -48,7 +48,7 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
 
     def perform_create(self, serializer):
         user = self.request.user
-        is_staff = is_super_admin(user) or user.role in ["reception", "academy_manager"]
+        is_staff = is_super_admin(user) or user.role in ["reception", "academy_manager", "special_manager"]
         if is_staff:
             serializer.save(
                 status=Subscription.Status.ACTIVE,
@@ -85,7 +85,7 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
         subscription = self.get_object()
         user = request.user
 
-        if not (is_super_admin(user) or user.role in ["reception", "academy_manager"]):
+        if not (is_super_admin(user) or user.role in ["reception", "academy_manager", "special_manager"]):
             if hasattr(user, "athlete") and user.athlete is not None:
                 if subscription.athlete != user.athlete:
                     return Response(
@@ -231,7 +231,7 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
             sub_amount = package.price
 
         # Instant activation if initiated by management staff
-        is_staff = is_super_admin(user) or user.role in ["reception", "academy_manager"]
+        is_staff = is_super_admin(user) or user.role in ["reception", "academy_manager", "special_manager"]
         sub_status = Subscription.Status.ACTIVE if is_staff else Subscription.Status.PENDING
 
         subscription = Subscription.objects.create(

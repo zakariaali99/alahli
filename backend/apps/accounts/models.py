@@ -11,6 +11,7 @@ class User(AbstractUser):
         SUPER_ADMIN = "super_admin", "Super Admin"
         RECEPTION = "reception", "Reception Staff"
         ACADEMY_MANAGER = "academy_manager", "Academy Manager"
+        SPECIAL_MANAGER = "special_manager", "Special Manager"
         TRAINER = "trainer", "Trainer"
         ATHLETE = "athlete", "Athlete"
         PARENT = "parent", "Parent"

@@ -32,7 +32,7 @@ class UserViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         qs = User.objects.filter(
-            role__in=["super_admin", "reception", "academy_manager", "trainer", "viewer"]
+            role__in=["super_admin", "reception", "academy_manager", "special_manager", "trainer", "viewer"]
         ).order_by("-id")
         return scope_by_academy(self.request.user, qs, academy_field="academy")
 

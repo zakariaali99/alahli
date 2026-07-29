@@ -1,17 +1,18 @@
 import React from "react"
+import { useQueryClient } from "@tanstack/react-query"
 import { motion, type Variants } from "framer-motion"
-import { useParams } from "react-router-dom"
-import { Link } from "react-router-dom"
+import { useParams, Link } from "react-router-dom"
 import {
   ChevronLeft, Edit, RefreshCw, Printer, Shield,
   Calendar, Award, Receipt, Users,
   CreditCard, Hash, Clock, BadgeCheck,
-  Phone, User, Briefcase, Activity,
+  Phone, User, Briefcase, Activity, X,
 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { useAthlete } from "@/lib/hooks/useAthletes"
-import { useSubscriptions } from "@/lib/hooks/useSubscriptions"
+import { useSubscriptions, useRenewSubscription } from "@/lib/hooks/useSubscriptions"
+import { usePackages } from "@/lib/hooks/usePackages"
 import { useToast } from "@/lib/toast"
 import { toAbsoluteMediaUrl } from "@/lib/media"
 import { Can } from "@/components/ui/can"
@@ -33,6 +34,25 @@ export default function AthleteProfilePage() {
   const isValidId = !isNaN(id) && id > 0
   const { data: athlete, isLoading } = useAthlete(isValidId ? id : 0)
   const { data: subsData } = useSubscriptions(isValidId ? { athlete: String(id) } : {})
+
+  const queryClient = useQueryClient()
+  const renewSubscriptionMut = useRenewSubscription()
+  const { data: packagesData } = usePackages()
+  const packages = packagesData?.results || []
+
+  const [showRenewModal, setShowRenewModal] = React.useState(false)
+  const [selectedPackageId, setSelectedPackageId] = React.useState<number | null>(null)
+  const [renewalAmount, setRenewalAmount] = React.useState("")
+  const [renewalMonths, setRenewalMonths] = React.useState(1)
+  const [renewError, setRenewError] = React.useState<string | null>(null)
+  const [priceType, setPriceType] = React.useState<"new" | "renewal">("renewal")
+
+  const normalizeRenewMonths = (durationType: "weeks" | "months", durationValue: number) => {
+    const estimated = durationType === "weeks" ? Math.max(1, Math.ceil(durationValue / 4)) : Math.max(1, durationValue)
+    const allowed = [1, 3, 6, 12]
+    const match = allowed.find((m) => m >= estimated)
+    return match ?? 12
+  }
 
   if (isNaN(id) || id <= 0) {
     return (
@@ -61,6 +81,72 @@ export default function AthleteProfilePage() {
   const subscriptions = subsData?.results || []
   const activeSub = subscriptions.find((s) => s.status === "active")
   const subs = activeSub || subscriptions[0]
+
+  // Pre-fill modal with the previously chosen package of the athlete
+  React.useEffect(() => {
+    if (showRenewModal && packages.length > 0) {
+      // Determine if they had a previous subscription
+      const hasPrev = subscriptions.filter((s) => s.status !== "rejected").length > 0
+      const defaultPriceType = hasPrev ? "renewal" : "new"
+      setPriceType(defaultPriceType)
+
+      // Find package chosen before (subs holds the current/latest subscription)
+      const match = subs ? packages.find((p) => p.name === subs.package_name) : null
+      const defaultPkg = match || packages[0]
+      if (defaultPkg) {
+        setSelectedPackageId(defaultPkg.id)
+        const basePrice = defaultPriceType === "renewal"
+          ? (defaultPkg.renewal_price || defaultPkg.price)
+          : (defaultPkg.new_price || defaultPkg.price)
+        setRenewalAmount(basePrice)
+        setRenewalMonths(normalizeRenewMonths(defaultPkg.duration_type, defaultPkg.duration_value))
+      }
+    }
+  }, [showRenewModal, packages, subs, subscriptions])
+
+  const handlePackageChange = (pkgId: number, currentPriceType = priceType) => {
+    const pkg = packages.find((p) => p.id === pkgId)
+    if (pkg) {
+      setSelectedPackageId(pkg.id)
+      const basePrice = currentPriceType === "renewal"
+        ? (pkg.renewal_price || pkg.price)
+        : (pkg.new_price || pkg.price)
+      setRenewalAmount(basePrice)
+      setRenewalMonths(normalizeRenewMonths(pkg.duration_type, pkg.duration_value))
+    }
+  }
+
+  const handlePriceTypeChange = (newType: "new" | "renewal") => {
+    setPriceType(newType)
+    if (selectedPackageId) {
+      handlePackageChange(selectedPackageId, newType)
+    }
+  }
+
+  const submitRenewal = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!subs) {
+      setRenewError("لا يوجد اشتراك سابق لتجديده")
+      return
+    }
+    if (!selectedPackageId) {
+      setRenewError("يرجى اختيار الباقة")
+      return
+    }
+    try {
+      setRenewError(null)
+      await renewSubscriptionMut.mutateAsync({
+        id: subs.id,
+        months: renewalMonths,
+        amount: renewalAmount,
+      })
+      toast.success("تم تجديد الاشتراك بنجاح")
+      await queryClient.invalidateQueries({ queryKey: ["subscriptions"] })
+      setShowRenewModal(false)
+    } catch (err: any) {
+      setRenewError(err?.message || "تعذر تنفيذ التجديد")
+    }
+  }
 
   const formatDate = (d: string) =>
     new Date(d).toLocaleDateString("ar-SA-u-nu-latn", { year: "numeric", month: "long", day: "numeric" })
@@ -118,12 +204,14 @@ export default function AthleteProfilePage() {
             </Link>
           </Can>
           <Can action="subscriptions:renew">
-            <Link to={`/dashboard/memberships?athlete_id=${id}`}>
-              <Button size="lg" className="bg-gradient-to-l from-primary to-primary/80 shadow-lg shadow-primary/20">
-                <RefreshCw className="w-4 h-4" />
-                تجديد الاشتراك
-              </Button>
-            </Link>
+            <Button
+              size="lg"
+              className="bg-gradient-to-l from-primary to-primary/80 shadow-lg shadow-primary/20"
+              onClick={() => setShowRenewModal(true)}
+            >
+              <RefreshCw className="w-4 h-4" />
+              تجديد الاشتراك
+            </Button>
           </Can>
         </div>
       </div>
@@ -482,6 +570,120 @@ export default function AthleteProfilePage() {
           </div>
         </motion.div>
       </div>
+
+      {showRenewModal && (
+        <div className="fixed inset-0 z-50 bg-black/50 p-4 flex items-center justify-center backdrop-blur-sm" onClick={() => setShowRenewModal(false)}>
+          <form
+            className="w-full max-w-lg rounded-2xl border border-border bg-card p-6 space-y-4 shadow-2xl relative"
+            onClick={(e) => e.stopPropagation()}
+            onSubmit={submitRenewal}
+          >
+            <div className="flex items-center justify-between border-b border-border/20 pb-3">
+              <h3 className="text-lg font-bold text-foreground">تجديد الاشتراك للرياضي</h3>
+              <button type="button" onClick={() => setShowRenewModal(false)} className="text-muted-foreground hover:text-foreground">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <p className="text-sm font-semibold text-muted-foreground">الرياضي: <span className="text-foreground font-bold">{athlete.full_name}</span></p>
+                {subs && (
+                  <p className="text-xs text-muted-foreground mt-1">
+                    الاشتراك الحالي: {subs.package_name} (ينتهي في {new Date(subs.end_date).toLocaleDateString("ar-SA-u-nu-latn")})
+                  </p>
+                )}
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-xs font-bold text-muted-foreground">الباقة المختارة للتجديد</label>
+                <select
+                  className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 cursor-pointer"
+                  value={selectedPackageId ?? ""}
+                  onChange={(e) => handlePackageChange(Number(e.target.value))}
+                  required
+                >
+                  <option value="">اختر باقة</option>
+                  {packages.map((pkg) => (
+                    <option key={pkg.id} value={pkg.id}>
+                      {pkg.name} (جديد: {Number(pkg.new_price || pkg.price).toLocaleString("ar-SA-u-nu-latn")} د.ل / تجديد: {Number(pkg.renewal_price || pkg.price).toLocaleString("ar-SA-u-nu-latn")} د.ل)
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="mb-1.5 block text-xs font-bold text-muted-foreground">نوع السعر</label>
+                <div className="flex gap-2">
+                  <button
+                    type="button"
+                    onClick={() => handlePriceTypeChange("new")}
+                    className={`flex-1 py-2 text-xs font-bold rounded-xl border transition-all ${
+                      priceType === "new"
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-surface-container-low text-muted-foreground border-border hover:bg-surface-container"
+                    }`}
+                  >
+                    سعر اشتراك جديد
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handlePriceTypeChange("renewal")}
+                    className={`flex-1 py-2 text-xs font-bold rounded-xl border transition-all ${
+                      priceType === "renewal"
+                        ? "bg-primary text-primary-foreground border-primary"
+                        : "bg-surface-container-low text-muted-foreground border-border hover:bg-surface-container"
+                    }`}
+                  >
+                    سعر تجديد
+                  </button>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label className="mb-1.5 block text-xs font-bold text-muted-foreground">المبلغ الفعلي (د.ل)</label>
+                  <input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+                    value={renewalAmount}
+                    onChange={(e) => setRenewalAmount(e.target.value)}
+                    required
+                  />
+                </div>
+
+                <div className="flex flex-col justify-end">
+                  <span className="text-xs font-bold text-muted-foreground mb-1.5 block">المدة الزمنية للباقة</span>
+                  <div className="bg-surface-container-low border border-border rounded-xl px-3 py-2 text-sm text-foreground font-semibold flex items-center justify-between h-9">
+                    <span>
+                      {selectedPackageId && packages.find(p => p.id === selectedPackageId) ? (
+                        (() => {
+                          const pkg = packages.find(p => p.id === selectedPackageId)!
+                          return `${pkg.duration_value} ${pkg.duration_type === "weeks" ? "أسبوع" : "شهر"}`
+                        })()
+                      ) : (
+                        "—"
+                      )}
+                    </span>
+                    <span className="text-[10px] text-muted-foreground font-normal">(تلقائي)</span>
+                  </div>
+                </div>
+              </div>
+
+              {renewError && <p className="text-xs text-error font-bold">{renewError}</p>}
+            </div>
+
+            <div className="flex justify-end gap-2 border-t border-border/20 pt-3">
+              <Button type="button" variant="ghost" onClick={() => setShowRenewModal(false)}>إلغاء</Button>
+              <Button type="submit" disabled={renewSubscriptionMut.isPending} className="bg-primary text-primary-foreground hover:bg-primary/95">
+                {renewSubscriptionMut.isPending ? "جاري التجديد..." : "تأكيد تجديد الاشتراك"}
+              </Button>
+            </div>
+          </form>
+        </div>
+      )}
     </motion.div>
   )
 }

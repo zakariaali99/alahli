@@ -93,7 +93,7 @@ def register_view(request):
     is_staff_creator = (
         request.user
         and request.user.is_authenticated
-        and request.user.role in ["super_admin", "academy_manager", "reception"]
+        and request.user.role in ["super_admin", "academy_manager", "special_manager", "reception"]
     )
 
     try:

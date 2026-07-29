@@ -290,9 +290,7 @@ export default function AcademyManagement() {
                 <div className="flex items-center gap-2 text-xs text-muted-foreground">
                   <span className="rounded-lg border border-border px-3 py-1.5">الحد الأقصى 3 أكاديميات</span>
                 </div>
-              ) : (
-                <Button size="sm" variant="outline" onClick={() => void openModal("academy")}><Plus className="h-4 w-4" /> إضافة أكاديمية</Button>
-              )}
+              ) : null}
             </Can>
           </div>
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
@@ -301,7 +299,6 @@ export default function AcademyManagement() {
               <motion.div key={academy.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} whileHover={{ y: -4 }} className="group relative cursor-pointer rounded-2xl border-2 border-border bg-card p-5 transition hover:border-primary" onClick={() => void openAcademyCard(academy)}>
 <div className="absolute left-2 top-2 z-10 flex gap-1 transition">
                    <Can action="departments:update"><button className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary hover:bg-primary/20" onClick={(e) => { e.stopPropagation(); openEditAcademyModal(academy) }}><Pencil className="h-3.5 w-3.5" /></button></Can>
-                   <Can action="departments:delete"><button className="flex h-7 w-7 items-center justify-center rounded-lg bg-error/10 text-error hover:bg-error/20" onClick={(e) => { e.stopPropagation(); setDeleteTarget({ type: "academy", id: academy.id, name: academy.name_ar }) }}><Trash2 className="h-3.5 w-3.5" /></button></Can>
                  </div>
                 <div className="flex items-start gap-3">
                   <div className="flex h-12 w-12 items-center justify-center rounded-xl text-lg font-bold text-white shadow" style={{ backgroundColor: academy.color }}>
@@ -329,7 +326,6 @@ export default function AcademyManagement() {
             <h3 className="inline-flex items-center gap-2 text-sm font-bold"><Layers3 className="h-4 w-4" /> رياضات {selectedAcademy.name_ar}</h3>
             <div className="flex items-center gap-2">
               <Can action="departments:update"><button className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary hover:bg-primary/20" onClick={() => openEditAcademyModal(selectedAcademy)}><Pencil className="h-3.5 w-3.5" /></button></Can>
-              <Can action="departments:delete"><button className="flex h-7 w-7 items-center justify-center rounded-lg bg-error/10 text-error hover:bg-error/20" onClick={() => setDeleteTarget({ type: "academy", id: selectedAcademy.id, name: selectedAcademy.name_ar })}><Trash2 className="h-3.5 w-3.5" /></button></Can>
               <Can action="sports:create"><Button size="sm" variant="outline" onClick={() => void openModal("sport")}><Plus className="h-4 w-4" /> إضافة رياضة</Button></Can>
             </div>
           </div>
@@ -339,7 +335,6 @@ export default function AcademyManagement() {
               <motion.div key={sport.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} whileHover={{ y: -4 }} className="group relative cursor-pointer rounded-2xl border-2 border-border bg-card p-5 transition hover:border-primary" onClick={() => void openSportCard(sport)}>
 <div className="absolute left-2 top-2 z-10 flex gap-1 transition">
                    <Can action="sports:update"><button className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary hover:bg-primary/20" onClick={(e) => { e.stopPropagation(); openEditSportModal(sport) }}><Pencil className="h-3.5 w-3.5" /></button></Can>
-                   <Can action="sports:delete"><button className="flex h-7 w-7 items-center justify-center rounded-lg bg-error/10 text-error hover:bg-error/20" onClick={(e) => { e.stopPropagation(); setDeleteTarget({ type: "sport", id: sport.id, name: sport.name_ar }) }}><Trash2 className="h-3.5 w-3.5" /></button></Can>
                  </div>
                 <div className="flex items-start gap-3">
                   <div className="flex h-12 w-12 items-center justify-center rounded-xl bg-primary/10 text-lg font-bold text-primary">
@@ -367,7 +362,6 @@ export default function AcademyManagement() {
             <h3 className="inline-flex items-center gap-2 text-sm font-bold"><Users className="h-4 w-4" /> مجموعات {selectedSport.name_ar}</h3>
             <div className="flex items-center gap-2">
               <Can action="sports:update"><button className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary hover:bg-primary/20" onClick={() => openEditSportModal(selectedSport)}><Pencil className="h-3.5 w-3.5" /></button></Can>
-              <Can action="sports:delete"><button className="flex h-7 w-7 items-center justify-center rounded-lg bg-error/10 text-error hover:bg-error/20" onClick={() => setDeleteTarget({ type: "sport", id: selectedSport.id, name: selectedSport.name_ar })}><Trash2 className="h-3.5 w-3.5" /></button></Can>
               <Can action="groups:create"><Button size="sm" variant="outline" onClick={() => void openModal("group")}><Plus className="h-4 w-4" /> إضافة مجموعة</Button></Can>
             </div>
           </div>
@@ -379,7 +373,6 @@ export default function AcademyManagement() {
                 <motion.div key={group.id} initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} whileHover={{ y: -4 }} className="group relative cursor-pointer rounded-2xl border-2 border-border bg-card p-5 transition hover:border-primary" onClick={() => openGroupCard(group)}>
 <div className="absolute left-2 top-2 z-10 flex gap-1 transition">
                      <Can action="groups:update"><button className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary hover:bg-primary/20" onClick={(e) => { e.stopPropagation(); void openEditGroupModal(group) }}><Pencil className="h-3.5 w-3.5" /></button></Can>
-                     <Can action="groups:delete"><button className="flex h-7 w-7 items-center justify-center rounded-lg bg-error/10 text-error hover:bg-error/20" onClick={(e) => { e.stopPropagation(); setDeleteTarget({ type: "group", id: group.id, name: group.name_ar }) }}><Trash2 className="h-3.5 w-3.5" /></button></Can>
                    </div>
                   <p className="font-bold">{group.name_ar}</p>
                   <p className="text-xs text-muted-foreground" dir="ltr">{group.name}</p>
@@ -411,7 +404,6 @@ export default function AcademyManagement() {
             <h3 className="inline-flex items-center gap-2 text-sm font-bold"><Users className="h-4 w-4" /> {selectedGroup.name_ar}</h3>
             <div className="flex items-center gap-2">
               <Can action="groups:update"><button className="flex h-7 w-7 items-center justify-center rounded-lg bg-primary/10 text-primary hover:bg-primary/20" onClick={() => void openEditGroupModal(selectedGroup)}><Pencil className="h-3.5 w-3.5" /></button></Can>
-              <Can action="groups:delete"><button className="flex h-7 w-7 items-center justify-center rounded-lg bg-error/10 text-error hover:bg-error/20" onClick={() => setDeleteTarget({ type: "group", id: selectedGroup.id, name: selectedGroup.name_ar })}><Trash2 className="h-3.5 w-3.5" /></button></Can>
             </div>
           </div>
           <div className="rounded-2xl border-2 border-border bg-card p-6">

@@ -208,17 +208,7 @@ export default function CoachesManagement() {
                           <Pencil className="h-3.5 w-3.5" />
                         </button>
                       </Can>
-                      <Can action="coaches:delete">
-                        <button
-                          className="flex h-7 w-7 items-center justify-center rounded-lg bg-error/10 text-error hover:bg-error/20"
-                          onClick={(e) => {
-                            e.stopPropagation()
-                            setDeleteTarget(coach)
-                          }}
-                        >
-                          <Trash2 className="h-3.5 w-3.5" />
-                        </button>
-                      </Can>
+
                     </div>
                     <div className="flex items-start gap-3">
                       {coach.photo ? (

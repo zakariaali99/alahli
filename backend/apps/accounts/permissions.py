@@ -1,8 +1,8 @@
 from rest_framework.permissions import BasePermission, SAFE_METHODS
 
 
-ADMIN_ROLES = frozenset(["super_admin", "academy_manager", "reception"])
-STAFF_ROLES = frozenset(["super_admin", "academy_manager", "reception", "trainer", "viewer"])
+ADMIN_ROLES = frozenset(["super_admin", "academy_manager", "special_manager", "reception"])
+STAFF_ROLES = frozenset(["super_admin", "academy_manager", "special_manager", "reception", "trainer", "viewer"])
 RECOGNITION_ROLES = frozenset(["super_admin", "reception"])
 
 

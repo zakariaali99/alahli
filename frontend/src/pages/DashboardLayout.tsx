@@ -20,6 +20,7 @@ import {
   Dumbbell,
   UserCog,
   BadgeAlert,
+  ArrowRight,
 } from "lucide-react"
 import { useAuth, isRejectedUser } from "@/lib/auth"
 import { ErrorBoundary } from "@/components/ui/error-boundary"
@@ -40,7 +41,7 @@ const allNavItems: NavItem[] = [
   { name: "الاشتراكات المنتهية", path: "/dashboard/expired-memberships", icon: BadgeAlert, permission: "subscriptions:read" },
   { name: "الفحص السريع", path: "/dashboard/verify", icon: QrCode, permission: "verify:read" },
   { name: "الطلبات الجديدة", path: "/dashboard/registrations", icon: Users, permission: "registrations:read" },
-  { name: "الحسابات", path: "/dashboard/accounts", icon: UserCog, permission: "registrations:read" },
+  { name: "أولياء الأمور", path: "/dashboard/parents", icon: UserCog, permission: "registrations:read" },
   { name: "الأكاديميات", path: "/dashboard/academies", icon: Building2, permission: "departments:read" },
   { name: "المدربون", path: "/dashboard/coaches", icon: Dumbbell, permission: "coaches:read" },
   { name: "الإدارة", path: "/dashboard/staff", icon: UserCog, permission: "staff:read" },
@@ -273,6 +274,29 @@ export default function DashboardLayout() {
 
             {/* Right: Actions */}
             <div className="mr-auto flex items-center gap-3 md:mr-0">
+              {/* Smart back button */}
+              {(() => {
+                const path = location.pathname
+                // Map of sub-routes -> their parent section URL
+                const backRoutes: Array<{ match: RegExp; backTo: string }> = [
+                  { match: /^\/dashboard\/athletes\/add$/, backTo: "/dashboard/athletes" },
+                  { match: /^\/dashboard\/athletes\/\d+\/edit$/, backTo: "/dashboard/athletes" },
+                  { match: /^\/dashboard\/athletes\/\d+$/, backTo: "/dashboard/athletes" },
+                ]
+                const matched = backRoutes.find((r) => r.match.test(path))
+                if (!matched) return null
+                return (
+                  <Button
+                    onClick={() => navigate(matched.backTo)}
+                    variant="outline"
+                    size="sm"
+                    className="gap-1.5"
+                  >
+                    <ArrowRight className="w-4 h-4" />
+                    <span className="hidden sm:inline">رجوع</span>
+                  </Button>
+                )
+              })()}
               <Button
                 onClick={handleLogout}
                 variant="ghost"
