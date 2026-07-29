@@ -1,6 +1,10 @@
+import { useState, useEffect } from "react"
 import { useParams, useNavigate, Link } from "react-router-dom"
 import { motion } from "framer-motion"
 import { Button } from "@/components/ui/button"
+import { api } from "@/lib/api"
+import { isParentAcademy } from "@/lib/departments"
+import type { Department } from "@/lib/types"
 import {
   ArrowRight,
   Sparkles,
@@ -33,92 +37,118 @@ interface AcademyData {
   }[]
 }
 
-const ACADEMIES_DATA: Record<string, AcademyData> = {
-  "4": {
-    id: "4",
-    name: "Al Ahli Sports Center",
-    nameAr: "مركز الأهلي الرياضي",
-    subtitle: "مصراتة - ليبيا",
-    color: "#0F4C81",
-    logo: "/logo.png",
-    heroImage: "/alahli_center.png",
-    description: "مركز رياضي متكامل مخصص لبناء الأجيال الرياضية الواعدة وتطوير مهارات القوة والمرونة والدفاع عن النفس في بيئة تربوية ورياضية آمنة ومجهزة بأحدث الصالات والمعدات.",
-    programs: [
-      {
-        title: "قسم الكاراتيه وأبطال النادي",
-        icon: ShieldCheck,
-        desc: "تدريبات احترافية مخصصة للأطفال والشباب لبناء الانضباط الذاتي واللياقة العالية وتعلم فنون الدفاع عن النفس (الكاتا والكوميتيه).",
-        features: [
-          "قاعة تاتامي مجهزة بالكامل ومحاطة بإضاءة طبيعية وأجواء مشجعة",
-          "تدرج الأحزمة الرسمية من الحزام الأبيض وحتى الحزام الأسود",
-          "تمارين مرونة عالية (الفتحة وتقوية المفاصل والضغط على القبضات)",
-          "مشاركة دورية في البطولات المحلية والاستعراضات الرياضية"
-        ]
-      },
-      {
-        title: "التمرين السويدي واللياقة البدنية",
-        icon: Activity,
-        desc: "برنامج بدني شامل يعتمد على التمارين السويدية والكاليستثنيكس لرفع معدلات التحمل والقوة العضلية والرشاقة.",
-        features: [
-          "تدريبات على العشب الصناعي الخارجي والملاعب المجهزة",
-          "تمارين الجذع والبطن باستخدام كرات اللياقة الثقيلة والأثقال",
-          "سرعة البديهة والرشاقة باستخدام مخاريط وعوارض التدريب",
-          "إشراف مباشر من مدربين متخصصين لضمان الأداء الصحيح"
-        ]
-      }
-    ],
-    gallery: [
-      { title: "تدريبات الكاراتيه والاستعراض", image: "/alahli_center.png" },
-      { title: "حصص القتال والتركيز", image: "/alahli_karate.png" },
-      { title: "تمارين اللياقة والسويدي", image: "/alahli_swedish.png" }
-    ]
-  },
-  "5": {
-    id: "5",
-    name: "Al Aws Academy",
-    nameAr: "أكاديمية الأوس",
-    subtitle: "مصراتة - ليبيا",
-    color: "#136F63",
-    logo: "/alaws_logo.png",
-    heroImage: "/alaws_academy.png",
-    description: "أكاديمية متخصصة في اكتشاف وصقل مواهب كرة القدم والرياضات الجماعية، تهدف لتوفير بيئة تدريبية احترافية تجمع بين الانضباط والرياضة والترفيه.",
-    programs: [
-      {
-        title: "أكاديمية كرة القدم للبراعم والشباب",
-        icon: Trophy,
-        desc: "برامج تدريبية كروية شاملة لتطوير المهارات التكتيكية والفردية والجماعية للاعبين الصغار والشباب.",
-        features: [
-          "ملاعب عشب صناعي حديثة ومجهزة بإضاءة وشباك حماية",
-          "تدريبات اللياقة والتمرير والتحكم بالكرة تحت إشراف مدربين معتمدين",
-          "مهرجانات رياضية دورية (يوم الأوس الرياضي) وتكريم المتميزين",
-          "متابعة دورية لحضور وأداء كل رياضي"
-        ]
-      },
-      {
-        title: "التدريب الإعدادي البدني",
-        icon: Dumbbell,
-        desc: "تمارين لياقة بدنية مكملة لتقوية العضلات ومنع الإصابات وتحسين السرعة والتحمل البدني.",
-        features: [
-          "تدريبات سرعة ورشاقة باستخدام المخاريط والحواجز",
-          "تمارين مرونة وإطالة عضلية متقدمة",
-          "برامج تناسب جميع الفئات العمرية"
-        ]
-      }
-    ],
-    gallery: [
-      { title: "تدريبات كرة القدم على العشب", image: "/alaws_academy.png" },
-      { title: "تمارين الإعداد البدني", image: "/alahli_swedish.png" },
-      { title: "أبطال الكاراتيه والرياضة", image: "/alahli_karate.png" }
-    ]
+const AHLI_DATA: AcademyData = {
+  id: "ahli",
+  name: "Al Ahli Sports Center",
+  nameAr: "مركز الأهلي الرياضي",
+  subtitle: "مصراتة - ليبيا",
+  color: "#0F4C81",
+  logo: "/logo.png",
+  heroImage: "/alahli_center.png",
+  description: "مركز رياضي متكامل مخصص لبناء الأجيال الرياضية الواعدة وتطوير مهارات القوة والمرونة والدفاع عن النفس في بيئة تربوية ورياضية آمنة ومجهزة بأحدث الصالات والمعدات.",
+  programs: [
+    {
+      title: "قسم الكاراتيه وأبطال النادي",
+      icon: ShieldCheck,
+      desc: "تدريبات احترافية مخصصة للأطفال والشباب لبناء الانضباط الذاتي واللياقة العالية وتعلم فنون الدفاع عن النفس (الكاتا والكوميتيه).",
+      features: [
+        "قاعة تاتامي مجهزة بالكامل ومحاطة بإضاءة طبيعية وأجواء مشجعة",
+        "تدرج الأحزمة الرسمية من الحزام الأبيض وحتى الحزام الأسود",
+        "تمارين مرونة عالية (الفتحة وتقوية المفاصل والضغط على القبضات)",
+        "مشاركة دورية في البطولات المحلية والاستعراضات الرياضية"
+      ]
+    },
+    {
+      title: "التمرين السويدي واللياقة البدنية",
+      icon: Activity,
+      desc: "برنامج بدني شامل يعتمد على التمارين السويدية والكاليستثنيكس لرفع معدلات التحمل والقوة العضلية والرشاقة.",
+      features: [
+        "تدريبات على العشب الصناعي الخارجي والملاعب المجهزة",
+        "تمارين الجذع والبطن باستخدام كرات اللياقة الثقيلة والأثقال",
+        "سرعة البديهة والرشاقة باستخدام مخاريط وعوارض التدريب",
+        "إشراف مباشر من مدربين متخصصين لضمان الأداء الصحيح"
+      ]
+    }
+  ],
+  gallery: [
+    { title: "تدريبات الكاراتيه والاستعراض", image: "/alahli_center.png" },
+    { title: "حصص القتال والتركيز", image: "/alahli_karate.png" },
+    { title: "تمارين اللياقة والسويدي", image: "/alahli_swedish.png" }
+  ]
+}
+
+const AWS_DATA: AcademyData = {
+  id: "aws",
+  name: "Al Aws Academy",
+  nameAr: "أكاديمية الأوس",
+  subtitle: "مصراتة - ليبيا",
+  color: "#136F63",
+  logo: "/alaws_logo.png",
+  heroImage: "/alaws_academy.png",
+  description: "أكاديمية متخصصة في اكتشاف وصقل مواهب كرة القدم والرياضات الجماعية، تهدف لتوفير بيئة تدريبية احترافية تجمع بين الانضباط والرياضة والترفيه.",
+  programs: [
+    {
+      title: "أكاديمية كرة القدم للبراعم والشباب",
+      icon: Trophy,
+      desc: "برامج تدريبية كروية شاملة لتطوير المهارات التكتيكية والفردية والجماعية للاعبين الصغار والشباب.",
+      features: [
+        "ملاعب عشب صناعي حديثة ومجهزة بإضاءة وشباك حماية",
+        "تدريبات اللياقة والتمرير والتحكم بالكرة تحت إشراف مدربين معتمدين",
+        "مهرجانات رياضية دورية (يوم الأوس الرياضي) وتكريم المتميزين",
+        "متابعة دورية لحضور وأداء كل رياضي"
+      ]
+    },
+    {
+      title: "التدريب الإعدادي البدني",
+      icon: Dumbbell,
+      desc: "تمارين لياقة بدنية مكملة لتقوية العضلات ومنع الإصابات وتحسين السرعة والتحمل البدني.",
+      features: [
+        "تدريبات سرعة ورشاقة باستخدام المخاريط والحواجز",
+        "تمارين مرونة وإطالة عضلية متقدمة",
+        "برامج تناسب جميع الفئات العمرية"
+      ]
+    }
+  ],
+  gallery: [
+    { title: "تدريبات كرة القدم على العشب", image: "/alaws_academy.png" },
+    { title: "تمارين الإعداد البدني", image: "/alahli_swedish.png" },
+    { title: "أبطال الكاراتيه والرياضة", image: "/alahli_karate.png" }
+  ]
+}
+
+function getAcademyData(dept: Department | null): AcademyData {
+  const base = dept && isParentAcademy(dept) ? AWS_DATA : AHLI_DATA
+  return {
+    ...base,
+    nameAr: dept?.name_ar || base.nameAr,
+    color: dept?.color || base.color,
+    logo: dept?.logo || base.logo,
   }
 }
 
 export default function AcademyDetails() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const [dept, setDept] = useState<Department | null>(null)
+  const [loading, setLoading] = useState(true)
 
-  // Default to Al Ahly (4) if id not found
-  const academy = ACADEMIES_DATA[id || "4"] || ACADEMIES_DATA["4"]
+  useEffect(() => {
+    if (!id) { setLoading(false); return }
+    api.get(`/departments/${id}/`)
+      .then((data: any) => setDept(data))
+      .catch(() => setDept(null))
+      .finally(() => setLoading(false))
+  }, [id])
+
+  const academy = getAcademyData(dept)
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#fafafb] flex items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    )
+  }
 
   return (
     <div className="min-h-screen bg-[#fafafb] text-[#0f2942] font-sans selection:bg-[#047857]/10 selection:text-[#047857]" dir="rtl">
@@ -130,9 +160,9 @@ export default function AcademyDetails() {
           <Link to="/" className="flex items-center gap-2 sm:gap-3">
             <img src={academy.logo || "/logo.png"} alt="Logo" className="h-9 w-9 sm:h-11 sm:w-11 object-contain rounded-full shadow-sm" />
             <div>
-              <span className="text-xs sm:text-base font-extrabold text-[#0f2942] block leading-tight md:hidden">الأهلي & الأوس</span>
-              <span className="text-base font-extrabold text-[#0f2942] hidden md:block leading-tight">مركز الأهلي الرياضي & أكاديمية الأوس</span>
-              <span className="text-[9px] sm:text-xs text-[#5f7288] font-bold">مصراتة - ليبيا</span>
+              <span className="text-sm sm:text-base font-extrabold text-[#0f2942] block leading-tight md:hidden">الأهلي والأوس</span>
+              <span className="text-base font-extrabold text-[#0f2942] hidden md:block leading-tight">مركز الأهلي الرياضي وأكاديمية الأوس</span>
+              <span className="text-[11px] sm:text-xs text-[#5f7288] font-bold">مصراتة - ليبيا</span>
             </div>
           </Link>
 

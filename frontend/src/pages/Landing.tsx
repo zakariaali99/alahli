@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/button"
 import { api } from "@/lib/api"
 import { extractResults } from "@/lib/response"
 import type { Department } from "@/lib/types"
+import { isParentAcademy } from "@/lib/departments"
 import {
   Users,
   CreditCard,
@@ -23,8 +24,8 @@ export default function Landing() {
       .catch(() => {})
   }, [])
 
-  const ahli = departments.length >= 2 ? departments[0] : null
-  const aws = departments.length >= 2 ? departments[1] : null
+  const ahli = departments.find((d) => !isParentAcademy(d)) || null
+  const aws = departments.find((d) => isParentAcademy(d)) || null
 
   const scrollToSection = (id: string) => {
     const element = document.getElementById(id)
@@ -41,7 +42,7 @@ export default function Landing() {
         <div className="mx-auto flex h-20 w-full max-w-7xl items-center justify-between px-3 sm:px-6 lg:px-8">
           
           <div className="flex items-center gap-2 sm:gap-3 cursor-pointer" onClick={() => scrollToSection("hero")}>
-            <img src="/logo.png" alt="Logo" className="h-9 w-9 sm:h-12 sm:w-12 object-contain" />
+            <img src={ahli?.logo || "/logo.png"} alt="Logo" className="h-9 w-9 sm:h-12 sm:w-12 object-contain" />
             <div className="flex flex-col">
               <span className="text-sm sm:text-base font-extrabold text-[#0f2942] leading-tight block md:hidden">الأهلي والأوس</span>
               <span className="text-base font-extrabold text-[#0f2942] leading-tight hidden md:block">مركز الأهلي الرياضي وأكاديمية الأوس</span>
@@ -150,7 +151,7 @@ export default function Landing() {
                   
                   {/* Logo Overlay */}
                   <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-16 h-16 rounded-full border-4 border-white bg-white shadow-md flex items-center justify-center overflow-hidden z-20">
-                    <img src="/logo.png" alt="Logo" className="w-12 h-12 object-contain" />
+                    <img src={ahli?.logo || "/logo.png"} alt="Logo" className="w-12 h-12 object-contain" />
                   </div>
                 </div>
 
@@ -181,7 +182,7 @@ export default function Landing() {
                   
                   {/* Logo Overlay */}
                   <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-16 h-16 rounded-full border-4 border-white bg-white shadow-md flex items-center justify-center overflow-hidden z-20">
-                    <img src="/alaws_logo.png" alt="Logo" className="w-full h-full object-cover" />
+                    <img src={aws?.logo || "/alaws_logo.png"} alt="Logo" className="w-full h-full object-cover" />
                   </div>
                 </div>
 
