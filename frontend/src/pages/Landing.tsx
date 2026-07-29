@@ -113,58 +113,62 @@ export default function Landing() {
           <div className="grid gap-10 md:grid-cols-2 max-w-5xl mx-auto">
             
             {/* Card 1: Al Ahly Sports Center */}
-            <motion.div 
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5 }}
-              className="group bg-white rounded-3xl border border-gray-150 p-6 flex flex-col hover:shadow-xl transition-all duration-300"
-            >
-              <div className="relative aspect-[16/10] w-full rounded-2xl overflow-hidden shadow-inner bg-gray-50">
-                <img 
-                  src="/alahli_center.png" 
-                  alt="Al Ahly Sports Center" 
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
-                />
-                
-                {/* Logo Overlay */}
-                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-16 h-16 rounded-full border-4 border-white bg-white shadow-md flex items-center justify-center overflow-hidden z-10">
-                  <img src="/logo.png" alt="Logo" className="w-12 h-12 object-contain" />
+            <Link to="/academy/4" className="block">
+              <motion.div 
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5 }}
+                className="group bg-white rounded-3xl border border-gray-150 p-6 flex flex-col hover:shadow-xl transition-all duration-300 cursor-pointer"
+              >
+                <div className="relative aspect-[16/10] w-full rounded-2xl overflow-hidden shadow-inner bg-gray-50">
+                  <img 
+                    src="/alahli_center.png" 
+                    alt="Al Ahly Sports Center" 
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                  />
+                  
+                  {/* Logo Overlay */}
+                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-16 h-16 rounded-full border-4 border-white bg-white shadow-md flex items-center justify-center overflow-hidden z-10">
+                    <img src="/logo.png" alt="Logo" className="w-12 h-12 object-contain" />
+                  </div>
                 </div>
-              </div>
 
-              <div className="mt-10 text-center space-y-2">
-                <h3 className="text-2xl font-extrabold text-[#0f2942]">مركز الأهلي الرياضي</h3>
-                <p className="text-sm font-semibold text-[#5f7288]">مركز الأهلي الرياضي</p>
-              </div>
-            </motion.div>
+                <div className="mt-10 text-center space-y-2">
+                  <h3 className="text-2xl font-extrabold text-[#0f2942] group-hover:text-[#047857] transition-colors">مركز الأهلي الرياضي</h3>
+                  <p className="text-sm font-semibold text-[#5f7288]">اضغط للاطلاع على التفاصيل والرياضات</p>
+                </div>
+              </motion.div>
+            </Link>
 
             {/* Card 2: Al Aws Academy */}
-            <motion.div 
-              initial={{ opacity: 0, y: 30 }}
-              whileInView={{ opacity: 1, y: 0 }}
-              viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: 0.15 }}
-              className="group bg-white rounded-3xl border border-gray-150 p-6 flex flex-col hover:shadow-xl transition-all duration-300"
-            >
-              <div className="relative aspect-[16/10] w-full rounded-2xl overflow-hidden shadow-inner bg-gray-50">
-                <img 
-                  src="/alaws_academy.png" 
-                  alt="Al Aws Academy" 
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
-                />
-                
-                {/* Logo Overlay */}
-                <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-16 h-16 rounded-full border-4 border-white bg-white shadow-md flex items-center justify-center overflow-hidden z-10">
-                  <img src="/logo.png" alt="Logo" className="w-12 h-12 object-contain" />
+            <Link to="/academy/5" className="block">
+              <motion.div 
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ duration: 0.5, delay: 0.15 }}
+                className="group bg-white rounded-3xl border border-gray-150 p-6 flex flex-col hover:shadow-xl transition-all duration-300 cursor-pointer"
+              >
+                <div className="relative aspect-[16/10] w-full rounded-2xl overflow-hidden shadow-inner bg-gray-50">
+                  <img 
+                    src="/alaws_academy.png" 
+                    alt="Al Aws Academy" 
+                    className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                  />
+                  
+                  {/* Logo Overlay */}
+                  <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-16 h-16 rounded-full border-4 border-white bg-white shadow-md flex items-center justify-center overflow-hidden z-10">
+                    <img src="/logo.png" alt="Logo" className="w-12 h-12 object-contain" />
+                  </div>
                 </div>
-              </div>
 
-              <div className="mt-10 text-center space-y-2">
-                <h3 className="text-2xl font-extrabold text-[#0f2942]">أكاديمية الأوس</h3>
-                <p className="text-sm font-semibold text-[#5f7288]">أكاديمية الأوس</p>
-              </div>
-            </motion.div>
+                <div className="mt-10 text-center space-y-2">
+                  <h3 className="text-2xl font-extrabold text-[#0f2942] group-hover:text-[#047857] transition-colors">أكاديمية الأوس</h3>
+                  <p className="text-sm font-semibold text-[#5f7288]">اضغط للاطلاع على التفاصيل والرياضات</p>
+                </div>
+              </motion.div>
+            </Link>
 
           </div>
         </div>

@@ -4,6 +4,7 @@ import { AuthProvider } from "@/lib/auth"
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom"
 import Login from "@/pages/Login"
 import Landing from "@/pages/Landing"
+import AcademyDetails from "@/pages/AcademyDetails"
 import RegisterAthlete from "@/pages/RegisterAthlete"
 import RegisterParent from "@/pages/RegisterParent"
 import DashboardLayout from "@/pages/DashboardLayout"
@@ -51,6 +52,7 @@ export default function App() {
             <BrowserRouter>
               <Routes>
                 <Route path="/" element={<Landing />} />
+                <Route path="/academy/:id" element={<AcademyDetails />} />
 
                 <Route path="/login" element={<Login />} />
                 <Route path="/register/athlete" element={<RegisterAthlete />} />
