@@ -49,7 +49,18 @@ class SportViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         qs = Sport.objects.all().select_related("department")
-        return scope_by_academy(self.request.user, qs, academy_field="department", request=self.request)
+        user = self.request.user
+
+        # Public/registration endpoints: return all active sports unscoped,
+        # let filterset_fields handle the ?department= filter.
+        # We must NOT apply scope_by_academy here, because if a staff user's
+        # token is present, scope_by_academy would filter by their academy and
+        # completely ignore the ?department= query param sent by the registration form.
+        if not user.is_authenticated:
+            return qs.filter(is_active=True)
+
+        # For authenticated staff, apply academy scoping as normal.
+        return scope_by_academy(user, qs, academy_field="department", request=self.request)
 
     def get_permissions(self):
         if self.action == "destroy":

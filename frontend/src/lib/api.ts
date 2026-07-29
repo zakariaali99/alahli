@@ -202,8 +202,8 @@ async function request<T = any>(
 }
 
 export const api = {
-  get: <T = any>(path: string, params?: Record<string, string>) =>
-    request<T>("GET", path, undefined, { params }),
+  get: <T = any>(path: string, params?: Record<string, string>, opts?: { skipAuth?: boolean }) =>
+    request<T>("GET", path, undefined, { params, ...opts }),
   post: <T = any>(path: string, body?: any, opts?: { formData?: boolean; skipAuth?: boolean }) =>
     request<T>("POST", path, body, opts),
   put: <T = any>(path: string, body?: any, opts?: { formData?: boolean }) =>

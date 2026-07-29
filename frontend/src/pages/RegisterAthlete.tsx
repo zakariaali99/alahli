@@ -67,7 +67,7 @@ export default function RegisterAthlete() {
     setSelectedSport(null)
     setLoadingSports(true)
     try {
-      const res = await api.get<{ results: Sport[] } | Sport[]>("/sports/", { department: String(academy.id) })
+      const res = await api.get<{ results: Sport[] } | Sport[]>("/sports/", { department: String(academy.id) }, { skipAuth: true })
       const list = extractResults(res)
       setSports(list)
       if (list.length > 0) {
