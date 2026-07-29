@@ -1,5 +1,5 @@
 import React, { useState } from "react"
-import { Link } from "react-router-dom"
+import { Link, useSearchParams } from "react-router-dom"
 import { motion, type Variants } from "framer-motion"
 import {
   Plus, Search, Filter, LayoutGrid, TableProperties, Eye, Edit2,
@@ -57,6 +57,8 @@ export default function AthletesPage() {
   const [page, setPage] = useState(1)
   const [selectedIds, setSelectedIds] = useState<Set<number>>(new Set())
   const [selectAll, setSelectAll] = useState(false)
+  const [searchParams] = useSearchParams()
+  const deptParam = searchParams.get("department")
 
   const toggleActiveMutation = useMutation({
     mutationFn: ({ id, is_active }: { id: number; is_active: boolean }) =>
@@ -96,6 +98,7 @@ export default function AthletesPage() {
     page_size: 20,
     ...(searchQuery ? { search: searchQuery } : {}),
     ...(statusFilter !== "all" ? { is_active: statusFilter === "active" ? "true" : "false" } : {}),
+    ...(deptParam ? { department: deptParam } : {}),
   })
 
   const athletes = data?.results || []
@@ -148,6 +151,14 @@ export default function AthletesPage() {
       <div className="fixed top-[-20%] right-[-10%] w-[60vw] h-[60vw] rounded-full bg-primary-container/10 blur-[120px] -z-10 pointer-events-none" />
       <div className="fixed bottom-[-15%] left-[-10%] w-[40vw] h-[40vw] rounded-full bg-secondary/5 blur-[100px] -z-10 pointer-events-none" />
 
+      {deptParam && (
+        <div className="bg-primary/10 border border-primary/20 rounded-2xl p-4 flex items-center justify-between text-primary">
+          <span className="font-extrabold text-sm">
+            عرض رياضيي {deptParam === "4" ? "مركز الأهلي الرياضي" : "أكاديمية الأوس"}
+          </span>
+        </div>
+      )}
+
       {/* ── Premium Header ── */}
       <motion.div variants={itemVariants} className="flex flex-col sm:flex-row justify-between items-start sm:items-end gap-4">
         <div>
@@ -159,7 +170,7 @@ export default function AthletesPage() {
           </p>
         </div>
         <Can action="athletes:create">
-          <Link to="/dashboard/athletes/add">
+          <Link to={`/dashboard/athletes/add${deptParam ? `?department=${deptParam}` : ""}`}>
             <Button size="lg" className="bg-gradient-to-r from-primary to-primary-container text-primary-foreground shadow-lg shadow-primary/20 hover:shadow-primary/30">
               <Plus className="w-4 h-4" />
               إضافة رياضي جديد

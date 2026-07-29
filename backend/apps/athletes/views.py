@@ -177,7 +177,7 @@ class AthleteViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         qs = Athlete.objects.select_related("department", "registration").prefetch_related("subscriptions")
         user = self.request.user
-        qs = scope_by_academy(user, qs, academy_field="department")
+        qs = scope_by_academy(user, qs, academy_field="department", request=self.request)
         if not is_staff_user(user):
             return qs.filter(is_active=True)
         return qs

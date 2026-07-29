@@ -23,7 +23,7 @@ class WorkoutSessionViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         qs = WorkoutSession.objects.all().select_related("category", "trainer")
-        return scope_by_academy(self.request.user, qs, academy_field="trainer__academy")
+        return scope_by_academy(self.request.user, qs, academy_field="trainer__academy", request=self.request)
 
     def get_permissions(self):
         if self.action in ["create", "update", "partial_update", "destroy"]:

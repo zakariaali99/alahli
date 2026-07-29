@@ -34,7 +34,7 @@ class UserViewSet(viewsets.ModelViewSet):
         qs = User.objects.filter(
             role__in=["super_admin", "reception", "academy_manager", "special_manager", "trainer", "viewer"]
         ).order_by("-id")
-        return scope_by_academy(self.request.user, qs, academy_field="academy")
+        return scope_by_academy(self.request.user, qs, academy_field="academy", request=self.request)
 
     def get_serializer_class(self):
         if self.action == "create":

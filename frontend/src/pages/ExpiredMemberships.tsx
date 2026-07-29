@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { Link } from "react-router-dom"
+import { Link, useSearchParams } from "react-router-dom"
 import { motion, type Variants } from "framer-motion"
 import {
   Search, Filter, AlertTriangle, Phone, Calendar, ChevronLeft,
@@ -78,6 +78,8 @@ export default function ExpiredMembershipsPage() {
   const [deptFilter, setDeptFilter] = useState("all")
   const [page, setPage] = useState(1)
   const PAGE_SIZE = 20
+  const [searchParams] = useSearchParams()
+  const deptParam = searchParams.get("department")
 
   const params: Record<string, string> = {
     status: "expired",
@@ -86,6 +88,7 @@ export default function ExpiredMembershipsPage() {
     ordering: "-end_date",
   }
   if (search) params.search = search
+  if (deptParam) params.athlete__department = deptParam
 
   const { data, isLoading, refetch } = useQuery({
     queryKey: ["expired-memberships", params],
@@ -136,7 +139,7 @@ export default function ExpiredMembershipsPage() {
             <RefreshCw className="w-4 h-4" />
             تحديث
           </Button>
-          <Link to="/dashboard/memberships">
+          <Link to={`/dashboard/memberships${deptParam ? `?department=${deptParam}` : ""}`}>
             <Button size="sm" className="bg-gradient-to-r from-primary to-primary-container text-primary-foreground shadow-lg shadow-primary/20">
               <Dumbbell className="w-4 h-4" />
               إدارة الاشتراكات
@@ -179,7 +182,7 @@ export default function ExpiredMembershipsPage() {
           />
         </div>
 
-        {departments.length > 0 && (
+        {!deptParam && departments.length > 0 && (
           <div className="min-w-[200px]">
             <Select
               value={deptFilter}

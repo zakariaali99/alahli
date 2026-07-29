@@ -17,6 +17,10 @@ import Verify from "@/pages/Verify"
 import Notifications from "@/pages/Notifications"
 import Reports from "@/pages/Reports"
 
+import ManagerLayout from "@/pages/manager/ManagerLayout"
+import ManagerHome from "@/pages/manager/ManagerHome"
+import ManagerDashboard from "@/pages/manager/ManagerDashboard"
+
 import Settings from "@/pages/Settings"
 import UserDashboardLayout from "@/pages/UserDashboardLayout"
 import SubscriptionPage from "@/pages/SubscriptionPage"
@@ -84,6 +88,11 @@ export default function App() {
                   <Route index element={<UserSubscriptions />} />
                   <Route path="subscribe" element={<SubscriptionPage />} />
                   <Route path="athlete" element={<AthletePage />} />
+                </Route>
+
+                <Route path="/manager" element={<ManagerLayout />}>
+                  <Route index element={<ManagerHome />} />
+                  <Route path=":academyId/dashboard" element={<ManagerDashboard />} />
                 </Route>
 
                 <Route path="*" element={<NotFound />} />

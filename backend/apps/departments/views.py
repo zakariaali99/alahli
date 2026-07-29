@@ -49,7 +49,7 @@ class SportViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         qs = Sport.objects.all().select_related("department")
-        return scope_by_academy(self.request.user, qs, academy_field="department")
+        return scope_by_academy(self.request.user, qs, academy_field="department", request=self.request)
 
     def get_permissions(self):
         if self.action == "destroy":
@@ -69,7 +69,7 @@ class GroupViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         qs = Group.objects.all().select_related("sport", "coach")
-        return scope_by_academy(self.request.user, qs, academy_field="sport__department")
+        return scope_by_academy(self.request.user, qs, academy_field="sport__department", request=self.request)
 
     def get_permissions(self):
         if self.action == "destroy":

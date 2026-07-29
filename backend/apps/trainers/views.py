@@ -17,7 +17,7 @@ class TrainerViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         qs = Trainer.objects.all().prefetch_related("classes")
-        return scope_by_academy(self.request.user, qs, academy_field="academy")
+        return scope_by_academy(self.request.user, qs, academy_field="academy", request=self.request)
 
     def get_permissions(self):
         if self.action == "destroy":

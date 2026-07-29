@@ -23,7 +23,7 @@ class NotificationViewSet(viewsets.ModelViewSet):
         user = self.request.user
         if is_staff_user(user):
             qs = Notification.objects.all()
-            qs = scope_by_academy(user, qs, academy_field="athlete__department")
+            qs = scope_by_academy(user, qs, academy_field="athlete__department", request=self.request)
             athlete_id = self.request.query_params.get("athlete")
             if athlete_id:
                 return qs.filter(athlete_id=athlete_id)

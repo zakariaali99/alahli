@@ -76,8 +76,14 @@ export default function DashboardLayout() {
 
     if (user.role === "athlete" || user.role === "parent") {
       navigate("/user", { replace: true })
+      return
     }
-  }, [isLoading, user, navigate])
+
+    if (user.role === "special_manager" && (location.pathname === "/dashboard" || location.pathname === "/dashboard/")) {
+      navigate("/manager", { replace: true })
+      return
+    }
+  }, [isLoading, user, navigate, location.pathname])
 
   useEffect(() => {
     window.addEventListener("auth:logout", handleForcedLogout)
@@ -128,10 +134,13 @@ export default function DashboardLayout() {
     navigate("/login")
   }
 
+  const isSpecialManager = user?.role === "special_manager"
+
   return (
     <div className="min-h-screen bg-background text-foreground flex overflow-x-hidden max-w-[100vw]">
       {/* ── Sidebar ── */}
-      <aside
+      {!isSpecialManager && (
+        <aside
         className={`fixed top-0 right-0 h-screen z-50 flex w-72 md:w-64 flex-col transition-all duration-300 ease-[cubic-bezier(0.22,1,0.36,1)]
           ${sidebarOpen ? "translate-x-0 opacity-100" : "max-md:translate-x-full opacity-0 pointer-events-none"}
           bg-sidebar-bg border-l border-sidebar-border
@@ -214,8 +223,9 @@ export default function DashboardLayout() {
           </Button>
         </div>
       </aside>
+      )}
 
-      {isMobile && sidebarOpen && (
+      {isMobile && sidebarOpen && !isSpecialManager && (
         <button
           aria-label="close-sidebar"
           className="fixed inset-0 z-40 bg-black/40 md:hidden"
@@ -224,7 +234,7 @@ export default function DashboardLayout() {
       )}
 
       {/* ── Sidebar Open Trigger ── */}
-      {isMobile && !sidebarOpen && (
+      {isMobile && !sidebarOpen && !isSpecialManager && (
         <Button
           onClick={() => setSidebarOpen(true)}
           variant="ghost"
@@ -242,7 +252,7 @@ export default function DashboardLayout() {
       </div>
 
       {/* ── Main Content ── */}
-      <div className={`flex-1 flex flex-col min-h-screen min-w-0 transition-all duration-300 ${sidebarOpen ? "md:mr-64" : "md:mr-0"}`}>
+      <div className={`flex-1 flex flex-col min-h-screen min-w-0 transition-all duration-300 ${sidebarOpen && !isSpecialManager ? "md:mr-64" : "md:mr-0"}`}>
         {/* ── Floating Header ── */}
         <header
           className={`sticky top-0 z-30 transition-all duration-300 ${
@@ -254,7 +264,7 @@ export default function DashboardLayout() {
           <div className="flex flex-wrap items-center justify-between gap-3 px-4 py-3 md:h-16 md:px-6 md:py-0">
             {/* Left: Breadcrumb / Page title area */}
             <div className="flex w-full items-center gap-3 md:w-auto">
-              {!sidebarOpen && !isMobile && (
+              {!sidebarOpen && !isMobile && !isSpecialManager && (
                 <Button
                   onClick={() => setSidebarOpen(true)}
                   variant="ghost"
@@ -274,8 +284,23 @@ export default function DashboardLayout() {
 
             {/* Right: Actions */}
             <div className="mr-auto flex items-center gap-3 md:mr-0">
-              {/* Smart back button */}
               {(() => {
+                const searchParams = new URLSearchParams(location.search)
+                const deptParam = searchParams.get("department")
+                if (isSpecialManager && deptParam) {
+                  return (
+                    <Button
+                      onClick={() => navigate(`/manager/${deptParam}/dashboard`)}
+                      variant="outline"
+                      size="sm"
+                      className="gap-1.5 border-[#0F4C81] text-[#0F4C81] hover:bg-[#0F4C81]/5"
+                    >
+                      <ArrowRight className="w-4 h-4" />
+                      <span>العودة إلى لوحة المدير</span>
+                    </Button>
+                  )
+                }
+
                 const path = location.pathname
                 // Map of sub-routes -> their parent section URL
                 const backRoutes: Array<{ match: RegExp; backTo: string }> = [

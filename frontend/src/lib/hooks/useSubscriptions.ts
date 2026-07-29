@@ -38,6 +38,7 @@ interface SubscriptionListParams {
   page_size?: number
   status?: string
   athlete?: string
+  athlete__department?: string
   search?: string
   ordering?: string
 }

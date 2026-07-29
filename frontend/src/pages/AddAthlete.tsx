@@ -1,5 +1,5 @@
-import { useState } from "react"
-import { Link, useNavigate } from "react-router-dom"
+import { useState, useEffect } from "react"
+import { Link, useNavigate, useSearchParams } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
 import { ArrowRight, Dumbbell, Users, CheckCircle, AlertCircle, Loader2, Building2, Sparkles } from "lucide-react"
 import { Button } from "@/components/ui/button"
@@ -58,6 +58,18 @@ export default function AddAthletePage() {
   const [submitting, setSubmitting] = useState(false)
   const [error, setError] = useState("")
   const [success, setSuccess] = useState(false)
+  const [searchParams] = useSearchParams()
+  const deptParam = searchParams.get("department")
+
+  useEffect(() => {
+    if (deptParam) {
+      const match = ACADEMIES.find((a) => a.id === Number(deptParam))
+      if (match) {
+        setSelectedAcademy(match)
+        setStep("form")
+      }
+    }
+  }, [deptParam])
 
   const isParent = selectedAcademy?.id === 5
 
@@ -216,13 +228,15 @@ export default function AddAthletePage() {
                 <span className="w-3 h-3 rounded-full" style={{ backgroundColor: selectedAcademy.color ?? "#0F4C81" }} />
                 <span className="text-xs font-black">الأكاديمية: {selectedAcademy.name_ar}</span>
               </div>
-              <button
-                type="button"
-                onClick={() => setStep("choose")}
-                className="text-xs text-primary hover:underline font-bold"
-              >
-                تغيير
-              </button>
+              {!deptParam && (
+                <button
+                  type="button"
+                  onClick={() => setStep("choose")}
+                  className="text-xs text-primary hover:underline font-bold"
+                >
+                  تغيير
+                </button>
+              )}
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-4 rounded-2xl border border-border bg-card p-6 max-w-md">

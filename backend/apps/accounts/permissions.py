@@ -22,11 +22,15 @@ def is_recognition_staff(user):
     return bool(user and user.is_authenticated and user.role in RECOGNITION_ROLES)
 
 
-def scope_by_academy(user, queryset, academy_field="department"):
+def scope_by_academy(user, queryset, academy_field="department", request=None):
     if is_super_admin(user):
         return queryset
     if user.academy:
         return queryset.filter(**{academy_field: user.academy})
+    if request and getattr(user, "role", None) == "special_manager":
+        dept_id = request.query_params.get("department")
+        if dept_id:
+            return queryset.filter(**{academy_field: dept_id})
     return queryset
 
 

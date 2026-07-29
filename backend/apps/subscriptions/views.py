@@ -30,7 +30,7 @@ from .serializers import (
 
 class SubscriptionViewSet(viewsets.ModelViewSet):
     serializer_class = SubscriptionSerializer
-    filterset_fields = ["status", "athlete", "payment_method"]
+    filterset_fields = ["status", "athlete", "payment_method", "athlete__department"]
     search_fields = ["athlete__full_name", "athlete__membership_number"]
 
     def get_queryset(self):
@@ -38,7 +38,7 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
         base = Subscription.objects.all().select_related(
             "athlete__department", "group", "approved_by",
         ).prefetch_related("renewals")
-        base = scope_by_academy(user, base, academy_field="athlete__department")
+        base = scope_by_academy(user, base, academy_field="athlete__department", request=self.request)
         if hasattr(user, "athlete") and user.athlete is not None:
             return base.filter(athlete=user.athlete)
         if user.role == "parent":
@@ -292,7 +292,7 @@ class AttendanceLogViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         user = self.request.user
         base = AttendanceLog.objects.all().select_related("athlete", "verified_by", "subscription")
-        base = scope_by_academy(user, base, academy_field="athlete__department")
+        base = scope_by_academy(user, base, academy_field="athlete__department", request=self.request)
         if hasattr(user, "athlete") and user.athlete is not None:
             return base.filter(athlete=user.athlete)
         return base
