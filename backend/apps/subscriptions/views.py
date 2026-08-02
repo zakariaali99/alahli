@@ -225,6 +225,8 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
         now = datetime.date.today()
         if package.duration_type == "weeks":
             end = now + relativedelta(weeks=package.duration_value)
+        elif package.duration_type == "days":
+            end = now + relativedelta(days=package.duration_value)
         else:
             end = now + relativedelta(months=package.duration_value)
 

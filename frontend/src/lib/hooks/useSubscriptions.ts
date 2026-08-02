@@ -64,8 +64,28 @@ export function useSubscription(id: number) {
 export function useCreateSubscription() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: (data: { athlete: number; start_date: string; end_date: string; amount: string }) =>
-      api.post<Subscription>("/subscriptions/", data),
+    mutationFn: (data: {
+      athlete: number
+      start_date: string
+      end_date: string
+      amount: string
+      package_id?: number
+      payment_method?: "cash" | "bank_transfer"
+      invoice_pdf?: File | null
+    }) => {
+      if (data.invoice_pdf) {
+        const form = new FormData()
+        form.append("athlete", String(data.athlete))
+        form.append("start_date", data.start_date)
+        form.append("end_date", data.end_date)
+        form.append("amount", data.amount)
+        form.append("payment_method", data.payment_method || "cash")
+        if (data.package_id) form.append("package_id", String(data.package_id))
+        form.append("invoice_pdf", data.invoice_pdf)
+        return api.post<Subscription>("/subscriptions/", form, { formData: true })
+      }
+      return api.post<Subscription>("/subscriptions/", data)
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["subscriptions"] })
     },

@@ -35,7 +35,7 @@ type PackageFormState = {
   new_price: string
   renewal_price: string
   package_type: "monthly" | "multi_month" | "single_session"
-  duration_type: "weeks" | "months"
+  duration_type: "days" | "weeks" | "months"
   duration_value: number
   max_athletes: number
   tag: "discount" | "special" | "normal"
@@ -58,8 +58,7 @@ const DEFAULT_PACKAGE_FORM: PackageFormState = {
   renewal_price: "",
   package_type: "monthly",
   duration_type: "months",
-  duration_value: 1,
-  max_athletes: 1,
+  duration_value: 1,  max_athletes: 1,
   tag: "normal",
   order: 0,
   is_active: true,
@@ -355,7 +354,7 @@ export default function PlansPage() {
                       </div>
 
                       <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1.5">
-                        <span>{pkg.raw.duration_value} {pkg.raw.duration_type === "weeks" ? "أسبوع" : "شهر"}</span>
+                        <span>{pkg.raw.duration_value} {pkg.raw.duration_type === "days" ? (pkg.raw.duration_value === 1 ? "يوم" : "أيام") : pkg.raw.duration_type === "weeks" ? (pkg.raw.duration_value === 1 ? "أسبوع" : "أسابيع") : pkg.raw.duration_value === 1 ? "شهر" : "أشهر"}</span>
                         <span>•</span>
                         <span>{pkg.raw.max_athletes} رياضي</span>
                         {!pkg.raw.is_active && (
@@ -549,9 +548,10 @@ export default function PlansPage() {
                     <select
                       id="package-duration-type"
                       value={packageForm.duration_type}
-                      onChange={(e) => setPackageForm((prev) => ({ ...prev, duration_type: e.target.value as "weeks" | "months" }))}
+                      onChange={(e) => setPackageForm((prev) => ({ ...prev, duration_type: e.target.value as "days" | "weeks" | "months" }))}
                       className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer"
                     >
+                      <option value="days">أيام</option>
                       <option value="weeks">أسابيع</option>
                       <option value="months">أشهر</option>
                     </select>

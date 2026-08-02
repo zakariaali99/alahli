@@ -135,6 +135,12 @@ class TestAthleteDetail:
         response = auth_client.delete(f"/api/athletes/{athlete.id}/")
         assert response.status_code == status.HTTP_204_NO_CONTENT
 
+    def test_retrieve_athlete_with_data_url_photo_does_not_build_media_path(self, auth_client):
+        athlete = AthleteFactory(photo="data:image/jpeg;base64,dGVzdA==")
+        response = auth_client.get(f"/api/athletes/{athlete.id}/")
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["photo"] == "data:image/jpeg;base64,dGVzdA=="
+
 
 @pytest.mark.django_db
 class TestVerify:

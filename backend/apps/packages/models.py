@@ -3,6 +3,7 @@ from django.db import models
 
 class SubscriptionPackage(models.Model):
     class DurationType(models.TextChoices):
+        DAYS = "days", "Days"
         WEEKS = "weeks", "Weeks"
         MONTHS = "months", "Months"
 
@@ -23,7 +24,7 @@ class SubscriptionPackage(models.Model):
     renewal_price = models.DecimalField(max_digits=10, decimal_places=2, default=0.00, help_text="Renewal subscription price")
     package_type = models.CharField(max_length=20, choices=PackageType.choices, default=PackageType.MONTHLY)
     duration_type = models.CharField(max_length=10, choices=DurationType.choices, default=DurationType.MONTHS)
-    duration_value = models.PositiveIntegerField(default=1, help_text="Number of weeks or months")
+    duration_value = models.PositiveIntegerField(default=1, help_text="Number of days, weeks or months")
     max_athletes = models.PositiveIntegerField(default=1, help_text="Max athletes allowed for this package")
     tag = models.CharField(max_length=10, choices=Tag.choices, default=Tag.NORMAL, db_index=True)
     features = models.JSONField(default=list, blank=True)

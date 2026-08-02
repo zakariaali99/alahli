@@ -63,7 +63,7 @@ type QuickRenewPackage = {
   id: number
   title: string
   amount: number
-  durationType: "weeks" | "months"
+  durationType: "days" | "weeks" | "months"
   durationValue: number
 }
 
@@ -199,8 +199,13 @@ export default function MembershipsPage() {
   const updateSubscriptionMut = useUpdateSubscription()
   const renewSubscriptionMut = useRenewSubscription()
 
-  const normalizeRenewMonths = (durationType: "weeks" | "months", durationValue: number) => {
-    const estimated = durationType === "weeks" ? Math.max(1, Math.ceil(durationValue / 4)) : Math.max(1, durationValue)
+  const normalizeRenewMonths = (durationType: "days" | "weeks" | "months", durationValue: number) => {
+    const estimated =
+      durationType === "days"
+        ? Math.max(1, Math.ceil(durationValue / 30))
+        : durationType === "weeks"
+          ? Math.max(1, Math.ceil(durationValue / 4))
+          : Math.max(1, durationValue)
     const allowed = [1, 3, 6, 12]
     const match = allowed.find((m) => m >= estimated)
     return match ?? 12
@@ -420,7 +425,12 @@ export default function MembershipsPage() {
     const Icon = iconMap[pkg.icon_name || "CalendarDays"] || CalendarDays
     const newPriceNum = Number(pkg.new_price || pkg.price)
     const renewalPriceNum = Number(pkg.renewal_price || pkg.price)
-    const durationDays = pkg.duration_type === "weeks" ? pkg.duration_value * 7 : pkg.duration_value * 30
+    const durationDays =
+      pkg.duration_type === "days"
+        ? pkg.duration_value
+        : pkg.duration_type === "weeks"
+          ? pkg.duration_value * 7
+          : pkg.duration_value * 30
     const isFeatured = pkg.color_class?.includes("featured") || pkg.id === 2
     
     let typeLabel = "شهري"
@@ -575,7 +585,7 @@ export default function MembershipsPage() {
                     </div>
 
                     <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1.5">
-                      <span>{pkg.raw.duration_value} {pkg.raw.duration_type === "weeks" ? "أسبوع" : "شهر"}</span>
+                      <span>{pkg.raw.duration_value} {pkg.raw.duration_type === "days" ? (pkg.raw.duration_value === 1 ? "يوم" : "أيام") : pkg.raw.duration_type === "weeks" ? (pkg.raw.duration_value === 1 ? "أسبوع" : "أسابيع") : pkg.raw.duration_value === 1 ? "شهر" : "أشهر"}</span>
                       <span>•</span>
                       <span>{pkg.raw.max_athletes} رياضي</span>
                     </div>
@@ -952,7 +962,9 @@ export default function MembershipsPage() {
                     if (id && pkg) {
                       const start = manualSubForm.start_date || new Date().toISOString().slice(0, 10)
                       const date = new Date(start)
-                      if (pkg.duration_type === "weeks") {
+                      if (pkg.duration_type === "days") {
+                        date.setDate(date.getDate() + pkg.duration_value)
+                      } else if (pkg.duration_type === "weeks") {
                         date.setDate(date.getDate() + pkg.duration_value * 7)
                       } else {
                         date.setMonth(date.getMonth() + pkg.duration_value)
@@ -993,7 +1005,9 @@ export default function MembershipsPage() {
                     const pkg = packages.find((p) => p.id === Number(id))
                     if (pkg) {
                       const date = new Date(start)
-                      if (pkg.duration_type === "weeks") {
+                      if (pkg.duration_type === "days") {
+                        date.setDate(date.getDate() + pkg.duration_value)
+                      } else if (pkg.duration_type === "weeks") {
                         date.setDate(date.getDate() + pkg.duration_value * 7)
                       } else {
                         date.setMonth(date.getMonth() + pkg.duration_value)

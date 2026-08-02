@@ -219,7 +219,9 @@ export default function AddAthletePage() {
     if (!pkg) return
     const start = subForm.start_date || new Date().toISOString().slice(0, 10)
     const date = new Date(start)
-    if (pkg.duration_type === "weeks") {
+    if (pkg.duration_type === "days") {
+      date.setDate(date.getDate() + pkg.duration_value)
+    } else if (pkg.duration_type === "weeks") {
       date.setDate(date.getDate() + pkg.duration_value * 7)
     } else {
       date.setMonth(date.getMonth() + pkg.duration_value)
@@ -680,7 +682,8 @@ export default function AddAthletePage() {
                       let end = ""
                       if (pkg) {
                         const date = new Date(start)
-                        if (pkg.duration_type === "weeks") date.setDate(date.getDate() + pkg.duration_value * 7)
+                        if (pkg.duration_type === "days") date.setDate(date.getDate() + pkg.duration_value)
+                        else if (pkg.duration_type === "weeks") date.setDate(date.getDate() + pkg.duration_value * 7)
                         else date.setMonth(date.getMonth() + pkg.duration_value)
                         end = date.toISOString().slice(0, 10)
                       }

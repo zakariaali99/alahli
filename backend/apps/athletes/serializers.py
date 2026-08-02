@@ -32,8 +32,12 @@ class AthleteListSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         data = super().to_representation(instance)
         request = self.context.get("request")
-        if request and data.get("photo"):
-            data["photo"] = request.build_absolute_uri(data["photo"])
+        if instance.photo and data.get("photo"):
+            raw_name = (instance.photo.name or "").lower()
+            if raw_name.startswith("data:"):
+                data["photo"] = instance.photo.name
+            elif not raw_name.startswith(("http://", "https://")) and request:
+                data["photo"] = request.build_absolute_uri(instance.photo.url)
         return data
 
 
@@ -61,8 +65,12 @@ class AthleteDetailSerializer(serializers.ModelSerializer):
     def to_representation(self, instance):
         data = super().to_representation(instance)
         request = self.context.get("request")
-        if request and data.get("photo"):
-            data["photo"] = request.build_absolute_uri(data["photo"])
+        if instance.photo and data.get("photo"):
+            raw_name = (instance.photo.name or "").lower()
+            if raw_name.startswith("data:"):
+                data["photo"] = instance.photo.name
+            elif not raw_name.startswith(("http://", "https://")) and request:
+                data["photo"] = request.build_absolute_uri(instance.photo.url)
         if request and data.get("qr_code"):
             data["qr_code"] = request.build_absolute_uri(data["qr_code"])
         return data

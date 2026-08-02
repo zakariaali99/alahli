@@ -521,7 +521,7 @@ export default function SubscriptionPage() {
                           </p>
                         )}
                         
-                        <p className="text-xs text-muted-foreground">{latinNumber(p.duration_value)} {p.duration_type === "months" ? "شهر" : "أسبوع"}</p>
+                        <p className="text-xs text-muted-foreground">{latinNumber(p.duration_value)} {p.duration_type === "days" ? (p.duration_value === 1 ? "يوم" : "أيام") : p.duration_type === "weeks" ? (p.duration_value === 1 ? "أسبوع" : "أسابيع") : p.duration_value === 1 ? "شهر" : "أشهر"}</p>
                         <p className="text-xs text-muted-foreground">الحد الأقصى للرياضيين: {latinNumber(p.max_athletes)}</p>
                       </button>
                     )

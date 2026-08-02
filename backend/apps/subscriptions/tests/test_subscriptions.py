@@ -1,3 +1,4 @@
+import datetime
 import pytest
 from apps.athletes.models import Athlete, RegistrationRequest
 from rest_framework import status
@@ -234,6 +235,41 @@ class TestSubscriptionCheckoutAthleteFallback:
 
         assert response.status_code == status.HTTP_201_CREATED
         assert response.data["status"] == "pending"
+
+    def test_checkout_days_package_computes_end_date_from_days(self, api_client):
+        from datetime import timedelta
+
+        department = DepartmentFactory()
+        sport = Sport.objects.create(name="summer", name_ar="الصيفي", department=department)
+        group = Group.objects.create(
+            name="camp1", name_ar="المجموعة الصيفية", sport=sport,
+            days=["saturday"], start_time="10:00", end_time="12:00",
+        )
+        package = SubscriptionPackage.objects.create(
+            name="Summer Camp", price="60.00",
+            duration_type="days", duration_value=15, max_athletes=1,
+        )
+
+        athlete = AthleteFactory(department=department, is_active=True)
+        user = UserFactory(role="athlete", athlete=athlete)
+        refresh = RefreshToken.for_user(user)
+        api_client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
+
+        response = api_client.post(
+            "/api/subscriptions/checkout/",
+            {
+                "sport_id": sport.id,
+                "group_id": group.id,
+                "package_id": package.id,
+                "payment_method": "cash",
+            },
+        )
+
+        assert response.status_code == status.HTTP_201_CREATED
+        subscription = Subscription.objects.get(id=response.data["subscription_id"])
+        expected_end = datetime.date.today() + timedelta(days=15)
+        assert subscription.end_date == expected_end
+        assert subscription.package_name == "Summer Camp"
 
 
 @pytest.mark.django_db
