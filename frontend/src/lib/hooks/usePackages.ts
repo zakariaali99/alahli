@@ -22,9 +22,13 @@ export interface SubscriptionPackage {
   department_name: string | null
 }
 
-export function usePackages() {
+export function usePackages(department?: string) {
   return useQuery({
-    queryKey: ["packages"],
-    queryFn: () => api.get<{ count: number; results: SubscriptionPackage[] }>("/packages/"),
+    queryKey: ["packages", department ?? "all"],
+    queryFn: () =>
+      api.get<{ count: number; results: SubscriptionPackage[] }>(
+        "/packages/",
+        department ? { department } : undefined,
+      ),
   })
 }

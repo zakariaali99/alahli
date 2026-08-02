@@ -19,6 +19,7 @@ from apps.athletes.models import Athlete, ParentAthlete
 from apps.departments.models import Group
 from apps.packages.models import SubscriptionPackage
 
+from .filters import SubscriptionFilter
 from .models import AttendanceLog, Renewal, Subscription
 from .serializers import (
     AttendanceLogSerializer,
@@ -30,7 +31,7 @@ from .serializers import (
 
 class SubscriptionViewSet(viewsets.ModelViewSet):
     serializer_class = SubscriptionSerializer
-    filterset_fields = ["status", "athlete", "payment_method", "athlete__department"]
+    filterset_class = SubscriptionFilter
     search_fields = ["athlete__full_name", "athlete__membership_number"]
 
     def get_queryset(self):
@@ -109,6 +110,8 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
 
         months = serializer.validated_data["months"]
         amount = serializer.validated_data["amount"]
+        payment_method = serializer.validated_data.get("payment_method", "cash")
+        invoice_pdf = serializer.validated_data.get("invoice_pdf")
 
         new_start = datetime.date.today()
         if subscription.end_date > new_start:
@@ -117,12 +120,15 @@ class SubscriptionViewSet(viewsets.ModelViewSet):
         new_end = new_start + relativedelta(months=months)
         subscription.end_date = new_end
         subscription.status = Subscription.Status.ACTIVE
+        subscription.payment_method = payment_method
         subscription.save()
 
         Renewal.objects.create(
             subscription=subscription,
             amount=amount,
             months=months,
+            payment_method=payment_method,
+            invoice_pdf=invoice_pdf,
             created_by=user,
         )
 

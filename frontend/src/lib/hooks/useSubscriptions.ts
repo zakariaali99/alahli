@@ -7,6 +7,8 @@ interface Renewal {
   subscription: number
   amount: string
   months: number
+  payment_method: "cash" | "bank_transfer"
+  invoice_pdf: string | null
   renewal_date: string
   created_by: number | null
   created_at: string
@@ -39,6 +41,7 @@ interface SubscriptionListParams {
   status?: string
   athlete?: string
   athlete__department?: string
+  athlete__sport?: string
   search?: string
   ordering?: string
 }
@@ -82,8 +85,29 @@ export function useDeleteSubscription() {
 export function useRenewSubscription() {
   const qc = useQueryClient()
   return useMutation({
-    mutationFn: ({ id, months, amount }: { id: number; months: number; amount: string }) =>
-      api.post<Subscription>(`/subscriptions/${id}/renew/`, { months, amount }),
+    mutationFn: ({
+      id,
+      months,
+      amount,
+      payment_method = "cash",
+      invoice_pdf,
+    }: {
+      id: number
+      months: number
+      amount: string
+      payment_method?: "cash" | "bank_transfer"
+      invoice_pdf?: File | null
+    }) => {
+      if (invoice_pdf) {
+        const form = new FormData()
+        form.append("months", String(months))
+        form.append("amount", amount)
+        form.append("payment_method", payment_method)
+        form.append("invoice_pdf", invoice_pdf)
+        return api.post<Subscription>(`/subscriptions/${id}/renew/`, form, { formData: true })
+      }
+      return api.post<Subscription>(`/subscriptions/${id}/renew/`, { months, amount, payment_method })
+    },
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["subscriptions"] })
     },

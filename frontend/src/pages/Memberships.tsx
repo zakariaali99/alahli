@@ -12,21 +12,18 @@ import {
   Filter,
   MoreVertical,
   PlusCircle,
-  Pencil,
-  Trash2,
+  RefreshCw,
   X,
   ChevronLeft,
   ChevronRight,
 } from "lucide-react"
 import { useRenewSubscription, useSubscriptions, useUpdateSubscription } from "@/lib/hooks/useSubscriptions"
-import { usePackages, type SubscriptionPackage } from "@/lib/hooks/usePackages"
+import { usePackages } from "@/lib/hooks/usePackages"
 import { Button } from "@/components/ui/button"
-import { Input, Select } from "@/components/ui/input"
-import { Card } from "@/components/ui/card"
+import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Link, useSearchParams } from "react-router-dom"
 import { api } from "@/lib/api"
-import { useAuth } from "@/lib/auth"
 import { toAbsoluteMediaUrl } from "@/lib/media"
 import { Can } from "@/components/ui/can"
 
@@ -57,23 +54,6 @@ const statusMap: Record<string, { label: string; cls: string; dot: string }> = {
   rejected: { label: "مرفوض", cls: "bg-error/10 text-error border border-error/10", dot: "bg-error" },
 }
 
-type PackageFormState = {
-  name: string
-  description: string
-  price: string
-  new_price: string
-  renewal_price: string
-  package_type: "monthly" | "multi_month" | "single_session"
-  duration_type: "weeks" | "months"
-  duration_value: number
-  max_athletes: number
-  tag: "discount" | "special" | "normal"
-  order: number
-  is_active: boolean
-  featuresText: string
-  department: number | null
-}
-
 type FlashMessage = {
   type: "success" | "error" | "info"
   text: string
@@ -87,37 +67,12 @@ type QuickRenewPackage = {
   durationValue: number
 }
 
-const DEFAULT_PACKAGE_FORM: PackageFormState = {
-  name: "",
-  description: "",
-  price: "",
-  new_price: "",
-  renewal_price: "",
-  package_type: "monthly",
-  duration_type: "months",
-  duration_value: 1,
-  max_athletes: 1,
-  tag: "normal",
-  order: 0,
-  is_active: true,
-  featuresText: "",
-  department: null,
-}
-
 export default function MembershipsPage() {
   const queryClient = useQueryClient()
-  const { user } = useAuth()
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState("")
   const [page, setPage] = useState(1)
-  const [packageModalOpen, setPackageModalOpen] = useState(false)
-  const [editingPackageId, setEditingPackageId] = useState<number | null>(null)
-  const [packageForm, setPackageForm] = useState<PackageFormState>(DEFAULT_PACKAGE_FORM)
-  const [packageSubmitting, setPackageSubmitting] = useState(false)
-  const [packageError, setPackageError] = useState<string | null>(null)
-  const [packageFieldErrors, setPackageFieldErrors] = useState<Record<string, string>>({})
   const [flash, setFlash] = useState<FlashMessage | null>(null)
-  const [deleteTarget, setDeleteTarget] = useState<SubscriptionPackage | null>(null)
   const [detailsSub, setDetailsSub] = useState<any | null>(null)
   const [rejectTarget, setRejectTarget] = useState<{ id: number; name: string } | null>(null)
   const [rejectReason, setRejectReason] = useState("")
@@ -142,9 +97,10 @@ export default function MembershipsPage() {
   const [quickRenewSubs, setQuickRenewSubs] = useState<any[]>([])
   const [quickRenewLoadingSubs, setQuickRenewLoadingSubs] = useState(false)
   const [quickRenewError, setQuickRenewError] = useState<string | null>(null)
+  const [quickRenewPreset, setQuickRenewPreset] = useState<{ athlete: string; sub: string } | null>(null)
+  const [quickRenewPaymentMethod, setQuickRenewPaymentMethod] = useState<"cash" | "bank_transfer">("cash")
+  const [quickRenewInvoice, setQuickRenewInvoice] = useState<File | null>(null)
   const [departments, setDepartments] = useState<Array<{ id: number; name_ar: string }>>([])
-
-  const canManagePackages = user?.is_superuser || user?.role === "super_admin" || user?.role === "reception" || user?.role === "special_manager"
 
   useEffect(() => {
     if (!flash) return
@@ -163,6 +119,12 @@ export default function MembershipsPage() {
 
   const [searchParams] = useSearchParams()
   const deptParam = searchParams.get("department")
+  const sportParam = searchParams.get("sport")
+  const renewMode = searchParams.get("renew") === "1"
+
+  useEffect(() => {
+    if (renewMode) setStatusFilter("")
+  }, [renewMode])
 
   useEffect(() => {
     const athleteId = searchParams.get("athlete_id")
@@ -195,9 +157,10 @@ export default function MembershipsPage() {
     search: search || undefined,
     status: statusFilter || undefined,
     athlete__department: deptParam || undefined,
+    athlete__sport: sportParam || undefined,
   })
 
-  const { data: packagesData } = usePackages()
+  const { data: packagesData } = usePackages(deptParam ?? undefined)
   const packages = packagesData?.results ?? []
 
   useEffect(() => {
@@ -248,7 +211,22 @@ export default function MembershipsPage() {
     setQuickRenewAthlete("")
     setQuickRenewSubId("")
     setQuickRenewSubs([])
+    setQuickRenewPreset(null)
     setQuickRenewError(null)
+    setQuickRenewPaymentMethod("cash")
+    setQuickRenewInvoice(null)
+    await loadAthletes()
+  }
+
+  const openQuickRenewFromRow = async (sub: any) => {
+    setQuickRenewPackage(null)
+    setQuickRenewPreset({ athlete: String(sub.athlete), sub: String(sub.id) })
+    setQuickRenewAthlete(String(sub.athlete))
+    setQuickRenewSubId(String(sub.id))
+    setQuickRenewSubs([sub])
+    setQuickRenewError(null)
+    setQuickRenewPaymentMethod("cash")
+    setQuickRenewInvoice(null)
     await loadAthletes()
   }
 
@@ -258,7 +236,10 @@ export default function MembershipsPage() {
     setQuickRenewAthlete("")
     setQuickRenewSubId("")
     setQuickRenewSubs([])
+    setQuickRenewPreset(null)
     setQuickRenewError(null)
+    setQuickRenewPaymentMethod("cash")
+    setQuickRenewInvoice(null)
   }
 
   const loadAthleteSubscriptions = async (athleteId: string) => {
@@ -296,7 +277,7 @@ export default function MembershipsPage() {
 
   const submitQuickRenew = async (e: FormEvent) => {
     e.preventDefault()
-    if (!quickRenewPackage) return
+    if (!quickRenewPackage && !quickRenewPreset) return
     if (!quickRenewAthlete) {
       setQuickRenewError("يرجى اختيار الرياضي")
       return
@@ -308,11 +289,25 @@ export default function MembershipsPage() {
 
     try {
       setQuickRenewError(null)
-      const months = normalizeRenewMonths(quickRenewPackage.durationType, quickRenewPackage.durationValue)
+      const presetSub = quickRenewSubs.find((s) => String(s.id) === quickRenewSubId)
+      const presetPkg = quickRenewPreset
+        ? packages.find((p) => p.name === presetSub?.package_name)
+        : undefined
+      const amount =
+        quickRenewPackage?.amount ??
+        Number(presetPkg?.renewal_price || presetPkg?.price || presetSub?.amount || 0)
+      const months = quickRenewPackage
+        ? normalizeRenewMonths(quickRenewPackage.durationType, quickRenewPackage.durationValue)
+        : presetPkg
+          ? normalizeRenewMonths(presetPkg.duration_type, presetPkg.duration_value)
+          : 1
+
       await renewSubscriptionMut.mutateAsync({
         id: Number(quickRenewSubId),
         months,
-        amount: quickRenewPackage.amount.toString(),
+        amount: amount.toString(),
+        payment_method: quickRenewPaymentMethod,
+        invoice_pdf: quickRenewInvoice,
       })
 
       await queryClient.invalidateQueries({ queryKey: ["subscriptions"] })
@@ -462,139 +457,24 @@ export default function MembershipsPage() {
     return pages
   }
 
-  const resetPackageForm = () => {
-    setPackageForm({
-      ...DEFAULT_PACKAGE_FORM,
-      department: deptParam ? Number(deptParam) : null
-    })
-    setEditingPackageId(null)
-    setPackageError(null)
-    setPackageFieldErrors({})
-  }
+  const renewRows = (renewMode ? [...subscriptions] : []).sort(
+    (a: any, b: any) => new Date(a.end_date).getTime() - new Date(b.end_date).getTime(),
+  )
 
-  const openCreatePackageModal = () => {
-    resetPackageForm()
-    setPackageModalOpen(true)
-  }
-
-  const openEditPackageModal = (pkg: SubscriptionPackage) => {
-    setEditingPackageId(pkg.id)
-    setPackageError(null)
-    setPackageForm({
-      name: pkg.name,
-      description: pkg.description || "",
-      price: pkg.price,
-      new_price: pkg.new_price || pkg.price,
-      renewal_price: pkg.renewal_price || "",
-      package_type: pkg.package_type || "monthly",
-      duration_type: pkg.duration_type,
-      duration_value: pkg.duration_value,
-      max_athletes: pkg.max_athletes,
-      tag: pkg.tag,
-      order: pkg.order,
-      is_active: pkg.is_active,
-      featuresText: (pkg.features || []).join("\n"),
-      department: pkg.department ?? null,
-    })
-    setPackageModalOpen(true)
-  }
-
-  const closePackageModal = () => {
-    if (packageSubmitting) return
-    setPackageModalOpen(false)
-    resetPackageForm()
-  }
-
-  const buildPackagePayload = () => {
-    const features = packageForm.featuresText
-      .split("\n")
-      .map((line) => line.trim())
-      .filter(Boolean)
-
-    return {
-      name: packageForm.name.trim(),
-      description: packageForm.description.trim(),
-      price: packageForm.price || packageForm.new_price,
-      new_price: packageForm.new_price || packageForm.price,
-      renewal_price: packageForm.renewal_price || "0.00",
-      package_type: packageForm.package_type,
-      duration_type: packageForm.duration_type,
-      duration_value: packageForm.duration_value,
-      max_athletes: packageForm.max_athletes,
-      tag: packageForm.tag,
-      order: packageForm.order,
-      is_active: packageForm.is_active,
-      features,
-      department: packageForm.department || null,
-    }
-  }
-
-  const submitPackage = async (e: FormEvent) => {
-    e.preventDefault()
-    const nextFieldErrors: Record<string, string> = {}
-    if (!packageForm.name.trim()) nextFieldErrors.name = "اسم الباقة مطلوب"
-    
-    const priceVal = packageForm.price || packageForm.new_price
-    if (!priceVal || Number(priceVal) <= 0) {
-      nextFieldErrors.price = "السعر الأساسي مطلوب ويجب أن يكون أكبر من صفر"
-    }
-    if (packageForm.new_price && Number(packageForm.new_price) < 0) {
-      nextFieldErrors.new_price = "سعر الاشتراك الجديد لا يمكن أن يكون سالباً"
-    }
-    if (packageForm.renewal_price && Number(packageForm.renewal_price) < 0) {
-      nextFieldErrors.renewal_price = "سعر التجديد لا يمكن أن يكون سالباً"
-    }
-
-    if (!packageForm.duration_value || packageForm.duration_value < 1) nextFieldErrors.duration_value = "المدة يجب أن تكون 1 أو أكثر"
-    if (!packageForm.max_athletes || packageForm.max_athletes < 1) nextFieldErrors.max_athletes = "أقصى عدد يجب أن يكون 1 أو أكثر"
-    if (packageForm.order < 0) nextFieldErrors.order = "الترتيب لا يمكن أن يكون سالباً"
-
-    if (Object.keys(nextFieldErrors).length > 0) {
-      setPackageFieldErrors(nextFieldErrors)
-      setPackageError("يرجى مراجعة الحقول المطلوبة")
-      return
-    }
-
-    try {
-      setPackageSubmitting(true)
-      setPackageError(null)
-      setPackageFieldErrors({})
-      const payload = buildPackagePayload()
-
-      if (editingPackageId) {
-        await api.put(`/packages/${editingPackageId}/`, payload)
-        setFlash({ type: "success", text: "تم تحديث الباقة بنجاح" })
-      } else {
-        await api.post("/packages/", payload)
-        setFlash({ type: "success", text: "تم إنشاء الباقة بنجاح" })
-      }
-
-      await queryClient.invalidateQueries({ queryKey: ["packages"] })
-      closePackageModal()
-    } catch (err: any) {
-      setPackageError(err?.message || "تعذر حفظ الباقة")
-    } finally {
-      setPackageSubmitting(false)
-    }
-  }
-
-  const deletePackage = async (pkg: SubscriptionPackage) => {
-    setDeleteTarget(pkg)
-  }
-
-  const confirmDeletePackage = async () => {
-    if (!deleteTarget) return
-
-    try {
-      await api.delete(`/packages/${deleteTarget.id}/`)
-      await queryClient.invalidateQueries({ queryKey: ["packages"] })
-      setFlash({ type: "success", text: "تم حذف الباقة بنجاح" })
-    } catch (err: any) {
-      setFlash({ type: "error", text: err?.message || "تعذر حذف الباقة" })
-    } finally {
-      setDeleteTarget(null)
-    }
-  }
+  const quickRenewPresetSub = quickRenewPreset ? quickRenewSubs.find((s) => String(s.id) === quickRenewSubId) ?? quickRenewSubs[0] : undefined
+  const quickRenewPresetPkg = quickRenewPresetSub ? packages.find((p) => p.name === quickRenewPresetSub.package_name) : undefined
+  const quickRenewAmount =
+    quickRenewPackage?.amount ??
+    Number(quickRenewPresetPkg?.renewal_price || quickRenewPresetPkg?.price || quickRenewPresetSub?.amount || 0)
+  const quickRenewMonths = quickRenewPackage
+    ? normalizeRenewMonths(quickRenewPackage.durationType, quickRenewPackage.durationValue)
+    : quickRenewPresetPkg
+      ? normalizeRenewMonths(quickRenewPresetPkg.duration_type, quickRenewPresetPkg.duration_value)
+      : 1
+  const quickRenewAthleteName =
+    quickRenewAthlete && !quickRenewPreset
+      ? athleteOptions.find((a) => a.id === Number(quickRenewAthlete))?.full_name || ""
+      : ""
 
   return (
     <motion.div className="space-y-8 overflow-hidden" dir="rtl" variants={containerVariants} initial="hidden" animate="visible">
@@ -624,16 +504,19 @@ export default function MembershipsPage() {
           <p className="text-muted-foreground mt-1 text-sm">تجديد، متابعة، وإدارة الباقات المالية للرياضيين.</p>
         </div>
         <div className="flex items-center gap-3 w-full md:w-auto">
+          {renewMode && (
+            <div className="rounded-2xl border border-primary/25 bg-primary/5 px-4 py-3 text-sm font-bold text-primary">
+              وضع التجديد — اختر اشتراكاً ثم اضغط "تجديد" لتمديد المدة. الباقات المعتمدة للتجديد أدناه.
+            </div>
+          )}
           <Can action="packages:create">
-            <Button
-              size="lg"
-              variant="outline"
-              className="w-full md:w-auto border-primary text-primary hover:bg-primary/5 rounded-xl font-bold"
-              onClick={openCreatePackageModal}
+            <Link
+              to={`/dashboard/plans${deptParam ? `?department=${deptParam}` : ""}`}
+              className="inline-flex items-center justify-center gap-2 rounded-xl border border-primary text-primary hover:bg-primary/5 px-4 py-2.5 text-sm font-bold"
             >
               <PlusCircle className="w-5 h-5" />
-              إضافة باقة
-            </Button>
+              إدارة الباقات
+            </Link>
           </Can>
           <Can action="subscriptions:create">
             <Button
@@ -710,16 +593,6 @@ export default function MembershipsPage() {
                   </div>
 
                   <div className="space-y-2 mt-auto">
-                    <div className="flex items-center justify-between gap-1">
-                      <Can action="packages:update">
-                        <div className="flex items-center gap-1">
-                          <Button type="button" variant="ghost" size="xs" className="h-7 text-xs text-muted-foreground hover:text-foreground px-2" onClick={() => openEditPackageModal(pkg.raw)}>
-                            <Pencil className="w-3.5 h-3.5 mr-1" /> تعديل
-                          </Button>
-
-                        </div>
-                      </Can>
-                    </div>
                     <Can action="subscriptions:renew">
                       <button
                         onClick={() => openQuickRenew({
@@ -745,22 +618,16 @@ export default function MembershipsPage() {
           })}
 
           <Can action="packages:create">
-            <motion.button
-              type="button"
-              variants={cardVariants}
-              custom={pkgList.length + 1}
-              initial="hidden"
-              whileInView="visible"
-              viewport={{ once: true, margin: "-50px" }}
-              onClick={openCreatePackageModal}
+            <Link
+              to={`/dashboard/plans${deptParam ? `?department=${deptParam}` : ""}`}
               className="rounded-2xl border-2 border-dashed border-primary/30 bg-primary/5 hover:bg-primary/10 transition-all duration-300 h-[280px] flex flex-col items-center justify-center gap-2 p-5"
             >
               <div className="w-10 h-10 rounded-full bg-primary/10 text-primary flex items-center justify-center">
                 <PlusCircle className="w-5 h-5" />
               </div>
-              <p className="font-bold text-sm text-primary">إضافة باقة جديدة</p>
-              <p className="text-[11px] text-muted-foreground text-center">إنشاء باقة جديدة مع تحديد الأسعار والفترات والخصائص</p>
-            </motion.button>
+              <p className="font-bold text-sm text-primary">إدارة الباقات</p>
+              <p className="text-[11px] text-muted-foreground text-center">إنشاء وتعديل الباقات والأسعار من صفحة الباقات</p>
+            </Link>
           </Can>
         </div>
       </section>
@@ -890,6 +757,18 @@ export default function MembershipsPage() {
                               </Button>
                             </Can>
                           </div>
+                        ) : renewMode ? (
+                          <button
+                            type="button"
+                            onClick={(e) => {
+                              e.stopPropagation()
+                              void openQuickRenewFromRow(sub)
+                            }}
+                            className="inline-flex items-center gap-1 rounded-lg bg-secondary/10 text-secondary border border-secondary/15 px-3 py-1.5 text-xs font-bold hover:bg-secondary/20 transition-colors"
+                          >
+                            <RefreshCw className="w-3.5 h-3.5" />
+                            تجديد
+                          </button>
                         ) : (
                           <button
                             className="p-1.5 text-muted-foreground hover:text-primary transition-colors rounded-lg hover:bg-surface-container"
@@ -958,21 +837,6 @@ export default function MembershipsPage() {
         </motion.div>
       </section>
 
-      {deleteTarget && (
-        <div className="fixed inset-0 z-50 bg-black/50 p-4 flex items-center justify-center">
-          <div className="w-full max-w-md rounded-2xl border border-border bg-card p-5 space-y-4">
-            <h3 className="text-lg font-bold">تأكيد الحذف</h3>
-            <p className="text-sm text-muted-foreground">
-              هل تريد حذف باقة <span className="font-semibold text-foreground">{deleteTarget.name}</span>؟ لا يمكن التراجع بعد التنفيذ.
-            </p>
-            <div className="flex justify-end gap-2">
-              <Button type="button" variant="ghost" onClick={() => setDeleteTarget(null)}>إلغاء</Button>
-              <Button type="button" variant="destructive" onClick={confirmDeletePackage}>حذف</Button>
-            </div>
-          </div>
-        </div>
-      )}
-
       {rejectTarget && (
         <div className="fixed inset-0 z-50 bg-black/50 p-4 flex items-center justify-center" onClick={() => setRejectTarget(null)}>
           <div className="w-full max-w-md rounded-2xl border border-border bg-card p-5 space-y-4" onClick={(e) => e.stopPropagation()}>
@@ -1007,252 +871,6 @@ export default function MembershipsPage() {
               </Button>
             </div>
           </div>
-        </div>
-      )}
-
-      {packageModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/50 p-4 flex items-center justify-center backdrop-blur-sm">
-          <form
-            onSubmit={submitPackage}
-            className="w-full max-w-2xl max-h-[90vh] overflow-y-auto rounded-3xl border border-border bg-card p-6 md:p-8 space-y-6 shadow-2xl relative"
-          >
-            <div className="flex items-center justify-between border-b border-border/20 pb-4">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center">
-                  <PlusCircle className="w-5 h-5" />
-                </div>
-                <h3 className="text-xl font-extrabold text-foreground">
-                  {editingPackageId ? "تعديل الباقة" : "إضافة باقة جديدة"}
-                </h3>
-              </div>
-              <button
-                type="button"
-                onClick={closePackageModal}
-                aria-label="إغلاق"
-                className="text-muted-foreground hover:text-foreground transition-colors p-1 rounded-lg hover:bg-surface-container"
-              >
-                <X className="w-5 h-5" />
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              {/* Name & Academy */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label htmlFor="package-name" className="mb-1.5 block text-xs font-bold text-muted-foreground">اسم الباقة <span className="text-error">*</span></label>
-                  <input
-                    id="package-name"
-                    value={packageForm.name}
-                    onChange={(e) => {
-                      setPackageForm((prev) => ({ ...prev, name: e.target.value }))
-                      setPackageFieldErrors((prev) => ({ ...prev, name: "" }))
-                    }}
-                    placeholder="مثال: الباقة الذهبية السنوية"
-                    className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                  />
-                  {packageFieldErrors.name && <p className="mt-1 text-[11px] text-error font-medium">{packageFieldErrors.name}</p>}
-                </div>
-
-                <div>
-                  <label htmlFor="package-department" className="mb-1.5 block text-xs font-bold text-muted-foreground">الأكاديمية المتاحة لها</label>
-                  <select
-                    id="package-department"
-                    value={packageForm.department ?? ""}
-                    onChange={(e) => setPackageForm((prev) => ({ ...prev, department: e.target.value ? Number(e.target.value) : null }))}
-                    disabled={!!deptParam}
-                    className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
-                  >
-                    <option value="">جميع الأكاديميات (باقة عامة)</option>
-                    {departments.map((d) => (
-                      <option key={d.id} value={d.id}>{d.name_ar}</option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              {/* Pricing Card Section */}
-              <div className="p-4 rounded-2xl border border-border/40 bg-surface-container-lowest/50 space-y-4">
-                <p className="text-xs font-bold text-primary">إعدادات التسعير (د.ل)</p>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label htmlFor="package-new-price" className="mb-1.5 block text-xs font-bold text-muted-foreground">سعر الاشتراك الجديد (أول مرة) <span className="text-error">*</span></label>
-                    <div className="relative">
-                      <input
-                        id="package-new-price"
-                        value={packageForm.new_price}
-                        onChange={(e) => {
-                          const val = e.target.value
-                          setPackageForm((prev) => ({ ...prev, new_price: val, price: val }))
-                          setPackageFieldErrors((prev) => ({ ...prev, price: "" }))
-                        }}
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        placeholder="0.00"
-                        className="w-full bg-surface-container-low border border-border rounded-xl pl-10 pr-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                      />
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-semibold">د.ل</span>
-                    </div>
-                    {packageFieldErrors.price && <p className="mt-1 text-[11px] text-error font-medium">{packageFieldErrors.price}</p>}
-                  </div>
-
-                  <div>
-                    <label htmlFor="package-renewal-price" className="mb-1.5 block text-xs font-bold text-muted-foreground">سعر التجديد (اختياري)</label>
-                    <div className="relative">
-                      <input
-                        id="package-renewal-price"
-                        value={packageForm.renewal_price}
-                        onChange={(e) => {
-                          setPackageForm((prev) => ({ ...prev, renewal_price: e.target.value }))
-                          setPackageFieldErrors((prev) => ({ ...prev, renewal_price: "" }))
-                        }}
-                        type="number"
-                        min="0"
-                        step="0.01"
-                        placeholder="0.00"
-                        className="w-full bg-surface-container-low border border-border rounded-xl pl-10 pr-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                      />
-                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs text-muted-foreground font-semibold">د.ل</span>
-                    </div>
-                    {packageFieldErrors.renewal_price && <p className="mt-1 text-[11px] text-error font-medium">{packageFieldErrors.renewal_price}</p>}
-                  </div>
-                </div>
-              </div>
-
-              {/* Description */}
-              <div>
-                <label htmlFor="package-description" className="mb-1.5 block text-xs font-bold text-muted-foreground">وصف الباقة</label>
-                <textarea
-                  id="package-description"
-                  value={packageForm.description}
-                  onChange={(e) => setPackageForm((prev) => ({ ...prev, description: e.target.value }))}
-                  rows={2}
-                  placeholder="اكتب وصفاً موجزاً للباقة وما تغطيه..."
-                  className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all resize-none"
-                />
-              </div>
-
-              {/* Duration & Capacity Section */}
-              <div className="p-4 rounded-2xl border border-border/40 bg-surface-container-lowest/50 space-y-4">
-                <p className="text-xs font-bold text-primary">المدة والخصائص للرياضيين</p>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                  <div>
-                    <label htmlFor="package-duration-type" className="mb-1.5 block text-xs font-bold text-muted-foreground">وحدة المدة</label>
-                    <select
-                      id="package-duration-type"
-                      value={packageForm.duration_type}
-                      onChange={(e) => setPackageForm((prev) => ({ ...prev, duration_type: e.target.value as "weeks" | "months" }))}
-                      className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer"
-                    >
-                      <option value="weeks">أسابيع</option>
-                      <option value="months">أشهر</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label htmlFor="package-duration" className="mb-1.5 block text-xs font-bold text-muted-foreground">عدد الفترات <span className="text-error">*</span></label>
-                    <input
-                      id="package-duration"
-                      type="number"
-                      min="1"
-                      value={packageForm.duration_value}
-                      onChange={(e) => {
-                        setPackageForm((prev) => ({ ...prev, duration_value: Number(e.target.value) || 1 }))
-                        setPackageFieldErrors((prev) => ({ ...prev, duration_value: "" }))
-                      }}
-                      placeholder="مثال: 3"
-                      className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                    />
-                    {packageFieldErrors.duration_value && <p className="mt-1 text-[11px] text-error font-medium">{packageFieldErrors.duration_value}</p>}
-                  </div>
-
-                  <div>
-                    <label htmlFor="package-max-athletes" className="mb-1.5 block text-xs font-bold text-muted-foreground">عدد الرياضيين <span className="text-error">*</span></label>
-                    <input
-                      id="package-max-athletes"
-                      type="number"
-                      min="1"
-                      value={packageForm.max_athletes}
-                      onChange={(e) => {
-                        setPackageForm((prev) => ({ ...prev, max_athletes: Number(e.target.value) || 1 }))
-                        setPackageFieldErrors((prev) => ({ ...prev, max_athletes: "" }))
-                      }}
-                      placeholder="مثال: 1"
-                      className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                    />
-                    {packageFieldErrors.max_athletes && <p className="mt-1 text-[11px] text-error font-medium">{packageFieldErrors.max_athletes}</p>}
-                  </div>
-                </div>
-              </div>
-
-              {/* Tag, Order & Status */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 items-end">
-                <div>
-                  <label htmlFor="package-tag" className="mb-1.5 block text-xs font-bold text-muted-foreground">وسم الباقة</label>
-                  <select
-                    id="package-tag"
-                    value={packageForm.tag}
-                    onChange={(e) => setPackageForm((prev) => ({ ...prev, tag: e.target.value as "discount" | "special" | "normal" }))}
-                    className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer"
-                  >
-                    <option value="normal">عادي</option>
-                    <option value="special">مميز (الأكثر طلباً)</option>
-                    <option value="discount">خصم</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label htmlFor="package-order" className="mb-1.5 block text-xs font-bold text-muted-foreground">ترتيب الظهور</label>
-                  <input
-                    id="package-order"
-                    type="number"
-                    min="0"
-                    value={packageForm.order}
-                    onChange={(e) => {
-                      setPackageForm((prev) => ({ ...prev, order: Number(e.target.value) || 0 }))
-                      setPackageFieldErrors((prev) => ({ ...prev, order: "" }))
-                    }}
-                    className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                  />
-                  {packageFieldErrors.order && <p className="mt-1 text-[11px] text-error font-medium">{packageFieldErrors.order}</p>}
-                </div>
-
-                <div className="flex items-center h-10 pr-2">
-                  <label className="flex items-center gap-2.5 cursor-pointer select-none text-sm font-semibold">
-                    <input
-                      type="checkbox"
-                      checked={packageForm.is_active}
-                      onChange={(e) => setPackageForm((prev) => ({ ...prev, is_active: e.target.checked }))}
-                      className="w-4.5 h-4.5 accent-primary rounded cursor-pointer"
-                    />
-                    الباقة مفعلة ونشطة
-                  </label>
-                </div>
-              </div>
-
-              {/* Features */}
-              <div>
-                <label htmlFor="package-features" className="mb-1.5 block text-xs font-bold text-muted-foreground">ميزات الباقة (كل سطر = ميزة منفصلة)</label>
-                <textarea
-                  id="package-features"
-                  value={packageForm.featuresText}
-                  onChange={(e) => setPackageForm((prev) => ({ ...prev, featuresText: e.target.value }))}
-                  rows={3}
-                  placeholder="مثال:&#10;دخول غير محدود لصالة الرياضة&#10;جلسة تدريب خاصة واحدة شهرياً"
-                  className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all"
-                />
-              </div>
-            </div>
-
-            {packageError && <p className="text-xs text-error font-bold">{packageError}</p>}
-
-            <div className="flex justify-end gap-3 border-t border-border/20 pt-4">
-              <Button type="button" variant="ghost" onClick={closePackageModal}>إلغاء</Button>
-              <Button type="submit" disabled={packageSubmitting} className="bg-primary text-primary-foreground hover:bg-primary/95 px-5">
-                {packageSubmitting ? "جارٍ الحفظ..." : "حفظ الباقة"}
-              </Button>
-            </div>
-          </form>
         </div>
       )}
 
@@ -1424,7 +1042,7 @@ export default function MembershipsPage() {
         </div>
       )}
 
-      {quickRenewPackage && (
+      {(quickRenewPackage || quickRenewPreset) && (
         <div className="fixed inset-0 z-50 bg-black/50 p-4 flex items-center justify-center" onClick={closeQuickRenew}>
           <form
             className="w-full max-w-xl rounded-2xl border border-border bg-card p-5 space-y-4"
@@ -1432,58 +1050,101 @@ export default function MembershipsPage() {
             onSubmit={submitQuickRenew}
           >
             <div className="flex items-center justify-between">
-              <h3 className="text-lg font-bold">تجديد سريع - {quickRenewPackage.title}</h3>
+              <h3 className="text-lg font-bold">
+                {quickRenewPackage ? `تجديد سريع - ${quickRenewPackage.title}` : "تجديد الاشتراك"}
+              </h3>
               <button type="button" onClick={closeQuickRenew}><X className="w-5 h-5 text-muted-foreground" /></button>
             </div>
 
             <div className="rounded-xl border border-border bg-surface-container-low p-3 text-sm">
-              <p>القيمة: <span className="font-semibold">{quickRenewPackage.amount.toLocaleString("ar-SA-u-nu-latn")} د.ل</span></p>
+              <p>القيمة: <span className="font-semibold">{quickRenewAmount.toLocaleString("ar-SA-u-nu-latn")} د.ل</span></p>
               <p className="text-muted-foreground text-xs mt-1">
-                مدة التجديد المعتمدة: {normalizeRenewMonths(quickRenewPackage.durationType, quickRenewPackage.durationValue)} شهر
+                مدة التجديد المعتمدة: {quickRenewMonths} شهر
               </p>
             </div>
 
             <div>
-              <label className="mb-1 block text-xs text-muted-foreground">اختر الرياضي</label>
+              <label className="mb-1 block text-xs text-muted-foreground">طريقة الدفع</label>
               <select
                 className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2 text-sm"
-                value={quickRenewAthlete}
-                onChange={(e) => {
-                  setQuickRenewAthlete(e.target.value)
-                  void loadAthleteSubscriptions(e.target.value)
-                }}
-                required
+                value={quickRenewPaymentMethod}
+                onChange={(e) => setQuickRenewPaymentMethod(e.target.value as "cash" | "bank_transfer")}
               >
-                <option value="">اختر رياضي</option>
-                {athleteOptions.map((athlete) => (
-                  <option key={athlete.id} value={String(athlete.id)}>
-                    {athlete.full_name} ({athlete.membership_number})
-                  </option>
-                ))}
+                <option value="cash">نقدي</option>
+                <option value="bank_transfer">تحويل مصرفي</option>
               </select>
             </div>
 
-            {quickRenewAthlete && (
+            {quickRenewPaymentMethod === "bank_transfer" && (
               <div>
-                <label className="mb-1 block text-xs text-muted-foreground">الاشتراك المستهدف</label>
-                {quickRenewLoadingSubs ? (
-                  <div className="rounded-xl border border-border bg-surface-container-low p-3 text-xs text-muted-foreground">جاري تحميل الاشتراكات...</div>
-                ) : (
+                <label className="mb-1 block text-xs text-muted-foreground">إيصال التحويل (PDF اختياري)</label>
+                <input
+                  type="file"
+                  accept="application/pdf,.pdf"
+                  className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2 text-sm"
+                  onChange={(e) => setQuickRenewInvoice(e.target.files?.[0] || null)}
+                />
+              </div>
+            )}
+
+            {quickRenewPreset ? (
+              <div className="rounded-xl border border-border bg-surface-container-low p-3 text-sm space-y-1.5">
+                <p className="flex items-center justify-between">
+                  <span className="text-muted-foreground text-xs">الرياضي</span>
+                  <span className="font-semibold">{quickRenewPresetSub?.athlete_name || quickRenewAthleteName || quickRenewAthlete}</span>
+                </p>
+                <p className="flex items-center justify-between">
+                  <span className="text-muted-foreground text-xs">الاشتراك المراد تجديده</span>
+                  <span className="font-semibold">
+                    {quickRenewPresetSub?.package_name || "بدون باقة"} {quickRenewPresetSub ? `- ينتهي ${formatDate(quickRenewPresetSub.end_date)}` : ""}
+                  </span>
+                </p>
+              </div>
+            ) : (
+              <>
+                <div>
+                  <label className="mb-1 block text-xs text-muted-foreground">اختر الرياضي</label>
                   <select
                     className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2 text-sm"
-                    value={quickRenewSubId}
-                    onChange={(e) => setQuickRenewSubId(e.target.value)}
+                    value={quickRenewAthlete}
+                    onChange={(e) => {
+                      setQuickRenewAthlete(e.target.value)
+                      void loadAthleteSubscriptions(e.target.value)
+                    }}
                     required
                   >
-                    <option value="">اختر اشتراك</option>
-                    {quickRenewSubs.map((sub) => (
-                      <option key={sub.id} value={String(sub.id)}>
-                        {sub.package_name} - {statusMap[sub.status]?.label || sub.status} - ينتهي {formatDate(sub.end_date)}
+                    <option value="">اختر رياضي</option>
+                    {athleteOptions.map((athlete) => (
+                      <option key={athlete.id} value={String(athlete.id)}>
+                        {athlete.full_name} ({athlete.membership_number})
                       </option>
                     ))}
                   </select>
+                </div>
+
+                {quickRenewAthlete && (
+                  <div>
+                    <label className="mb-1 block text-xs text-muted-foreground">الاشتراك المستهدف</label>
+                    {quickRenewLoadingSubs ? (
+                      <div className="rounded-xl border border-border bg-surface-container-low p-3 text-xs text-muted-foreground">جاري تحميل الاشتراكات...</div>
+                    ) : (
+                      <select
+                        className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2 text-sm"
+                        value={quickRenewSubId}
+                        onChange={(e) => setQuickRenewSubId(e.target.value)}
+                        required
+                      >
+                        <option value="">اختر اشتراك</option>
+                        {quickRenewSubs.map((sub) => (
+                          <option key={sub.id} value={String(sub.id)}>
+                            {sub.package_name} - {statusMap[sub.status]?.label || sub.status} - ينتهي {formatDate(sub.end_date)}
+                          </option>
+                        ))}
+                      </select>
+                    )}
+                  </div>
                 )}
-              </div>
+              </>
             )}
 
             {quickRenewError && <p className="text-xs text-error">{quickRenewError}</p>}

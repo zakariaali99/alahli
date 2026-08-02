@@ -25,12 +25,16 @@ def is_recognition_staff(user):
 def scope_by_academy(user, queryset, academy_field="department", request=None):
     if is_super_admin(user):
         return queryset
-    if user and user.is_authenticated and getattr(user, "academy", None):
-        return queryset.filter(**{academy_field: user.academy})
-    if request and user and user.is_authenticated and getattr(user, "role", None) == "special_manager":
-        dept_id = request.query_params.get("department")
+    if not (user and user.is_authenticated):
+        return queryset
+    # Special managers can switch between academies via ?department=,
+    # which must take precedence over any academy set on their account.
+    if user.role == "special_manager":
+        dept_id = request.query_params.get("department") if request else None
         if dept_id:
             return queryset.filter(**{academy_field: dept_id})
+    if getattr(user, "academy", None):
+        return queryset.filter(**{academy_field: user.academy})
     return queryset
 
 

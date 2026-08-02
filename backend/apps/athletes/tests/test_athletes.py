@@ -9,6 +9,7 @@ from django.contrib.auth import authenticate
 from apps.accounts.tests.factories import AthleteFactory, DepartmentFactory, UserFactory
 from apps.athletes.models import Athlete
 from apps.accounts.models import User
+from apps.athletes.models import RegistrationRequest
 
 
 @pytest.fixture
@@ -203,3 +204,58 @@ class TestRegistrationAPI:
             notification_type="new_registration",
             entity_id=response.data["registration_id"]
         )
+
+
+@pytest.mark.django_db
+class TestParentUpdate:
+    def _register_parent(self, api_client, phone="0914444444"):
+        response = api_client.post("/api/auth/register/", {
+            "role": "parent",
+            "full_name": "ولي أمر قديم",
+            "phone": phone,
+            "password": "password123",
+            "birth_day": 1,
+            "birth_month": 1,
+            "birth_year": 1980,
+            "residence": "طرابلس",
+        })
+        assert response.status_code == status.HTTP_201_CREATED
+        return response.data["registration_id"]
+
+    def test_update_parent(self, api_client, auth_client):
+        reg_id = self._register_parent(api_client)
+        response = auth_client.patch(f"/api/athletes/registrations/{reg_id}/parent-update/", {
+            "full_name": "ولي أمر محدث",
+            "whatsapp_phone": "0915555555",
+            "residence": "بنغازي",
+        })
+        assert response.status_code == status.HTTP_200_OK
+        reg = RegistrationRequest.objects.get(id=reg_id)
+        assert reg.user.full_name_ar == "ولي أمر محدث"
+        assert reg.user.phone == "0915555555"
+        assert reg.residence == "بنغازي"
+
+    def test_update_parent_rejects_non_parent(self, api_client, auth_client):
+        response = api_client.post("/api/auth/register/", {
+            "role": "athlete",
+            "full_name": "لاعب تعديل",
+            "phone": "0916666666",
+            "password": "password123",
+            "photo": "data:image/jpeg;base64,dGVzdA==",
+            "birth_day": 1,
+            "birth_month": 1,
+            "birth_year": 2000,
+        })
+        reg_id = response.data["registration_id"]
+        res = auth_client.patch(f"/api/athletes/registrations/{reg_id}/parent-update/", {
+            "full_name": "اسم جديد",
+        })
+        assert res.status_code == status.HTTP_400_BAD_REQUEST
+
+    def test_update_parent_duplicate_phone(self, api_client, auth_client):
+        UserFactory(phone="0917777777")
+        reg_id = self._register_parent(api_client)
+        response = auth_client.patch(f"/api/athletes/registrations/{reg_id}/parent-update/", {
+            "whatsapp_phone": "0917777777",
+        })
+        assert response.status_code == status.HTTP_400_BAD_REQUEST

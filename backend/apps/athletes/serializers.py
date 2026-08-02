@@ -141,6 +141,14 @@ class RegistrationRejectSerializer(serializers.Serializer):
     reason = serializers.CharField(required=True, allow_blank=False)
 
 
+class ParentUpdateSerializer(serializers.Serializer):
+    full_name = serializers.CharField(max_length=100, required=False, allow_blank=True)
+    whatsapp_phone = serializers.CharField(
+        max_length=20, required=False, allow_blank=True, validators=[validate_libyan_phone],
+    )
+    residence = serializers.CharField(max_length=200, required=False, allow_blank=True)
+
+
 class ParentAthleteSerializer(serializers.ModelSerializer):
     athlete_name = serializers.CharField(source="athlete.full_name", read_only=True)
     athlete_membership = serializers.CharField(source="athlete.membership_number", read_only=True)
@@ -195,10 +203,7 @@ class RegisterSerializer(serializers.Serializer):
         return value
 
     def validate(self, attrs):
-        if attrs["role"] == "athlete":
-            if not attrs.get("photo"):
-                raise serializers.ValidationError({"photo": "الصورة مطلوبة للرياضيين"})
-        else:
+        if attrs["role"] != "athlete":
             attrs.pop("photo", None)
 
         department_id = attrs.get("department")

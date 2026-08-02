@@ -23,6 +23,7 @@ export default function NewAthletes() {
   const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const deptParam = searchParams.get("department")
+  const sportParam = searchParams.get("sport")
   const [registrations, setRegistrations] = useState<RegistrationRequest[]>([])
   const [pendingSubscriptions, setPendingSubscriptions] = useState<Subscription[]>([])
   const [loading, setLoading] = useState(true)
@@ -37,17 +38,17 @@ export default function NewAthletes() {
 
   useEffect(() => {
     void fetchAll()
-  }, [deptParam])
+  }, [deptParam, sportParam])
 
   const fetchAll = async () => {
     setLoading(true)
     try {
       setActionError(null)
       const regsUrl = deptParam
-        ? `/athletes/registrations/?status=pending&department=${deptParam}`
+        ? `/athletes/registrations/?status=pending&department=${deptParam}${sportParam ? `&sport=${sportParam}` : ""}`
         : "/athletes/registrations/?status=pending"
       const subsUrl = deptParam
-        ? `/subscriptions/?status=pending&athlete__department=${deptParam}`
+        ? `/subscriptions/?status=pending&athlete__department=${deptParam}${sportParam ? `&athlete__sport=${sportParam}` : ""}`
         : "/subscriptions/?status=pending"
 
       const [regs, subs] = await Promise.all([

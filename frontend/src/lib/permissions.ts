@@ -63,8 +63,8 @@ const PERMISSIONS: Record<Action, Role[]> = {
   "subscriptions:renew": ["super_admin", "academy_manager", "special_manager"],
 
   "packages:create": ["super_admin", "academy_manager", "special_manager"],
-  "packages:update": ["super_admin"],
-  "packages:delete": ["super_admin"],
+  "packages:update": ["super_admin", "academy_manager", "special_manager"],
+  "packages:delete": ["super_admin", "academy_manager", "special_manager"],
 
   "departments:read": ["super_admin", "academy_manager", "special_manager", "reception", "trainer", "viewer"],
   "departments:create": ["super_admin"],

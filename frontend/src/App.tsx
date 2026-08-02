@@ -19,6 +19,7 @@ import Reports from "@/pages/Reports"
 
 import ManagerLayout from "@/pages/manager/ManagerLayout"
 import ManagerHome from "@/pages/manager/ManagerHome"
+import ManagerSports from "@/pages/manager/ManagerSports"
 import ManagerDashboard from "@/pages/manager/ManagerDashboard"
 
 import Settings from "@/pages/Settings"
@@ -33,7 +34,9 @@ import AdminNotifications from "@/pages/admin/AdminNotifications"
 import StaffManagement from "@/pages/admin/StaffManagement"
 import CoachesManagement from "@/pages/admin/CoachesManagement"
 import Parents from "@/pages/Parents"
+import ParentPage from "@/pages/ParentPage"
 import ExpiredMemberships from "@/pages/ExpiredMemberships"
+import Plans from "@/pages/admin/Plans"
 import { ToastProvider } from "@/lib/toast"
 import { ErrorBoundary } from "@/components/ui/error-boundary"
 import OfflineBar from "@/components/ui/offline-bar"
@@ -79,6 +82,8 @@ export default function App() {
                   <Route path="staff" element={<StaffManagement />} />
                   <Route path="coaches" element={<CoachesManagement />} />
                   <Route path="parents" element={<Parents />} />
+                  <Route path="parents/:id" element={<ParentPage />} />
+                  <Route path="plans" element={<Plans />} />
                   <Route path="notifications" element={<AdminNotifications />} />
                   <Route path="notification-preferences" element={<Notifications />} />
                   <Route path="admin-notifications" element={<Navigate to="/dashboard/notifications" replace />} />
@@ -92,6 +97,7 @@ export default function App() {
 
                 <Route path="/manager" element={<ManagerLayout />}>
                   <Route index element={<ManagerHome />} />
+                  <Route path=":academyId/sports" element={<ManagerSports />} />
                   <Route path=":academyId/dashboard" element={<ManagerDashboard />} />
                 </Route>
 

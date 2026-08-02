@@ -59,7 +59,9 @@ export default function AthletesPage() {
   const [selectAll, setSelectAll] = useState(false)
   const [searchParams] = useSearchParams()
   const deptParam = searchParams.get("department")
+  const sportParam = searchParams.get("sport")
   const [deptName, setDeptName] = useState("")
+  const [sportName, setSportName] = useState("")
 
   useEffect(() => {
     if (deptParam) {
@@ -68,6 +70,14 @@ export default function AthletesPage() {
         .catch(() => {})
     }
   }, [deptParam])
+
+  useEffect(() => {
+    if (sportParam) {
+      api.get(`/sports/${sportParam}/`)
+        .then((s: any) => setSportName(s.name_ar || ""))
+        .catch(() => {})
+    }
+  }, [sportParam])
 
   const toggleActiveMutation = useMutation({
     mutationFn: ({ id, is_active }: { id: number; is_active: boolean }) =>
@@ -108,6 +118,7 @@ export default function AthletesPage() {
     ...(searchQuery ? { search: searchQuery } : {}),
     ...(statusFilter !== "all" ? { is_active: statusFilter === "active" ? "true" : "false" } : {}),
     ...(deptParam ? { department: deptParam } : {}),
+    ...(sportParam ? { sport: sportParam } : {}),
   })
 
   const [showSyncModal, setShowSyncModal] = useState(false)
@@ -177,6 +188,7 @@ export default function AthletesPage() {
         <div className="bg-primary/10 border border-primary/20 rounded-2xl p-4 flex items-center justify-between text-primary">
           <span className="font-extrabold text-sm">
             عرض رياضيي {deptName || deptParam}
+            {sportParam ? ` ← ${sportName || sportParam}` : ""}
           </span>
         </div>
       )}
@@ -197,7 +209,7 @@ export default function AthletesPage() {
             تحديث
           </Button>
           <Can action="athletes:create">
-            <Link to={`/dashboard/athletes/add${deptParam ? `?department=${deptParam}` : ""}`}>
+            <Link to={`/dashboard/athletes/add${deptParam ? `?department=${deptParam}${sportParam ? `&sport=${sportParam}` : ""}` : ""}`}>
               <Button size="lg" className="bg-gradient-to-r from-primary to-primary-container text-primary-foreground shadow-lg shadow-primary/20 hover:shadow-primary/30">
                 <Plus className="w-4 h-4" />
                 إضافة رياضي جديد

@@ -13,7 +13,7 @@ from apps.accounts.tests.factories import (
 from apps.departments.models import Group, Sport
 from apps.notifications.models import Notification
 from apps.packages.models import SubscriptionPackage
-from apps.subscriptions.models import Subscription
+from apps.subscriptions.models import Renewal, Subscription
 
 
 @pytest.fixture
@@ -75,6 +75,19 @@ class TestSubscriptionRenew:
             "amount": "300.00",
         })
         assert response.status_code == status.HTTP_200_OK
+
+    def test_renew_with_payment_method(self, auth_client):
+        sub = SubscriptionFactory()
+        response = auth_client.post(f"/api/subscriptions/{sub.id}/renew/", {
+            "months": 3,
+            "amount": "150.00",
+            "payment_method": "bank_transfer",
+        })
+        assert response.status_code == status.HTTP_200_OK
+        renewal = Renewal.objects.get(subscription=sub)
+        assert renewal.payment_method == "bank_transfer"
+        sub.refresh_from_db()
+        assert sub.payment_method == "bank_transfer"
 
     def test_renew_invalid_months(self, auth_client):
         sub = SubscriptionFactory()

@@ -11,7 +11,6 @@ class RenewalSerializer(serializers.ModelSerializer):
         fields = "__all__"
         read_only_fields = ["created_by"]
 
-
 class SubscriptionSerializer(serializers.ModelSerializer):
     renewals = RenewalSerializer(many=True, read_only=True)
     athlete_name = serializers.CharField(source="athlete.full_name", read_only=True)
@@ -76,6 +75,16 @@ class SubscriptionSerializer(serializers.ModelSerializer):
 class RenewSubscriptionSerializer(serializers.Serializer):
     months = serializers.ChoiceField(choices=[1, 3, 6, 12])
     amount = serializers.DecimalField(max_digits=10, decimal_places=2)
+    payment_method = serializers.ChoiceField(choices=["cash", "bank_transfer"], default="cash")
+    invoice_pdf = serializers.FileField(required=False, allow_null=True)
+
+    def validate_invoice_pdf(self, value):
+        if value:
+            if not value.name.endswith(".pdf"):
+                raise serializers.ValidationError("Only PDF files are allowed")
+            if value.content_type != "application/pdf":
+                raise serializers.ValidationError("File must be a PDF")
+        return value
 
 
 class CheckoutSerializer(serializers.Serializer):

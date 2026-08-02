@@ -1,5 +1,5 @@
 import { useState } from "react"
-import { useSearchParams } from "react-router-dom"
+import { useSearchParams, useNavigate } from "react-router-dom"
 import { motion, type Variants } from "framer-motion"
 import {
   Users, Search, Filter, CheckCircle2,
@@ -61,8 +61,10 @@ function RegistrationStatusBadge({ status }: { status: Parent["registration_stat
 export default function ParentsPage() {
   const [search, setSearch] = useState("")
   const [statusFilter, setStatusFilter] = useState("all")
+  const navigate = useNavigate()
   const [searchParams] = useSearchParams()
   const deptParam = searchParams.get("department")
+  const sportParam = searchParams.get("sport")
   const [page, setPage] = useState(1)
   const PAGE_SIZE = 20
   const [showSyncModal, setShowSyncModal] = useState(false)
@@ -83,6 +85,7 @@ export default function ParentsPage() {
     page_size: String(PAGE_SIZE),
     role_choice: "parent",
     ...(deptParam ? { department: deptParam } : {}),
+    ...(sportParam ? { sport: sportParam } : {}),
   }
   if (statusFilter !== "all") params.status = statusFilter
 
@@ -198,7 +201,11 @@ export default function ParentsPage() {
               </tr>
             )}
             {!isLoading && parents.map((p) => (
-              <tr key={p.id} className="border-b border-border/50 hover:bg-surface-container-low/50">
+              <tr
+                key={p.id}
+                onClick={() => navigate(`/dashboard/parents/${p.id}${deptParam ? `?department=${deptParam}` : ""}`)}
+                className="border-b border-border/50 hover:bg-surface-container-low/50 cursor-pointer transition-colors"
+              >
                 <td className="px-4 py-3">
                   <div className="flex items-center gap-3">
                     <div className="flex h-9 w-9 items-center justify-center rounded-full bg-emerald-500/10 text-xs font-bold text-emerald-600">

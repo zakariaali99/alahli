@@ -16,25 +16,23 @@ from apps.accounts.permissions import (
     IsManagementOrAbove,
     IsManagerOrAbove,
     IsStaffOrAbove,
-    IsSuperAdmin,
     is_management_staff,
     is_staff_user,
     scope_by_academy,
 )
-from apps.accounts.serializers import UserSerializer
 from apps.accounts.validators import validate_libyan_phone
 from apps.subscriptions.models import Subscription
 
-from .filters import AthleteFilter
+from .filters import AthleteFilter, RegistrationRequestFilter
 from .models import Athlete, ParentAthlete, RegistrationRequest
 from .serializers import (
     AthleteDetailSerializer,
     AthleteListSerializer,
     ParentAthleteSerializer,
+    ParentUpdateSerializer,
     RegisterSerializer,
-    RegistrationApproveSerializer,
-    RegistrationRequestSerializer,
     RegistrationRejectSerializer,
+    RegistrationRequestSerializer,
 )
 
 
@@ -87,6 +85,9 @@ def register_view(request):
     residence = serializer.validated_data.get("residence", "")
     health_status = serializer.validated_data.get("health_status", "")
     whatsapp_phone = serializer.validated_data.get("whatsapp_phone", "")
+    if role == "parent":
+        # Al Aws parents provide a single WhatsApp number; reuse it as the login phone.
+        whatsapp_phone = whatsapp_phone or serializer.validated_data["phone"]
     parent_name = serializer.validated_data.get("parent_name", "")
     parent_phone = serializer.validated_data.get("parent_phone", "")
 
@@ -100,6 +101,13 @@ def register_view(request):
             or request.user.is_superuser
         )
     )
+
+    # Photo is optional for staff-created athlete accounts; required for public registration
+    if role == "athlete" and not photo_file and not is_staff_creator:
+        return Response(
+            {"photo": "الصورة مطلوبة للرياضيين"},
+            status=status.HTTP_400_BAD_REQUEST,
+        )
 
     sport_id = serializer.validated_data.get("sport")
 
@@ -176,6 +184,7 @@ def register_view(request):
         {
             "message": "تم التسجيل بنجاح",
             "registration_id": registration.id,
+            "user_id": user.id,
             "athlete_id": athlete.id if role == "athlete" and 'athlete' in locals() else None,
         },
         status=status.HTTP_201_CREATED,
@@ -314,11 +323,12 @@ class AthleteViewSet(viewsets.ModelViewSet):
 class RegistrationRequestViewSet(viewsets.ReadOnlyModelViewSet):
     serializer_class = RegistrationRequestSerializer
     permission_classes = [IsManagementOrAbove]
-    filterset_fields = ["status", "role_choice"]
+    filterset_class = RegistrationRequestFilter
 
     def get_queryset(self):
-        from apps.accounts.permissions import is_super_admin
         from django.db.models import Q
+
+        from apps.accounts.permissions import is_super_admin
         user = self.request.user
         qs = RegistrationRequest.objects.all().select_related(
             "user", "reviewed_by", "athlete", "athlete__department"
@@ -436,6 +446,53 @@ class RegistrationRequestViewSet(viewsets.ReadOnlyModelViewSet):
         return Response({"detail": "تم رفض طلب التسجيل", "registration_id": registration.id})
 
 
+    @transaction.atomic
+    @action(detail=True, methods=["patch"], url_path="parent-update")
+    def parent_update(self, request, pk=None):
+        registration = self.get_object()
+
+        if registration.role_choice != RegistrationRequest.RoleChoice.PARENT:
+            return Response(
+                {"detail": "هذا الإجراء مخصص لتعديل بيانات أولياء الأمور فقط"},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        serializer = ParentUpdateSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        user = registration.user
+        update_fields = []
+
+        if data.get("full_name") is not None and data["full_name"].strip():
+            first_name, last_name = _split_full_name(data["full_name"])
+            user.first_name_ar = first_name
+            user.last_name_ar = last_name
+            update_fields += ["first_name_ar", "last_name_ar"]
+
+        if data.get("whatsapp_phone") is not None:
+            phone = data["whatsapp_phone"]
+            if phone and User.objects.filter(phone=phone).exclude(pk=user.pk).exists():
+                return Response(
+                    {"detail": {"whatsapp_phone": "رقم الهاتف هذا مسجل بالفعل"}},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            user.phone = phone
+            user.whatsapp_phone = phone
+            update_fields += ["phone", "whatsapp_phone"]
+
+        if update_fields:
+            user.save(update_fields=update_fields)
+
+        if "residence" in data:
+            registration.residence = data["residence"]
+            registration.save(update_fields=["residence"])
+
+        return Response(
+            RegistrationRequestSerializer(registration, context={"request": request}).data
+        )
+
+
 class ParentAthleteViewSet(viewsets.ModelViewSet):
     serializer_class = ParentAthleteSerializer
     permission_classes = [IsAuthenticated]
@@ -445,15 +502,31 @@ class ParentAthleteViewSet(viewsets.ModelViewSet):
 
     @transaction.atomic
     def create(self, request, *args, **kwargs):
+        from apps.accounts.permissions import is_management_staff
+
+        staff_mode = is_management_staff(request.user)
+        parent_id = request.data.get("parent_id")
+
+        if staff_mode and parent_id and str(parent_id).isdigit():
+            parent = User.objects.filter(id=parent_id, role=User.Role.PARENT).first()
+            if not parent:
+                return Response({"detail": "ولي الأمر غير موجود"}, status=status.HTTP_400_BAD_REQUEST)
+        else:
+            parent = request.user
+
         athlete_id = request.data.get("athlete")
         if athlete_id and str(athlete_id).isdigit():
+            if staff_mode and parent_id and str(parent_id).isdigit():
+                existing = ParentAthlete.objects.filter(parent=parent, athlete_id=athlete_id).first()
+                if existing:
+                    return Response(ParentAthleteSerializer(existing).data)
             serializer = self.get_serializer(data={
                 "athlete": athlete_id,
                 "relationship": request.data.get("relationship", ""),
             })
             serializer.is_valid(raise_exception=True)
-            self.perform_create(serializer)
-            return Response(serializer.data, status=status.HTTP_201_CREATED)
+            link = serializer.save(parent=parent)
+            return Response(ParentAthleteSerializer(link).data, status=status.HTTP_201_CREATED)
 
         full_name = request.data.get("full_name")
         phone = request.data.get("phone")
@@ -487,22 +560,29 @@ class ParentAthleteViewSet(viewsets.ModelViewSet):
             except (ValueError, IndexError, TypeError):
                 return Response({"detail": "تنسيق الصورة غير صالح"}, status=status.HTTP_400_BAD_REQUEST)
 
+        sport_id = request.data.get("sport") or parent.preferred_sport_id
+        dept_id = parent.academy_id or request.data.get("department") or 5
+
         user = User.objects.create_user(
             phone=phone,
             first_name_ar=full_name,
             last_name_ar="",
             password=secrets.token_urlsafe(16),
             role="athlete",
-            residence=request.user.residence,
-            whatsapp_phone=request.user.phone,
-            is_active=False,
-            academy_id=request.user.academy_id or 5,
+            residence=parent.residence,
+            whatsapp_phone=parent.phone,
+            is_active=staff_mode,
+            academy_id=dept_id,
+            preferred_sport_id=sport_id if parent_id else None,
         )
         registration = RegistrationRequest.objects.create(
             user=user,
             role_choice=RegistrationRequest.RoleChoice.ATHLETE,
-            residence=request.user.residence,
+            residence=parent.residence,
             health_status=health_status,
+            status=RegistrationRequest.Status.APPROVED if staff_mode else RegistrationRequest.Status.PENDING,
+            reviewed_by=request.user if staff_mode else None,
+            reviewed_at=timezone.now() if staff_mode else None,
         )
 
         athlete = Athlete.objects.create(
@@ -511,18 +591,18 @@ class ParentAthleteViewSet(viewsets.ModelViewSet):
             birth_date=birth_date,
             gender="male",
             photo=photo_file,
-            residence=request.user.residence,
+            residence=parent.residence,
             health_status=health_status,
             notes="",
-            is_active=False,
+            is_active=staff_mode,
             registration=registration,
-            department_id=request.user.academy_id or 5,
-            sport=request.user.preferred_sport,
+            department_id=dept_id,
+            sport_id=sport_id,
         )
         user.athlete = athlete
         user.save(update_fields=["athlete"])
 
-        parent_link = ParentAthlete.objects.create(parent=request.user, athlete=athlete)
+        parent_link = ParentAthlete.objects.create(parent=parent, athlete=athlete)
         return Response(ParentAthleteSerializer(parent_link).data, status=status.HTTP_201_CREATED)
 
     def perform_create(self, serializer):
@@ -531,5 +611,24 @@ class ParentAthleteViewSet(viewsets.ModelViewSet):
     @action(detail=False, methods=["get"])
     def children(self, request):
         athletes = Athlete.objects.filter(parents__parent=request.user)
+        serializer = AthleteDetailSerializer(athletes, many=True, context={"request": request})
+        return Response(serializer.data)
+
+    @action(detail=False, methods=["get"])
+    def children_of(self, request):
+        from apps.accounts.permissions import is_management_staff
+
+        if not is_management_staff(request.user):
+            return Response({"detail": "لا تملك صلاحية الوصول"}, status=status.HTTP_403_FORBIDDEN)
+
+        parent_id = request.query_params.get("parent_id")
+        parent = User.objects.filter(id=parent_id, role=User.Role.PARENT).first() if parent_id else None
+        if not parent:
+            return Response({"detail": "ولي الأمر غير موجود"}, status=status.HTTP_404_NOT_FOUND)
+
+        dept_id = request.query_params.get("department")
+        athletes = Athlete.objects.filter(parents__parent=parent).select_related("department", "sport", "registration")
+        if dept_id:
+            athletes = athletes.filter(department_id=dept_id)
         serializer = AthleteDetailSerializer(athletes, many=True, context={"request": request})
         return Response(serializer.data)

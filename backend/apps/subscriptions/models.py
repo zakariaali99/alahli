@@ -55,6 +55,14 @@ class Renewal(models.Model):
     )
     amount = models.DecimalField(max_digits=10, decimal_places=2)
     months = models.IntegerField()
+    payment_method = models.CharField(
+        max_length=20,
+        choices=Subscription.PaymentMethod.choices,
+        default=Subscription.PaymentMethod.CASH,
+    )
+    invoice_pdf = models.FileField(
+        upload_to="renewals/", null=True, blank=True,
+    )
     renewal_date = models.DateField(auto_now_add=True)
     created_by = models.ForeignKey(
         "accounts.User", on_delete=models.SET_NULL, null=True, blank=True

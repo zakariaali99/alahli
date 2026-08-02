@@ -60,6 +60,8 @@ export default function AthleteProfilePage() {
   const [renewalMonths, setRenewalMonths] = React.useState(1)
   const [renewError, setRenewError] = React.useState<string | null>(null)
   const [priceType, setPriceType] = React.useState<"new" | "renewal">("renewal")
+  const [renewPaymentMethod, setRenewPaymentMethod] = React.useState<"cash" | "bank_transfer">("cash")
+  const [renewInvoice, setRenewInvoice] = React.useState<File | null>(null)
 
   const deleteMutation = useMutation({
     mutationFn: () => api.delete(`/athletes/${id}/`),
@@ -171,6 +173,8 @@ export default function AthleteProfilePage() {
         id: subs.id,
         months: renewalMonths,
         amount: renewalAmount,
+        payment_method: renewPaymentMethod,
+        invoice_pdf: renewInvoice,
       })
       toast.success("تم تجديد الاشتراك بنجاح")
       await queryClient.invalidateQueries({ queryKey: ["subscriptions"] })
@@ -182,6 +186,13 @@ export default function AthleteProfilePage() {
 
   const formatDate = (d: string) =>
     new Date(d).toLocaleDateString("ar-SA-u-nu-latn", { year: "numeric", month: "long", day: "numeric" })
+
+  const openRenewModal = () => {
+    setRenewError(null)
+    setRenewPaymentMethod("cash")
+    setRenewInvoice(null)
+    setShowRenewModal(true)
+  }
 
   const calcPercent = (start: string, end: string) => {
     const s = new Date(start).getTime()
@@ -249,7 +260,7 @@ export default function AthleteProfilePage() {
             <Button
               size="lg"
               className="bg-gradient-to-l from-primary to-primary/80 shadow-lg shadow-primary/20"
-              onClick={() => setShowRenewModal(true)}
+              onClick={openRenewModal}
             >
               <RefreshCw className="w-4 h-4" />
               تجديد الاشتراك
@@ -318,7 +329,7 @@ export default function AthleteProfilePage() {
           </div>
           <Can action="subscriptions:renew">
             <Button
-              onClick={() => setShowRenewModal(true)}
+              onClick={openRenewModal}
               className="bg-gradient-to-r from-primary to-primary-container text-primary-foreground shadow-lg shadow-primary/20 hover:shadow-xl shrink-0 h-11 px-6 font-extrabold rounded-xl"
             >
               <CreditCard className="w-4 h-4 ml-2" />
@@ -742,6 +753,30 @@ export default function AthleteProfilePage() {
               </div>
 
               {renewError && <p className="text-xs text-error font-bold">{renewError}</p>}
+
+              <div>
+                <label className="mb-1.5 block text-xs font-bold text-muted-foreground">طريقة الدفع</label>
+                <select
+                  className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+                  value={renewPaymentMethod}
+                  onChange={(e) => setRenewPaymentMethod(e.target.value as "cash" | "bank_transfer")}
+                >
+                  <option value="cash">نقدي</option>
+                  <option value="bank_transfer">تحويل مصرفي</option>
+                </select>
+              </div>
+
+              {renewPaymentMethod === "bank_transfer" && (
+                <div>
+                  <label className="mb-1.5 block text-xs font-bold text-muted-foreground">إيصال التحويل (PDF اختياري)</label>
+                  <input
+                    type="file"
+                    accept="application/pdf,.pdf"
+                    className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20"
+                    onChange={(e) => setRenewInvoice(e.target.files?.[0] || null)}
+                  />
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end gap-2 border-t border-border/20 pt-3">

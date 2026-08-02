@@ -5,7 +5,7 @@ from django.contrib.auth.hashers import make_password
 
 from apps.accounts.models import User
 from apps.athletes.models import Athlete
-from apps.departments.models import Department
+from apps.departments.models import Department, Sport
 from apps.subscriptions.models import Renewal, Subscription
 
 
@@ -33,6 +33,16 @@ class DepartmentFactory(factory.django.DjangoModelFactory):
     name = factory.Sequence(lambda n: f"Department {n}")
     name_ar = factory.Sequence(lambda n: f"القسم {n}")
     color = "#1487D4"
+    is_active = True
+
+
+class SportFactory(factory.django.DjangoModelFactory):
+    class Meta:
+        model = Sport
+
+    name = factory.Sequence(lambda n: f"Sport {n}")
+    name_ar = factory.Sequence(lambda n: f"رياضة {n}")
+    department = factory.SubFactory(DepartmentFactory)
     is_active = True
 
 

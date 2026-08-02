@@ -80,6 +80,7 @@ export default function ExpiredMembershipsPage() {
   const PAGE_SIZE = 20
   const [searchParams] = useSearchParams()
   const deptParam = searchParams.get("department")
+  const sportParam = searchParams.get("sport")
   const [showSyncModal, setShowSyncModal] = useState(false)
 
   const handleRefresh = async () => {
@@ -101,6 +102,7 @@ export default function ExpiredMembershipsPage() {
   }
   if (search) params.search = search
   if (deptParam) params.athlete__department = deptParam
+  if (sportParam) params.athlete__sport = sportParam
 
   const { data, isLoading, isFetching, refetch } = useQuery({
     queryKey: ["expired-memberships", params],
@@ -151,7 +153,7 @@ export default function ExpiredMembershipsPage() {
             <RefreshCw className="w-4 h-4" />
             تحديث
           </Button>
-          <Link to={`/dashboard/memberships${deptParam ? `?department=${deptParam}` : ""}`}>
+          <Link to={`/dashboard/memberships${deptParam ? `?department=${deptParam}` : ""}${sportParam ? `&sport=${sportParam}` : ""}`}>
             <Button size="sm" className="bg-gradient-to-r from-primary to-primary-container text-primary-foreground shadow-lg shadow-primary/20">
               <Dumbbell className="w-4 h-4" />
               إدارة الاشتراكات
@@ -291,7 +293,7 @@ export default function ExpiredMembershipsPage() {
                             <ExternalLink className="w-4 h-4" />
                           </button>
                         </Link>
-                        <Link to={`/dashboard/memberships?athlete=${sub.athlete}`}>
+                        <Link to={`/dashboard/memberships?athlete_id=${sub.athlete}${deptParam ? `&department=${deptParam}` : ""}${sportParam ? `&sport=${sportParam}` : ""}`}>
                           <button
                             title="تجديد الاشتراك"
                             className="px-3 py-1.5 rounded-lg bg-primary text-primary-foreground text-xs font-semibold hover:bg-primary/90 transition-colors"
