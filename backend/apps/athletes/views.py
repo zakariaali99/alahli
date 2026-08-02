@@ -345,7 +345,8 @@ class RegistrationRequestViewSet(viewsets.ReadOnlyModelViewSet):
             if dept_id:
                 return qs.filter(
                     Q(athlete__department=dept_id) |
-                    Q(athlete__isnull=True, user__academy=dept_id)
+                    Q(athlete__isnull=True, role_choice=RegistrationRequest.RoleChoice.PARENT, user__academy=dept_id) |
+                    Q(athlete__isnull=True, role_choice=RegistrationRequest.RoleChoice.PARENT, user__academy__isnull=True)
                 )
         return qs
 
@@ -561,7 +562,11 @@ class ParentAthleteViewSet(viewsets.ModelViewSet):
                 return Response({"detail": "تنسيق الصورة غير صالح"}, status=status.HTTP_400_BAD_REQUEST)
 
         sport_id = request.data.get("sport") or parent.preferred_sport_id
-        dept_id = parent.academy_id or request.data.get("department") or 5
+        dept_id = parent.academy_id or request.data.get("department")
+        if not dept_id:
+            from apps.departments.models import Department
+            dept = Department.objects.filter(name_ar__icontains="أوس").first() or Department.objects.order_by("id").first()
+            dept_id = dept.id if dept else None
 
         user = User.objects.create_user(
             phone=phone,

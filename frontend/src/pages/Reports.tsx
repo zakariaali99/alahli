@@ -79,7 +79,9 @@ export default function ReportsPage() {
   const fetchDepartments = async () => {
     try {
       const data = await api.get<Department[] | { results: Department[] }>("/departments/")
-      setDepartments(extractResults(data))
+      const list = extractResults(data)
+      setDepartments(list)
+      setSelectedAcademy((prev) => prev ?? list[0]?.id)
     } catch (e) {
       console.error(e)
     }

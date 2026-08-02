@@ -265,3 +265,55 @@ class TestParentUpdate:
             "whatsapp_phone": "0917777777",
         })
         assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+@pytest.mark.django_db
+class TestRegistrationScoping:
+    def _special_manager_client(self):
+        manager = UserFactory(role=User.Role.SPECIAL_MANAGER)
+        client = APIClient()
+        refresh = RefreshToken.for_user(manager)
+        client.credentials(HTTP_AUTHORIZATION=f"Bearer {refresh.access_token}")
+        return client
+
+    def _register_parent(self, api_client, phone, department=None):
+        payload = {
+            "role": "parent",
+            "full_name": f"ولي أمر {phone}",
+            "phone": phone,
+            "password": "password123",
+            "birth_day": 1,
+            "birth_month": 1,
+            "birth_year": 1980,
+            "residence": "طرابلس",
+        }
+        if department:
+            payload["department"] = department
+        response = api_client.post("/api/auth/register/", payload)
+        assert response.status_code == status.HTTP_201_CREATED
+        return response.data["registration_id"]
+
+    def test_special_manager_sees_parents_without_academy_in_any_department(self, api_client):
+        dept = DepartmentFactory()
+        client = self._special_manager_client()
+        self._register_parent(api_client, "0911111111")
+        self._register_parent(api_client, "0912222222", department=dept.id)
+
+        response = client.get("/api/athletes/registrations/", {"role_choice": "parent", "department": dept.id})
+        assert response.status_code == status.HTTP_200_OK
+        phones = {r["user_phone"] for r in response.data["results"]}
+        assert "0911111111" in phones
+        assert "0912222222" in phones
+
+    def test_special_manager_department_filters_registrations(self, api_client):
+        dept_a = DepartmentFactory()
+        dept_b = DepartmentFactory()
+        client = self._special_manager_client()
+        self._register_parent(api_client, "0913333333", department=dept_a.id)
+        self._register_parent(api_client, "0914444444", department=dept_b.id)
+
+        response = client.get("/api/athletes/registrations/", {"role_choice": "parent", "department": dept_a.id})
+        assert response.status_code == status.HTTP_200_OK
+        phones = {r["user_phone"] for r in response.data["results"]}
+        assert "0913333333" in phones
+        assert "0914444444" not in phones
