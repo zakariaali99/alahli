@@ -1,17 +1,41 @@
 from django.db import migrations, models
 
 def pin_and_enable_parents(apps, schema_editor):
+    Department = apps.get_model("departments", "Department")
     Sport = apps.get_model("departments", "Sport")
-    # Pin Karate and Cardio/Fitness, enable parents for Karate
-    for sport in Sport.objects.all():
-        name_norm = (sport.name_ar or "").replace("أ", "ا").replace("إ", "ا").replace("آ", "ا").lower()
-        if "كاراتيه" in name_norm or "karate" in (sport.name or "").lower():
-            sport.is_pinned = True
-            sport.supports_parents = True
-            sport.save()
-        elif "سويدي" in name_norm or "لياقة" in name_norm or "cardio" in (sport.name or "").lower() or "fitness" in (sport.name or "").lower():
-            sport.is_pinned = True
-            sport.save()
+
+    # For every department (including Al-Ahly), ensure Karate and Fitness exist & are pinned
+    for dept in Department.objects.all():
+        karate = Sport.objects.filter(department=dept, name_ar__icontains="كاراتيه").first()
+        if not karate:
+            Sport.objects.create(
+                department=dept,
+                name="Karate",
+                name_ar="كاراتيه",
+                is_pinned=True,
+                supports_parents=True,
+                is_active=True,
+            )
+        else:
+            karate.is_pinned = True
+            karate.supports_parents = True
+            karate.save()
+
+        fitness = Sport.objects.filter(department=dept, name_ar__icontains="لياقة").first()
+        if not fitness:
+            fitness = Sport.objects.filter(department=dept, name_ar__icontains="سويدي").first()
+        if not fitness:
+            Sport.objects.create(
+                department=dept,
+                name="Fitness & Cardio",
+                name_ar="لياقة بدنية / سويدي",
+                is_pinned=True,
+                supports_parents=False,
+                is_active=True,
+            )
+        else:
+            fitness.is_pinned = True
+            fitness.save()
 
 class Migration(migrations.Migration):
 
