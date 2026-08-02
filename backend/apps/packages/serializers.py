@@ -5,6 +5,7 @@ from .models import SubscriptionPackage
 
 class SubscriptionPackageSerializer(serializers.ModelSerializer):
     department_name = serializers.CharField(source="department.name_ar", read_only=True, allow_null=True)
+    sport_name = serializers.CharField(source="sport.name_ar", read_only=True, allow_null=True)
 
     class Meta:
         model = SubscriptionPackage

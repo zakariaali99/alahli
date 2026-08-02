@@ -85,6 +85,31 @@ class TestPackageRead:
         assert response.status_code == status.HTTP_200_OK
         assert response.data["count"] == 1
 
+    def test_filter_packages_by_sport(self, auth_client, db):
+        from apps.departments.models import Department, Sport
+        from apps.packages.models import SubscriptionPackage
+        dept = Department.objects.create(name="Dept A", name_ar="قسم أ")
+        sport1 = Sport.objects.create(name="Karate", name_ar="كاراتيه", department=dept)
+        sport2 = Sport.objects.create(name="Football", name_ar="كرة قدم", department=dept)
+
+        pkg_karate = SubscriptionPackage.objects.create(
+            name="باقة كاراتيه", price=300, department=dept, sport=sport1, is_active=True
+        )
+        pkg_football = SubscriptionPackage.objects.create(
+            name="باقة كرة قدم", price=400, department=dept, sport=sport2, is_active=True
+        )
+        pkg_general = SubscriptionPackage.objects.create(
+            name="باقة عامة", price=200, department=dept, sport=null if False else None, is_active=True
+        )
+
+        res = auth_client.get(f"/api/packages/?department={dept.id}&sport={sport1.id}")
+        assert res.status_code == status.HTTP_200_OK
+        results = res.data["results"]
+        ids = [p["id"] for p in results]
+        assert pkg_karate.id in ids
+        assert pkg_general.id in ids
+        assert pkg_football.id not in ids
+
 
 @pytest.mark.django_db
 class TestPackageWrite:

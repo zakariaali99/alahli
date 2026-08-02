@@ -163,12 +163,13 @@ export default function SubscriptionPage() {
     }
   }
 
-  const fetchPackages = async (departmentId?: number) => {
+  const fetchPackages = async (departmentId?: number, sportId?: number) => {
     setLoading(true)
     setError("")
     try {
       const params: Record<string, string> = {}
       if (departmentId) params.department = String(departmentId)
+      if (sportId) params.sport = String(sportId)
       const res = await api.get<{ results: Package[] } | Package[]>("/packages/", params)
       const tagRank: Record<Package["tag"], number> = { discount: 0, special: 1, normal: 2 }
       const sorted = [...extractResults(res)].sort((a, b) => {
@@ -208,7 +209,7 @@ export default function SubscriptionPage() {
   const selectGroup = (g: Group) => {
     setError("")
     setData((prev) => ({ ...prev, group: g }))
-    fetchPackages(data.academy?.id)
+    fetchPackages(data.academy?.id, data.sport?.id)
     setStep(isParent ? 4 : hasLockedAcademy ? 2 : 3)
   }
 

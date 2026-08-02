@@ -43,6 +43,7 @@ type PackageFormState = {
   is_active: boolean
   featuresText: string
   department: number | null
+  sport: number | null
 }
 
 type FlashMessage = {
@@ -58,12 +59,14 @@ const DEFAULT_PACKAGE_FORM: PackageFormState = {
   renewal_price: "",
   package_type: "monthly",
   duration_type: "months",
-  duration_value: 1,  max_athletes: 1,
+  duration_value: 1,
+  max_athletes: 1,
   tag: "normal",
   order: 0,
   is_active: true,
   featuresText: "",
   department: null,
+  sport: null,
 }
 
 export default function PlansPage() {
@@ -80,6 +83,7 @@ export default function PlansPage() {
   const [flash, setFlash] = useState<FlashMessage | null>(null)
   const [deleteTarget, setDeleteTarget] = useState<SubscriptionPackage | null>(null)
   const [departments, setDepartments] = useState<Array<{ id: number; name_ar: string }>>([])
+  const [sports, setSports] = useState<Array<{ id: number; name_ar: string; department: number }>>([])
 
   useEffect(() => {
     if (!flash) return
@@ -94,15 +98,25 @@ export default function PlansPage() {
         setDepartments(Array.isArray(items) ? items : [])
       })
       .catch((err) => console.warn("Failed to load departments:", err))
+
+    api.get<{ results: Array<{ id: number; name_ar: string; department: number }> } | Array<{ id: number; name_ar: string; department: number }>>("/sports/")
+      .then((res) => {
+        const items = (res as any).results || res
+        setSports(Array.isArray(items) ? items : [])
+      })
+      .catch((err) => console.warn("Failed to load sports:", err))
   }, [])
 
   const { data: packagesData, isLoading } = usePackages(deptParam ?? undefined)
   const packages = packagesData?.results ?? []
 
+  const availableSports = sports.filter((s) => !packageForm.department || s.department === packageForm.department)
+
   const resetPackageForm = () => {
     setPackageForm({
       ...DEFAULT_PACKAGE_FORM,
       department: deptParam ? Number(deptParam) : null,
+      sport: null,
     })
     setEditingPackageId(null)
     setPackageError(null)
@@ -132,6 +146,7 @@ export default function PlansPage() {
       is_active: pkg.is_active,
       featuresText: (pkg.features || []).join("\n"),
       department: pkg.department ?? null,
+      sport: pkg.sport ?? null,
     })
     setPackageModalOpen(true)
   }
@@ -163,6 +178,7 @@ export default function PlansPage() {
       is_active: packageForm.is_active,
       features,
       department: packageForm.department || null,
+      sport: packageForm.sport || null,
     }
   }
 
@@ -353,10 +369,15 @@ export default function PlansPage() {
                         </span>
                       </div>
 
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1.5">
+                      <div className="flex items-center gap-2 text-xs text-muted-foreground mt-1.5 flex-wrap">
                         <span>{pkg.raw.duration_value} {pkg.raw.duration_type === "days" ? (pkg.raw.duration_value === 1 ? "يوم" : "أيام") : pkg.raw.duration_type === "weeks" ? (pkg.raw.duration_value === 1 ? "أسبوع" : "أسابيع") : pkg.raw.duration_value === 1 ? "شهر" : "أشهر"}</span>
                         <span>•</span>
                         <span>{pkg.raw.max_athletes} رياضي</span>
+                        {pkg.raw.sport_name && (
+                          <span className="text-[10px] font-extrabold px-2 py-0.5 rounded-full bg-teal-50 text-teal-700 border border-teal-200">
+                            {pkg.raw.sport_name}
+                          </span>
+                        )}
                         {!pkg.raw.is_active && (
                           <>
                             <span>•</span>
@@ -447,7 +468,7 @@ export default function PlansPage() {
             </div>
 
             <div className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
                   <label htmlFor="package-name" className="mb-1.5 block text-xs font-bold text-muted-foreground">اسم الباقة <span className="text-error">*</span></label>
                   <input
@@ -468,13 +489,28 @@ export default function PlansPage() {
                   <select
                     id="package-department"
                     value={packageForm.department ?? ""}
-                    onChange={(e) => setPackageForm((prev) => ({ ...prev, department: e.target.value ? Number(e.target.value) : null }))}
+                    onChange={(e) => setPackageForm((prev) => ({ ...prev, department: e.target.value ? Number(e.target.value) : null, sport: null }))}
                     disabled={!!deptParam}
                     className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer disabled:opacity-75 disabled:cursor-not-allowed"
                   >
                     <option value="">جميع الأكاديميات (باقة عامة)</option>
                     {departments.map((d) => (
                       <option key={d.id} value={d.id}>{d.name_ar}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="package-sport" className="mb-1.5 block text-xs font-bold text-muted-foreground">الرياضة المتاحة لها</label>
+                  <select
+                    id="package-sport"
+                    value={packageForm.sport ?? ""}
+                    onChange={(e) => setPackageForm((prev) => ({ ...prev, sport: e.target.value ? Number(e.target.value) : null }))}
+                    className="w-full bg-surface-container-low border border-border rounded-xl px-3 py-2.5 text-sm text-foreground outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all cursor-pointer"
+                  >
+                    <option value="">جميع الرياضات (باقة شاملة)</option>
+                    {availableSports.map((s) => (
+                      <option key={s.id} value={s.id}>{s.name_ar}</option>
                     ))}
                   </select>
                 </div>

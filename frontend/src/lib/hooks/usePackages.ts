@@ -20,15 +20,21 @@ export interface SubscriptionPackage {
   order: number
   department: number | null
   department_name: string | null
+  sport: number | null
+  sport_name: string | null
 }
 
-export function usePackages(department?: string) {
+export function usePackages(department?: string, sport?: string) {
+  const params: Record<string, string> = {}
+  if (department) params.department = department
+  if (sport) params.sport = sport
+
   return useQuery({
-    queryKey: ["packages", department ?? "all"],
+    queryKey: ["packages", department ?? "all", sport ?? "all"],
     queryFn: () =>
       api.get<{ count: number; results: SubscriptionPackage[] }>(
         "/packages/",
-        department ? { department } : undefined,
+        Object.keys(params).length > 0 ? params : undefined,
       ),
   })
 }

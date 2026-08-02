@@ -33,4 +33,9 @@ class SubscriptionPackageViewSet(viewsets.ModelViewSet):
             queryset = queryset.filter(
                 models.Q(department_id=department_id) | models.Q(department__isnull=True)
             )
+        sport_id = self.request.query_params.get("sport")
+        if sport_id:
+            queryset = queryset.filter(
+                models.Q(sport_id=sport_id) | models.Q(sport__isnull=True)
+            )
         return queryset.order_by("tag_priority", "order")

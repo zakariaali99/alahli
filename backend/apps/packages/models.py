@@ -35,6 +35,11 @@ class SubscriptionPackage(models.Model):
         null=True, blank=True, related_name="packages",
         help_text="Academy this package belongs to. Null = available to all academies.",
     )
+    sport = models.ForeignKey(
+        "departments.Sport", on_delete=models.CASCADE,
+        null=True, blank=True, related_name="packages",
+        help_text="Sport this package belongs to. Null = available to all sports in department.",
+    )
     is_active = models.BooleanField(default=True)
     order = models.PositiveIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)

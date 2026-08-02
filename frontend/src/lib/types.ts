@@ -57,6 +57,10 @@ export interface Package {
   features: string[]
   icon_name?: string
   color_class?: string
+  department?: number | null
+  department_name?: string | null
+  sport?: number | null
+  sport_name?: string | null
   is_active: boolean
   order: number
 }

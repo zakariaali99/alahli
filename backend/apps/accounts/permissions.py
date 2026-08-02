@@ -23,18 +23,33 @@ def is_recognition_staff(user):
 
 
 def scope_by_academy(user, queryset, academy_field="department", request=None):
-    if is_super_admin(user):
-        return queryset
     if not (user and user.is_authenticated):
         return queryset
-    # Special managers can switch between academies via ?department=,
-    # which must take precedence over any academy set on their account.
-    if user.role == "special_manager":
-        dept_id = request.query_params.get("department") if request else None
+
+    dept_id = None
+    if request:
+        dept_id = (
+            request.query_params.get("department")
+            or request.query_params.get("academy")
+            or request.query_params.get(academy_field)
+        )
+
+    # Super admins and special managers can switch academies via query parameter
+    if is_super_admin(user) or getattr(user, "role", "") == "special_manager":
         if dept_id:
             return queryset.filter(**{academy_field: dept_id})
-    if getattr(user, "academy", None):
-        return queryset.filter(**{academy_field: user.academy})
+        return queryset
+
+    # If explicit department query param is passed for catalog lookup (e.g., sports, groups, packages)
+    if dept_id:
+        model_name = queryset.model._meta.model_name
+        if model_name in ["sport", "group", "subscriptionpackage", "faq"]:
+            return queryset.filter(**{academy_field: dept_id})
+
+    user_academy = getattr(user, "academy_id", None) or getattr(user, "academy", None)
+    if user_academy:
+        return queryset.filter(**{academy_field: user_academy})
+
     return queryset
 
 
