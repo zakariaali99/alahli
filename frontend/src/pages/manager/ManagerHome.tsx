@@ -9,7 +9,14 @@ import { getAcademyLogo, isParentAcademy } from "@/lib/departments"
 export default function ManagerHome() {
   const navigate = useNavigate()
   const { data, isLoading, isError, refetch } = useDepartments()
-  const departments = extractResults(data)
+  const rawDepartments = extractResults(data)
+  const departments = [...rawDepartments].sort((a, b) => {
+    const isAParent = isParentAcademy(a)
+    const isBParent = isParentAcademy(b)
+    if (!isAParent && isBParent) return -1
+    if (isAParent && !isBParent) return 1
+    return a.id - b.id
+  })
 
   if (isLoading) {
     return (

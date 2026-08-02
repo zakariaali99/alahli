@@ -6,12 +6,18 @@ import { LogOut, ArrowRight, Building } from "lucide-react"
 import { useAuth } from "@/lib/auth"
 import { ErrorBoundary } from "@/components/ui/error-boundary"
 import { roleLabel } from "@/lib/permissions"
+import { useDepartment } from "@/lib/hooks/useDepartments"
+import { getAcademyLogo } from "@/lib/departments"
 
 export default function ManagerLayout() {
   const location = useLocation()
   const navigate = useNavigate()
   const { user, logout, isLoading } = useAuth()
   const { academyId } = useParams<{ academyId: string }>()
+  const numericId = academyId ? Number(academyId) : undefined
+  const { data: department } = useDepartment(numericId)
+  const academyLogo = getAcademyLogo(department)
+
 
   const handleForcedLogout = useCallback(() => {
     navigate("/login", { replace: true })
@@ -80,7 +86,7 @@ export default function ManagerLayout() {
               {academyId ? (
                 <span className="p-0.5 rounded-lg bg-white border border-gray-150 shadow-sm flex items-center justify-center w-8 h-8 shrink-0 overflow-hidden">
                   <img 
-                    src={(academyId === "4" || academyId === "2") ? "/logo.png" : "/alaws_logo.png"} 
+                    src={academyLogo} 
                     alt="Logo" 
                     className="w-full h-full object-contain" 
                   />

@@ -20,6 +20,10 @@ export class ErrorBoundary extends Component<Props, State> {
     console.error("[ErrorBoundary]", error, errorInfo)
   }
 
+  handleReset = () => {
+    this.setState({ hasError: false })
+  }
+
   handleReload = () => {
     this.setState({ hasError: false })
     window.location.reload()
@@ -28,12 +32,19 @@ export class ErrorBoundary extends Component<Props, State> {
   render() {
     if (this.state.hasError) {
       return (
-        <div className="rounded-2xl border border-destructive/25 bg-destructive/5 p-5 text-center">
-          <p className="text-sm font-semibold text-destructive">حدث خطأ أثناء تحميل الصفحة</p>
-          <p className="mt-1 text-xs text-muted-foreground">حاول إعادة التحميل للمتابعة.</p>
-          <Button className="mt-3" onClick={this.handleReload} size="sm" variant="outline">
-            إعادة التحميل
-          </Button>
+        <div className="flex flex-col items-center justify-center rounded-3xl border border-error/20 bg-error/5 p-8 text-center my-6 gap-3">
+          <p className="text-base font-extrabold text-error">تعذر تحميل المحتوى (قد يكون بسبب ضعف اتصال الإنترنت)</p>
+          <p className="text-xs text-muted-foreground max-w-sm">
+            يرجى التأكد من الاتصال بالشبكة والمحاولة مرة أخرى.
+          </p>
+          <div className="flex items-center gap-3 mt-2">
+            <Button onClick={this.handleReset} size="sm" className="font-bold">
+              إعادة المحاولة
+            </Button>
+            <Button onClick={this.handleReload} size="sm" variant="outline">
+              تحديث الصفحة
+            </Button>
+          </div>
         </div>
       )
     }

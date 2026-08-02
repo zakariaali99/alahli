@@ -56,17 +56,17 @@ def register_view(request):
     dept_id = serializer.validated_data.get("department")
     role = serializer.validated_data["role"]
     if dept_id:
-        if dept_id == 5:
-            role = "parent"
-        elif dept_id == 4:
-            role = "athlete"
-        else:
-            from apps.departments.models import Department
-            dept = Department.objects.filter(id=dept_id).first()
-            if dept:
-                if "أوس" in dept.name_ar or "aws" in dept.name.lower():
+        from apps.departments.models import Department
+        dept = Department.objects.filter(id=dept_id).first()
+        if dept:
+            name_ar_norm = dept.name_ar.replace("أ", "ا").replace("إ", "ا").replace("آ", "ا")
+            if "اوس" in name_ar_norm or "aws" in dept.name.lower():
+                role = "parent"
+            elif "اهلي" in name_ar_norm or "ahli" in dept.name.lower():
+                # Allow parent role if explicitly selected for Al-Ahly (e.g. Karate)
+                if serializer.validated_data.get("role") == "parent":
                     role = "parent"
-                elif "أهلي" in dept.name_ar or "ahli" in dept.name.lower():
+                else:
                     role = "athlete"
 
 

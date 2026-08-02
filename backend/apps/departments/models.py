@@ -27,11 +27,13 @@ class Sport(models.Model):
     name = models.CharField(max_length=100)
     name_ar = models.CharField(max_length=100)
     department = models.ForeignKey(Department, on_delete=models.CASCADE, related_name="sports")
+    is_pinned = models.BooleanField(default=False, help_text="تثبيت الرياضة في أعلى القائمة")
+    supports_parents = models.BooleanField(default=False, help_text="تمكين نظام أولياء الأمور لهذه الرياضة")
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        ordering = ["name"]
+        ordering = ["-is_pinned", "name_ar"]
 
     def __str__(self):
         return self.name_ar

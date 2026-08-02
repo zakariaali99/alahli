@@ -194,7 +194,11 @@ export default function ManagerDashboard() {
     return <Navigate to={`/manager/${activeDepartment.id}/sports`} replace />
   }
 
-  const isParent = isParentAcademy(activeDepartment)
+  const isSportParent = selectedSport ? (
+    selectedSport.name_ar.includes("كاراتيه") ||
+    (selectedSport as any).supports_parents === true
+  ) : false
+  const isParent = isParentAcademy(activeDepartment) || isSportParent
   const actionCards = buildCards(activeDepartment.id, isParent)
   const themeColor = activeDepartment.color || "#0F4C81"
 

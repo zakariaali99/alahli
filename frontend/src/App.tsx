@@ -46,7 +46,15 @@ export default function App() {
   const [queryClient] = useState(
     () =>
       new QueryClient({
-        defaultOptions: { queries: { staleTime: 30_000, retry: 1 } },
+        defaultOptions: {
+          queries: {
+            staleTime: 60_000,
+            gcTime: 300_000,
+            retry: 2,
+            retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 10000),
+            networkMode: "always",
+          },
+        },
       }),
   )
 

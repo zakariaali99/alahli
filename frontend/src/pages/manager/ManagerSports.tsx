@@ -1,6 +1,6 @@
 import { useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { motion } from "framer-motion"
-import { AlertTriangle, ArrowLeft, Check, RefreshCw, Trophy } from "lucide-react"
+import { AlertTriangle, ArrowLeft, Check, Pin, RefreshCw, Trophy } from "lucide-react"
 import { useDepartment, useSports } from "@/lib/hooks/useDepartments"
 import type { Department, Sport } from "@/lib/types"
 import { getAcademyLogo } from "@/lib/departments"
@@ -57,7 +57,20 @@ export default function ManagerSports() {
     )
   }
 
-  const sportCards = (sports ?? []).filter((s) => s.is_active)
+  const isPinnedSport = (sp: Sport) => {
+    if ((sp as any).is_pinned) return true
+    const n = (sp.name_ar || "").toLowerCase()
+    return n.includes("كاراتيه") || n.includes("سويدي") || n.includes("لياقة")
+  }
+
+  const sportCards = (sports ?? [])
+    .filter((s) => s.is_active)
+    .sort((a, b) => {
+      const pinA = isPinnedSport(a) ? 1 : 0
+      const pinB = isPinnedSport(b) ? 1 : 0
+      return pinB - pinA
+    })
+
   const themeColor = activeDepartment.color || "#0F4C81"
   const selectedId = sportParam ? Number(sportParam) : null
 
@@ -126,6 +139,7 @@ export default function ManagerSports() {
           <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             {sportCards.map((sp, idx) => {
               const isSelected = selectedId === sp.id
+              const isPinned = isPinnedSport(sp)
               return (
                 <motion.button
                   key={sp.id}
@@ -135,12 +149,18 @@ export default function ManagerSports() {
                   whileHover={{ y: -4 }}
                   whileTap={{ scale: 0.99 }}
                   onClick={() => enterDashboard(sp)}
-                  className={`w-full text-right p-6 rounded-3xl border transition-all duration-300 flex items-center gap-5 ${
+                  className={`w-full text-right p-6 rounded-3xl border transition-all duration-300 flex items-center gap-5 relative overflow-hidden ${
                     isSelected
                       ? "border-primary bg-primary/[0.06] shadow-lg shadow-primary/10"
                       : "border-gray-200/60 bg-gradient-to-br from-white to-gray-50 hover:border-primary/50 shadow-sm"
                   }`}
                 >
+                  {isPinned && (
+                    <span className="absolute top-3 left-3 flex items-center gap-1 text-[10px] font-extrabold text-amber-700 bg-amber-50 border border-amber-200/80 px-2 py-0.5 rounded-full shadow-2xs">
+                      <Pin className="w-3 h-3 fill-amber-500 text-amber-600" />
+                      مثبّت
+                    </span>
+                  )}
                   <div
                     className={`w-12 h-12 rounded-2xl flex items-center justify-center shrink-0 transition-colors ${
                       isSelected ? "bg-primary text-white" : "bg-primary/10 text-primary"
