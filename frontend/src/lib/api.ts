@@ -1,7 +1,19 @@
-if (!import.meta.env.VITE_API_URL) {
-  console.warn("VITE_API_URL not set — using localhost fallback. Set it in .env or build arg for production.")
+export function getApiBase(): string {
+  const envUrl = import.meta.env.VITE_API_URL
+  if (envUrl && typeof envUrl === "string" && envUrl.trim()) {
+    return envUrl.trim()
+  }
+  if (typeof window !== "undefined" && window.location && window.location.hostname) {
+    const host = window.location.hostname
+    if (host === "localhost" || host === "127.0.0.1") {
+      return "http://localhost:8000/api"
+    }
+    return `${window.location.origin}/api`
+  }
+  return "http://localhost:8000/api"
 }
-export const API_BASE = import.meta.env.VITE_API_URL || "http://localhost:8000/api"
+
+export const API_BASE = getApiBase()
 
 const REQUEST_TIMEOUT_MS = 15_000
 
@@ -135,7 +147,9 @@ async function request<T = any>(
   body?: any,
   opts: { formData?: boolean; skipAuth?: boolean; params?: Record<string, string> } = {},
 ): Promise<T> {
-  const url = new URL(`${API_BASE}${path}`)
+  const base = getApiBase()
+  const fullPath = path.startsWith("http") ? path : `${base.replace(/\/$/, "")}${path.startsWith("/") ? "" : "/"}${path}`
+  const url = new URL(fullPath)
   if (opts.params) {
     Object.entries(opts.params).forEach(([k, v]) => {
       if (v != null) url.searchParams.set(k, v)
