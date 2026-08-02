@@ -9,7 +9,7 @@ import { validateLibyanPhone } from "@/lib/utils"
 import { extractResults } from "@/lib/response"
 import CameraCapture from "@/components/ui/camera-capture"
 import type { Department, Sport } from "@/lib/types"
-import { isParentAcademy } from "@/lib/departments"
+import { isParentAcademy, getAcademyLogo } from "@/lib/departments"
 
 type Step = "choose" | "sport" | "form"
 
@@ -244,8 +244,8 @@ export default function AddAthletePage() {
                 onMouseLeave={(e) => (e.currentTarget.style.borderColor = "")}
               >
                 <div className="flex items-center justify-between mb-4">
-                  <span className="p-2.5 rounded-xl text-white" style={{ backgroundColor: academy.color ?? "#0F4C81" }}>
-                    <Building2 className="w-5 h-5" />
+                  <span className="p-1 rounded-xl bg-white border border-gray-100 shadow-sm flex items-center justify-center w-11 h-11 shrink-0 overflow-hidden">
+                    <img src={getAcademyLogo(academy)} alt="Logo" className="w-full h-full object-contain" />
                   </span>
                   <Sparkles className="w-4 h-4 text-amber-500" />
                 </div>

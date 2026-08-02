@@ -1,5 +1,5 @@
 import React, { useEffect, useCallback } from "react"
-import { Link, Outlet, useLocation, useNavigate } from "react-router-dom"
+import { Link, Outlet, useLocation, useNavigate, useParams } from "react-router-dom"
 import { motion, AnimatePresence } from "framer-motion"
 import { Button } from "@/components/ui/button"
 import { LogOut, ArrowRight, Building } from "lucide-react"
@@ -11,6 +11,7 @@ export default function ManagerLayout() {
   const location = useLocation()
   const navigate = useNavigate()
   const { user, logout, isLoading } = useAuth()
+  const { academyId } = useParams<{ academyId: string }>()
 
   const handleForcedLogout = useCallback(() => {
     navigate("/login", { replace: true })
@@ -76,7 +77,17 @@ export default function ManagerLayout() {
               </Button>
             )}
             <Link to="/manager" className="flex items-center gap-2">
-              <Building className="w-5 h-5 text-primary" />
+              {academyId ? (
+                <span className="p-0.5 rounded-lg bg-white border border-gray-150 shadow-sm flex items-center justify-center w-8 h-8 shrink-0 overflow-hidden">
+                  <img 
+                    src={(academyId === "4" || academyId === "2") ? "/logo.png" : "/alaws_logo.png"} 
+                    alt="Logo" 
+                    className="w-full h-full object-contain" 
+                  />
+                </span>
+              ) : (
+                <Building className="w-5 h-5 text-primary" />
+              )}
               <span className="text-base font-extrabold text-[#0f2942]">بوابة الإدارة العامة</span>
             </Link>
           </div>

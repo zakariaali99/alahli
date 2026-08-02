@@ -3,7 +3,7 @@ import { useParams, useNavigate } from "react-router-dom"
 import { motion } from "framer-motion"
 import { api } from "@/lib/api"
 import { type Department } from "@/lib/types"
-import { isParentAcademy } from "@/lib/departments"
+import { isParentAcademy, getAcademyLogo } from "@/lib/departments"
 import { 
   UserPlus, 
   Users, 
@@ -165,11 +165,7 @@ export default function ManagerDashboard() {
           <div 
             className="w-16 h-16 rounded-2xl flex items-center justify-center text-white shadow-md shrink-0 overflow-hidden bg-white border border-gray-100"
           >
-            {department.logo ? (
-              <img src={department.logo} alt="Logo" className="w-full h-full object-cover" />
-            ) : (
-              <Building className="w-8 h-8 text-primary" />
-            )}
+            <img src={getAcademyLogo(department)} alt="Logo" className="w-full h-full object-contain" />
           </div>
           <div>
             <h1 className="text-2xl font-black text-[#0f2942]">{department.name_ar}</h1>

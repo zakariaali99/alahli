@@ -1,10 +1,37 @@
-import React from "react"
+import React, { useState, useEffect } from "react"
 import { useNavigate } from "react-router-dom"
 import { motion } from "framer-motion"
-import { Building2, GraduationCap } from "lucide-react"
+import { api } from "@/lib/api"
+import { extractResults } from "@/lib/response"
+import type { Department } from "@/lib/types"
+import { getAcademyLogo, isParentAcademy } from "@/lib/departments"
 
 export default function ManagerHome() {
   const navigate = useNavigate()
+  const [departments, setDepartments] = useState<Department[]>([])
+  const [loading, setLoading] = useState(true)
+
+  useEffect(() => {
+    api.get("/departments/")
+      .then((res) => {
+        const list = extractResults<Department>(res)
+        setDepartments(list)
+      })
+      .catch((err) => {
+        console.error("Failed to load departments:", err)
+      })
+      .finally(() => {
+        setLoading(false)
+      })
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="flex h-[50vh] items-center justify-center">
+        <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+      </div>
+    )
+  }
 
   return (
     <div className="flex flex-col items-center justify-center py-12">
@@ -14,55 +41,42 @@ export default function ManagerHome() {
       </div>
 
       <div className="grid gap-8 md:grid-cols-2 w-full max-w-4xl px-4">
-        
-        {/* Card 1: Al Ahly Sports Center */}
-        <motion.button
-          whileHover={{ y: -6, scale: 1.01 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={() => navigate("/manager/4/dashboard")}
-          className="group relative flex flex-col items-center text-center p-8 bg-white rounded-3xl border border-gray-200/80 shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden"
-        >
-          <div className="absolute top-0 right-0 w-24 h-24 bg-[#0F4C81]/5 rounded-bl-full group-hover:bg-[#0F4C81]/10 transition-colors" />
-          
-          <div className="w-16 h-16 rounded-2xl bg-[#0F4C81]/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-            <Building2 className="w-8 h-8 text-[#0F4C81]" />
-          </div>
+        {departments.map((dept) => {
+          const isParent = isParentAcademy(dept)
+          const logo = getAcademyLogo(dept)
+          const accentColor = dept.color || (isParent ? "#136F63" : "#0F4C81")
+          return (
+            <motion.button
+              key={dept.id}
+              whileHover={{ y: -6, scale: 1.01 }}
+              whileTap={{ scale: 0.98 }}
+              onClick={() => navigate(`/manager/${dept.id}/dashboard`)}
+              className="group relative flex flex-col items-center text-center p-8 bg-white rounded-3xl border border-gray-200/80 shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden text-right"
+            >
+              <div 
+                className="absolute top-0 right-0 w-24 h-24 rounded-bl-full group-hover:opacity-10 transition-opacity" 
+                style={{ backgroundColor: `${accentColor}0a` }}
+              />
+              
+              <div className="w-20 h-20 rounded-2xl bg-white border border-gray-150 shadow-sm flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300 p-2 shrink-0 overflow-hidden">
+                <img src={logo} alt="Logo" className="w-full h-full object-contain" />
+              </div>
 
-          <h2 className="text-2xl font-black text-[#0f2942] group-hover:text-[#0F4C81] transition-colors mb-2">
-            مركز الأهلي الرياضي
-          </h2>
-          <p className="text-sm font-semibold text-muted-foreground mb-4">
-            إدارة تدريبات الكاراتيه، السويدي، اللياقة البدنية والاشتراكات
-          </p>
-          <span className="text-xs font-bold text-[#0F4C81] bg-[#0F4C81]/10 px-3 py-1 rounded-full">
-            دخول لوحة التحكم ←
-          </span>
-        </motion.button>
-
-        {/* Card 2: Al Aws Academy */}
-        <motion.button
-          whileHover={{ y: -6, scale: 1.01 }}
-          whileTap={{ scale: 0.98 }}
-          onClick={() => navigate("/manager/5/dashboard")}
-          className="group relative flex flex-col items-center text-center p-8 bg-white rounded-3xl border border-gray-200/80 shadow-md hover:shadow-xl transition-all duration-300 overflow-hidden"
-        >
-          <div className="absolute top-0 right-0 w-24 h-24 bg-[#136F63]/5 rounded-bl-full group-hover:bg-[#136F63]/10 transition-colors" />
-          
-          <div className="w-16 h-16 rounded-2xl bg-[#136F63]/10 flex items-center justify-center mb-6 group-hover:scale-110 transition-transform duration-300">
-            <GraduationCap className="w-8 h-8 text-[#136F63]" />
-          </div>
-
-          <h2 className="text-2xl font-black text-[#0f2942] group-hover:text-[#136F63] transition-colors mb-2">
-            أكاديمية الأوس
-          </h2>
-          <p className="text-sm font-semibold text-muted-foreground mb-4">
-            إدارة أكاديمية كرة القدم، أولياء الأمور، الأطفال والاشتراكات
-          </p>
-          <span className="text-xs font-bold text-[#136F63] bg-[#136F63]/10 px-3 py-1 rounded-full">
-            دخول لوحة التحكم ←
-          </span>
-        </motion.button>
-
+              <h2 className="text-2xl font-black text-[#0f2942] group-hover:text-primary transition-colors mb-2">
+                {dept.name_ar}
+              </h2>
+              <p className="text-sm font-semibold text-muted-foreground mb-4 h-12 flex items-center justify-center">
+                {isParent 
+                  ? "إدارة أكاديمية كرة القدم، أولياء الأمور، الأطفال والاشتراكات" 
+                  : "إدارة تدريبات الكاراتيه، السويدي، اللياقة البدنية والاشتراكات"
+                }
+              </p>
+              <span className="text-xs font-bold px-3 py-1 rounded-full text-white" style={{ backgroundColor: accentColor }}>
+                دخول لوحة التحكم ←
+              </span>
+            </motion.button>
+          )
+        })}
       </div>
     </div>
   )

@@ -59,10 +59,16 @@ export default function UserDashboardLayout() {
       <header className="sticky top-0 z-30 bg-card/90 backdrop-blur-xl border-b border-border">
         <div className="flex items-center justify-between px-4 h-14 max-w-2xl mx-auto w-full">
           <div className="flex items-center gap-2">
-            <div className="w-8 h-8 rounded-lg bg-primary flex items-center justify-center text-white font-bold text-xs">
-              أ
+            <div className="w-8 h-8 rounded-lg bg-white border border-gray-150 shadow-sm flex items-center justify-center shrink-0 overflow-hidden p-0.5">
+              <img 
+                src={(user?.academy === 5 || user?.academy === 3 || (user?.academy_name || "").includes("أوس") || (user?.academy_name || "").toLowerCase().includes("aws")) 
+                  ? "/alaws_logo.png" 
+                  : "/logo.png"} 
+                alt="Logo" 
+                className="w-full h-full object-contain" 
+              />
             </div>
-            <span className="font-bold text-sm">الأهلي الرياضي</span>
+            <span className="font-bold text-sm">{user?.academy_name || "مركز الأهلي الرياضي"}</span>
           </div>
           <div className="flex items-center gap-2">
             <Button variant="ghost" size="icon-xs" onClick={logout}>

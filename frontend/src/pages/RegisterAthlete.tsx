@@ -8,7 +8,7 @@ import { validateLibyanPhone } from "@/lib/utils"
 import { extractResults } from "@/lib/response"
 import { Trophy, Dumbbell, ArrowRight, CheckCircle, Building2, User, Phone, MapPin, HeartPulse, Sparkles, Loader2 } from "lucide-react"
 import type { Department, Sport } from "@/lib/types"
-import { isParentAcademy } from "@/lib/departments"
+import { isParentAcademy, getAcademyLogo } from "@/lib/departments"
 
 export default function RegisterAthlete() {
   const navigate = useNavigate()
@@ -216,8 +216,8 @@ export default function RegisterAthlete() {
                   }`}
                 >
                   <div className="flex items-center justify-between mb-3">
-                    <span className="p-2.5 rounded-xl text-white font-bold" style={{ backgroundColor: dept.color || (dept.name_ar.includes("الأهلي") ? "#00204F" : "#1A7A42") }}>
-                      <Building2 className="w-5 h-5" />
+                    <span className="p-1 rounded-xl bg-white border border-gray-100 shadow-sm flex items-center justify-center w-11 h-11 shrink-0 overflow-hidden">
+                      <img src={getAcademyLogo(dept)} alt="Logo" className="w-full h-full object-contain" />
                     </span>
                     <Sparkles className="w-4 h-4 text-amber-500" />
                   </div>

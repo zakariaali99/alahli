@@ -148,11 +148,17 @@ export default function DashboardLayout() {
       >
         <div className="flex items-center justify-between px-5 py-2 border-b border-sidebar-border">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-primary to-primary-container flex items-center justify-center text-white font-bold text-sm shadow-lg shrink-0">
-              م
+            <div className="w-10 h-10 rounded-xl bg-white border border-gray-100/10 shadow-md flex items-center justify-center shrink-0 overflow-hidden p-1">
+              <img 
+                src={(user?.academy === 5 || user?.academy === 3 || (user?.academy_name || "").includes("أوس") || (user?.academy_name || "").toLowerCase().includes("aws")) 
+                  ? "/alaws_logo.png" 
+                  : "/logo.png"} 
+                alt="Logo" 
+                className="w-full h-full object-contain" 
+              />
             </div>
             <div className="min-w-0">
-              <h2 className="text-sm font-bold text-white truncate">مركز الاهلي الرياضي</h2>
+              <h2 className="text-sm font-bold text-white truncate">{user?.academy_name || "مركز الأهلي الرياضي"}</h2>
               <p className="text-[10px] text-sidebar-fg truncate">نظام إدارة الأداء</p>
             </div>
           </div>
