@@ -6,7 +6,7 @@ import {
   Clock, XCircle, ChevronLeft, ChevronRight, UserX,
   RefreshCw, Phone,
 } from "lucide-react"
-import { useQuery } from "@tanstack/react-query"
+import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api"
 import { Button } from "@/components/ui/button"
 import { Input, Select } from "@/components/ui/input"
@@ -69,56 +69,81 @@ export default function ParentsPage() {
   const PAGE_SIZE = 20
   const [showSyncModal, setShowSyncModal] = useState(false)
 
+  const queryClient = useQueryClient()
+
   const handleRefresh = async () => {
     setShowSyncModal(true)
     const startTime = Date.now()
+    await queryClient.invalidateQueries({ queryKey: ["parents-list"] })
     await refetch()
     const elapsedTime = Date.now() - startTime
-    const delay = Math.max(0, 1000 - elapsedTime) // delay at least 1s
+    const delay = Math.max(0, 1000 - elapsedTime)
     setTimeout(() => {
       setShowSyncModal(false)
     }, delay)
   }
 
   const params: Record<string, string> = {
-    page: String(page),
-    page_size: String(PAGE_SIZE),
-    role_choice: "parent",
+    role: "parent",
     ...(deptParam ? { department: deptParam } : {}),
-    ...(sportParam ? { sport: sportParam } : {}),
   }
-  if (statusFilter !== "all") params.status = statusFilter
 
-  const { data: regData, isLoading, isFetching, refetch } = useQuery({
-    queryKey: ["parents-registrations", params],
+  const { data: parentUsersData, isLoading, isFetching, refetch } = useQuery({
+    queryKey: ["parents-list", params],
     queryFn: async () => {
-      const res = await api.get<PaginatedResponse<any> | any[]>("/athletes/registrations/", params)
-      return res
+      const usersRes = await api.get<any>("/auth/users/", params)
+      const regRes = await api.get<any>("/athletes/registrations/", { role_choice: "parent", ...(deptParam ? { department: deptParam } : {}) })
+      const users = extractResults(usersRes)
+      const regs = extractResults(regRes)
+
+      const mergedMap = new Map<string, Parent>()
+
+      // 1. Map registered parents
+      regs.forEach((r: any) => {
+        const phone = r.user_phone || ""
+        mergedMap.set(phone || String(r.user), {
+          id: r.user,
+          phone: phone,
+          full_name_ar: r.user_name || "ولي أمر",
+          is_active: r.status === "approved",
+          registration_status: r.status,
+          created_at: r.created_at,
+        })
+      })
+
+      // 2. Map directly created parent users
+      users.forEach((u: any) => {
+        const phone = u.phone || ""
+        if (!mergedMap.has(phone)) {
+          mergedMap.set(phone || String(u.id), {
+            id: u.id,
+            phone: phone,
+            full_name_ar: u.full_name_ar || `${u.first_name_ar || ""} ${u.last_name_ar || ""}`.trim() || "ولي أمر",
+            is_active: u.is_active,
+            registration_status: u.is_active ? "approved" : "pending",
+            created_at: u.created_at,
+          })
+        }
+      })
+
+      return Array.from(mergedMap.values())
     },
   })
 
-  const rawRegs = regData ? extractResults(regData as any) : []
+  const rawParents = parentUsersData || []
 
-  const parents: Parent[] = rawRegs
-    .filter((r: any) => {
-      if (!search) return true
-      const q = search.toLowerCase()
-      return (
-        (r.user_name || "").toLowerCase().includes(q) ||
-        (r.user_phone || "").includes(q)
-      )
-    })
-    .map((r: any) => ({
-      id: r.user,
-      phone: r.user_phone || "",
-      full_name_ar: r.user_name || "",
-      is_active: r.status === "approved",
-      registration_status: r.status,
-      created_at: r.created_at,
-    }))
+  const parents: Parent[] = rawParents.filter((r) => {
+    if (statusFilter !== "all" && r.registration_status !== statusFilter) return false
+    if (!search) return true
+    const q = search.toLowerCase()
+    return (
+      r.full_name_ar.toLowerCase().includes(q) ||
+      r.phone.includes(q)
+    )
+  })
 
-  const totalFromReg = regData && !Array.isArray(regData) ? (regData as any).count : parents.length
-  const totalPages = Math.ceil(totalFromReg / PAGE_SIZE)
+  const totalPages = Math.ceil(parents.length / PAGE_SIZE)
+  const paginatedParents = parents.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE)
 
   return (
     <motion.div
@@ -200,7 +225,7 @@ export default function ParentsPage() {
                 </td>
               </tr>
             )}
-            {!isLoading && parents.map((p) => (
+            {!isLoading && paginatedParents.map((p) => (
               <tr
                 key={p.id}
                 onClick={() => navigate(`/dashboard/parents/${p.id}${deptParam ? `?department=${deptParam}` : ""}`)}
@@ -233,7 +258,7 @@ export default function ParentsPage() {
       {totalPages > 1 && (
         <motion.div variants={itemVariants} className="flex items-center justify-between pt-2">
           <span className="text-xs text-muted-foreground">
-            إجمالي: {totalFromReg} ولي أمر
+            إجمالي: {parents.length} ولي أمر
           </span>
           <div className="flex items-center gap-2">
             <Button

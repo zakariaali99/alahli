@@ -37,13 +37,20 @@ def scope_by_academy(user, queryset, academy_field="department", request=None):
     # Super admins and special managers can switch academies via query parameter
     if is_super_admin(user) or getattr(user, "role", "") == "special_manager":
         if dept_id:
+            model_name = queryset.model._meta.model_name
+            if model_name == "user":
+                from django.db.models import Q
+                return queryset.filter(Q(academy=dept_id) | Q(athlete__department_id=dept_id))
             return queryset.filter(**{academy_field: dept_id})
         return queryset
 
-    # If explicit department query param is passed for catalog lookup (e.g., sports, groups, packages)
+    # If explicit department query param is passed for catalog/management lookup
     if dept_id:
         model_name = queryset.model._meta.model_name
-        if model_name in ["sport", "group", "subscriptionpackage", "faq"]:
+        if model_name in ["sport", "group", "subscriptionpackage", "faq", "athlete", "registrationrequest", "user"]:
+            if model_name == "user":
+                from django.db.models import Q
+                return queryset.filter(Q(academy=dept_id) | Q(athlete__department_id=dept_id))
             return queryset.filter(**{academy_field: dept_id})
 
     user_academy = getattr(user, "academy_id", None) or getattr(user, "academy", None)

@@ -31,9 +31,13 @@ class UserViewSet(viewsets.ModelViewSet):
     search_fields = ["phone", "full_name_ar"]
 
     def get_queryset(self):
-        qs = User.objects.filter(
-            role__in=["super_admin", "reception", "academy_manager", "special_manager", "trainer", "viewer"]
-        ).order_by("-id")
+        requested_role = self.request.query_params.get("role")
+        if requested_role:
+            qs = User.objects.filter(role=requested_role).order_by("-id")
+        else:
+            qs = User.objects.filter(
+                role__in=["super_admin", "reception", "academy_manager", "special_manager", "trainer", "viewer", "parent"]
+            ).order_by("-id")
         return scope_by_academy(self.request.user, qs, academy_field="academy", request=self.request)
 
     def get_serializer_class(self):

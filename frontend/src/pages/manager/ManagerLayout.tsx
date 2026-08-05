@@ -57,17 +57,28 @@ export default function ManagerLayout() {
   // Check if we are inside a sub-route (e.g. /manager/4/dashboard)
   const isSubRoute = location.pathname !== "/manager" && location.pathname !== "/manager/"
 
+  const themeColor = department?.color || "#0F4C81"
+
   return (
     <div className="min-h-screen bg-[#fafafb] text-[#0f2942] font-sans" dir="rtl">
       
-      {/* ── Ambient Background Decorations ── */}
+      {/* ── Ambient Background Decorations with Dynamic Theme ── */}
       <div className="fixed inset-0 pointer-events-none -z-10 overflow-hidden">
-        <div className="absolute -top-[20%] -right-[10%] w-[60vw] h-[60vw] rounded-full bg-primary/[0.03] blur-[120px]" />
-        <div className="absolute -bottom-[15%] -left-[10%] w-[40vw] h-[40vw] rounded-full bg-secondary/[0.03] blur-[100px]" />
+        <div
+          className="absolute -top-[20%] -right-[10%] w-[60vw] h-[60vw] rounded-full blur-[120px] transition-colors duration-500"
+          style={{ backgroundColor: `${themeColor}12` }}
+        />
+        <div
+          className="absolute -bottom-[15%] -left-[10%] w-[40vw] h-[40vw] rounded-full blur-[100px] transition-colors duration-500"
+          style={{ backgroundColor: `${themeColor}08` }}
+        />
       </div>
 
-      {/* ── Top Header ── */}
-      <header className="sticky top-0 z-30 bg-white/80 backdrop-blur-md border-b border-gray-200/80 shadow-sm">
+      {/* ── Top Header with Dynamic Theme Accent ── */}
+      <header
+        className="sticky top-0 z-30 bg-white/85 backdrop-blur-md border-b shadow-xs transition-colors duration-300"
+        style={{ borderBottomColor: department ? `${themeColor}35` : "rgba(229, 231, 235, 0.8)" }}
+      >
         <div className="mx-auto flex h-16 w-full max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
           
           <div className="flex items-center gap-3">
@@ -82,7 +93,8 @@ export default function ManagerLayout() {
                 }}
                 variant="outline"
                 size="sm"
-                className="gap-1.5 font-bold"
+                className="gap-1.5 font-bold transition-all"
+                style={{ borderColor: `${themeColor}30`, color: themeColor }}
               >
                 <ArrowRight className="w-4 h-4" />
                 <span>{location.pathname.includes("/dashboard") ? "الرجوع للرياضات" : "الرئيسية"}</span>
@@ -90,7 +102,10 @@ export default function ManagerLayout() {
             )}
             <Link to="/manager" className="flex items-center gap-2">
               {academyId ? (
-                <span className="p-0.5 rounded-lg bg-white border border-gray-150 shadow-sm flex items-center justify-center w-8 h-8 shrink-0 overflow-hidden">
+                <span
+                  className="p-0.5 rounded-lg bg-white border shadow-xs flex items-center justify-center w-8 h-8 shrink-0 overflow-hidden"
+                  style={{ borderColor: `${themeColor}40` }}
+                >
                   <img 
                     src={academyLogo} 
                     alt="Logo" 
@@ -98,9 +113,11 @@ export default function ManagerLayout() {
                   />
                 </span>
               ) : (
-                <Building className="w-5 h-5 text-primary" />
+                <Building className="w-5 h-5" style={{ color: themeColor }} />
               )}
-              <span className="text-base font-extrabold text-[#0f2942]">بوابة الإدارة العامة</span>
+              <span className="text-base font-extrabold text-[#0f2942]">
+                {department ? department.name_ar : "بوابة الإدارة العامة"}
+              </span>
             </Link>
           </div>
 
@@ -109,11 +126,14 @@ export default function ManagerLayout() {
               <p className="text-sm font-semibold text-foreground leading-tight">
                 {user.full_name_ar || "المسؤول"}
               </p>
-              <p className="text-[11px] text-muted-foreground">
-                {roleLabel(user.role)}
+              <p className="text-[11px] text-muted-foreground font-medium">
+                {roleLabel(user.role)} {department ? `— ${department.name_ar}` : ""}
               </p>
             </div>
-            <div className="w-9 h-9 rounded-full bg-gradient-to-br from-primary to-primary-container flex items-center justify-center text-white font-bold text-sm shadow-md shrink-0">
+            <div
+              className="w-9 h-9 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md shrink-0 transition-colors duration-300"
+              style={{ backgroundColor: themeColor }}
+            >
               {user.full_name_ar?.charAt(0) || "م"}
             </div>
             <Button

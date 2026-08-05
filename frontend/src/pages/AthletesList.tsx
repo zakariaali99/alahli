@@ -126,6 +126,7 @@ export default function AthletesPage() {
   const handleRefresh = async () => {
     setShowSyncModal(true)
     const startTime = Date.now()
+    await queryClient.invalidateQueries({ queryKey: ["athletes"] })
     await refetch()
     const elapsedTime = Date.now() - startTime
     const delay = Math.max(0, 1000 - elapsedTime)
