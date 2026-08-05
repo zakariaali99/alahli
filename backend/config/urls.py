@@ -8,6 +8,7 @@ from rest_framework.routers import DefaultRouter
 from config.views import serve_frontend_assets, serve_media, serve_spa
 
 from apps.accounts.health import health_check, push_health_check
+from apps.accounts.backup_views import BackupExportView, BackupImportView
 from apps.subscriptions.views import AttendanceLogViewSet
 
 router = DefaultRouter()
@@ -20,6 +21,8 @@ urlpatterns = [
     path("api/schema/", SpectacularAPIView.as_view(), name="schema"),
     path("api/docs/", SpectacularSwaggerView.as_view(url_name="schema"), name="swagger-ui"),
     path("api/auth/", include("apps.accounts.urls")),
+    path("api/backup/export/", BackupExportView.as_view(), name="backup-export-direct"),
+    path("api/backup/import/", BackupImportView.as_view(), name="backup-import-direct"),
     path("api/departments/", include("apps.departments.urls")),
     path("api/sports/", include("apps.departments.sports_urls")),
     path("api/groups/", include("apps.departments.groups_urls")),

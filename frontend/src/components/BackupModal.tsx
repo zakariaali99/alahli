@@ -23,11 +23,11 @@ export function BackupModal({ isOpen, onClose }: BackupModalProps) {
     try {
       setIsExporting(true)
       setStatusMessage(null)
-      const res = await fetch(`${getApiBase()}/auth/backup/export/`, {
-        headers: {
-          Authorization: token ? `Bearer ${token}` : "",
-        },
-      })
+      const headers = { Authorization: token ? `Bearer ${token}` : "" }
+      let res = await fetch(`${getApiBase()}/auth/backup/export/`, { headers })
+      if (res.status === 404) {
+        res = await fetch(`${getApiBase()}/backup/export/`, { headers })
+      }
       if (!res.ok) {
         const errData = await res.json().catch(() => ({}))
         throw new Error(errData.detail || `فشل في تحميل النسخة الاحتياطية (${res.status})`)
@@ -65,16 +65,22 @@ export function BackupModal({ isOpen, onClose }: BackupModalProps) {
       formData.append("file", selectedFile)
       formData.append("mode", mode)
 
-      const res = await fetch(`${getApiBase()}/auth/backup/import/`, {
+      const headers = { Authorization: token ? `Bearer ${token}` : "" }
+      let res = await fetch(`${getApiBase()}/auth/backup/import/`, {
         method: "POST",
-        headers: {
-          Authorization: token ? `Bearer ${token}` : "",
-        },
+        headers,
         body: formData,
       })
+      if (res.status === 404) {
+        res = await fetch(`${getApiBase()}/backup/import/`, {
+          method: "POST",
+          headers,
+          body: formData,
+        })
+      }
 
-      const data = await res.json()
-      if (!res.ok) throw new Error(data.detail || "حدث خطأ أثناء استعادة البيانات")
+      const data = await res.json().catch(() => ({}))
+      if (!res.ok) throw new Error(data.detail || `حدث خطأ أثناء استعادة البيانات (${res.status})`)
 
       setStatusMessage({
         type: "success",
