@@ -55,3 +55,29 @@ class User(AbstractUser):
 
     def __str__(self):
         return f"{self.full_name_ar} ({self.phone})"
+
+
+from django.db.models.signals import pre_delete
+from django.dispatch import receiver
+
+
+@receiver(pre_delete, sender=User)
+def delete_parent_children_on_parent_delete(sender, instance, **kwargs):
+    if instance.role == "parent" or hasattr(instance, "managed_athletes"):
+        from apps.athletes.models import Athlete, ParentAthlete
+
+        linked_ids = set(
+            ParentAthlete.objects.filter(parent=instance).values_list("athlete_id", flat=True)
+        )
+        phone_q = models.Q(parent_phone=instance.phone)
+        if instance.whatsapp_phone:
+            phone_q |= models.Q(parent_phone=instance.whatsapp_phone)
+        phone_ids = set(
+            Athlete.objects.filter(phone_q).values_list("id", flat=True)
+        )
+        all_child_ids = linked_ids.union(phone_ids)
+        if all_child_ids:
+            children = Athlete.objects.filter(id__in=all_child_ids)
+            child_users = User.objects.filter(athlete__in=children)
+            children.delete()
+            child_users.delete()
