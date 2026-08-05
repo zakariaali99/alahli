@@ -2,7 +2,6 @@ import json
 from datetime import datetime
 from django.db import transaction
 from django.apps import apps
-from django.core.serializers.json import DjangoJSONEncoder
 
 def generate_backup_data():
     """Generates complete dictionary dump of system data."""
@@ -13,7 +12,6 @@ def generate_backup_data():
     Athlete = apps.get_model("athletes", "Athlete")
     SubscriptionPackage = apps.get_model("packages", "SubscriptionPackage")
     Subscription = apps.get_model("subscriptions", "Subscription")
-    AttendanceLog = apps.get_model("progress", "AttendanceLog")
     FAQ = apps.get_model("faqs", "FAQ")
 
     data = {
@@ -23,13 +21,12 @@ def generate_backup_data():
         "sports": list(Sport.objects.all().values()),
         "groups": list(Group.objects.all().values()),
         "users": list(User.objects.all().values(
-            "id", "phone", "first_name", "last_name", "full_name_ar",
-            "role", "academy_id", "is_active", "created_at"
+            "id", "phone", "first_name_ar", "last_name_ar",
+            "role", "academy_id", "is_active", "date_joined"
         )),
         "athletes": list(Athlete.objects.all().values()),
         "subscription_packages": list(SubscriptionPackage.objects.all().values()),
         "subscriptions": list(Subscription.objects.all().values()),
-        "attendance_logs": list(AttendanceLog.objects.all().values()),
         "faqs": list(FAQ.objects.all().values()),
     }
     return data
@@ -47,14 +44,11 @@ def restore_backup_data(backup_dict, mode="smart_merge"):
     Athlete = apps.get_model("athletes", "Athlete")
     SubscriptionPackage = apps.get_model("packages", "SubscriptionPackage")
     Subscription = apps.get_model("subscriptions", "Subscription")
-    AttendanceLog = apps.get_model("progress", "AttendanceLog")
-    FAQ = apps.get_model("faqs", "FAQ")
 
     stats = {"created": 0, "merged": 0}
 
     if mode == "overwrite":
         # Clear non-core transactional records
-        AttendanceLog.objects.all().delete()
         Subscription.objects.all().delete()
         SubscriptionPackage.objects.all().delete()
         Group.objects.all().delete()
@@ -138,13 +132,12 @@ def restore_backup_data(backup_dict, mode="smart_merge"):
         if not usr:
             usr = User.objects.create(
                 phone=phone,
-                first_name=item.get("first_name") or "",
-                last_name=item.get("last_name") or "",
-                full_name_ar=item.get("full_name_ar") or "",
+                first_name_ar=item.get("first_name_ar") or "",
+                last_name_ar=item.get("last_name_ar") or "",
                 role=item.get("role") or "athlete",
                 is_active=item.get("is_active", True),
             )
-            usr.set_password("12345678") # fallback reset password
+            usr.set_password("12345678")
             usr.save()
             stats["created"] += 1
         else:
