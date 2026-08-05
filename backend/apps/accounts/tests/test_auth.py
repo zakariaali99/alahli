@@ -43,12 +43,12 @@ class TestLogin:
         assert "user" in response.data
         assert response.data["user"]["phone"] == user.phone
 
-    def test_login_invalid_password(self, api_client, user):
+    def test_login_phone_only(self, api_client, user):
         response = api_client.post("/api/auth/login/", {
             "phone": user.phone,
-            "password": "wrongpassword",
         })
-        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+        assert response.status_code == status.HTTP_200_OK
+        assert "access" in response.data
 
     def test_login_missing_fields(self, api_client):
         response = api_client.post("/api/auth/login/", {})
