@@ -306,7 +306,7 @@ export default function AthletePage() {
                 onSubmit={handleAddAthlete} className="bg-white border border-border/80 rounded-3xl p-5 space-y-3 mb-4 shadow-sm"
               >
                 <h3 className="text-xs font-black text-[#102033]">بيانات الرياضي الجديد</h3>
-                <CameraCapture onCapture={setPhoto} preview={photo || undefined} />
+                <CameraCapture onCapture={setPhoto} buttonText="إرفاق صورة" preview={photo || undefined} />
                 <input placeholder="اسم الطفل بالكامل" className="w-full bg-[#f8fafc] border rounded-xl px-3.5 py-2.5 text-sm"
                   value={addForm.full_name} onChange={(e) => setAddForm({ ...addForm, full_name: e.target.value })} required />
                 <input placeholder="السكن / العنوان" className="w-full bg-[#f8fafc] border rounded-xl px-3.5 py-2.5 text-sm"

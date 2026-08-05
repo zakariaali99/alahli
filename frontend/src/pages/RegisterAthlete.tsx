@@ -111,11 +111,6 @@ export default function RegisterAthlete() {
 
     const isParent = isParentAcademy(selectedAcademy)
 
-    if (!isParent && !photo) {
-      setError("صورة السيلفي أو الصورة الشخصية مطلوبة لإتمام التسجيل")
-      return
-    }
-
     const phoneErr = validateLibyanPhone(form.phone)
     if (phoneErr) {
       setError(phoneErr)
@@ -292,8 +287,8 @@ export default function RegisterAthlete() {
             <form onSubmit={handleSubmit} className="space-y-4 bg-white border border-border/60 rounded-3xl p-6 shadow-sm">
               {!isParent && (
                 <div>
-                  <label className="block text-xs font-bold text-[#102033] mb-1.5">صورة شخصية / سيلفي (إلزامية)</label>
-                  <CameraCapture onCapture={setPhoto} preview={photo || undefined} />
+                  <label className="block text-xs font-bold text-[#102033] mb-1.5">صورة شخصية (اختياري)</label>
+                  <CameraCapture onCapture={setPhoto} buttonText="إرفاق صورة" preview={photo || undefined} />
                 </div>
               )}
 

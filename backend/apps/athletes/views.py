@@ -102,13 +102,6 @@ def register_view(request):
         )
     )
 
-    # Photo is optional for staff-created athlete accounts; required for public registration
-    if role == "athlete" and not photo_file and not is_staff_creator:
-        return Response(
-            {"photo": "الصورة مطلوبة للرياضيين"},
-            status=status.HTTP_400_BAD_REQUEST,
-        )
-
     sport_id = serializer.validated_data.get("sport")
 
     try:

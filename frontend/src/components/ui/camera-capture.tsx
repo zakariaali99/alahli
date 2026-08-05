@@ -8,7 +8,7 @@ interface CameraCaptureProps {
   preview?: string
 }
 
-export default function CameraCapture({ onCapture, buttonText = "خذ صورة شخصية", preview }: CameraCaptureProps) {
+export default function CameraCapture({ onCapture, buttonText = "إرفاق صورة", preview }: CameraCaptureProps) {
   const videoRef = useRef<HTMLVideoElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
   const streamRef = useRef<MediaStream | null>(null)
