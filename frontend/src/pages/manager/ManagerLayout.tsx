@@ -73,13 +73,19 @@ export default function ManagerLayout() {
           <div className="flex items-center gap-3">
             {isSubRoute && (
               <Button
-                onClick={() => navigate("/manager")}
+                onClick={() => {
+                  if (location.pathname.includes("/dashboard")) {
+                    navigate(numericId ? `/manager/${numericId}/sports` : "/manager")
+                  } else {
+                    navigate("/manager")
+                  }
+                }}
                 variant="outline"
                 size="sm"
-                className="gap-1.5"
+                className="gap-1.5 font-bold"
               >
                 <ArrowRight className="w-4 h-4" />
-                <span>الرئيسية</span>
+                <span>{location.pathname.includes("/dashboard") ? "الرجوع للرياضات" : "الرئيسية"}</span>
               </Button>
             )}
             <Link to="/manager" className="flex items-center gap-2">

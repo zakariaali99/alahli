@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react"
 import { AnimatePresence, motion } from "framer-motion"
-import { Plus, Pencil, X, UserCog, ShieldCheck, SearchIcon, Trash2 } from "lucide-react"
+import { Plus, Pencil, X, UserCog, ShieldCheck, SearchIcon, Trash2, Database } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { api } from "@/lib/api"
@@ -8,6 +8,7 @@ import { extractResults } from "@/lib/response"
 import { validateLibyanPhone } from "@/lib/utils"
 import { useToast } from "@/lib/toast"
 import { Can } from "@/components/ui/can"
+import { BackupModal } from "@/components/BackupModal"
 
 type StaffUser = {
   id: number
@@ -57,6 +58,8 @@ export default function StaffManagement() {
   const [submitting, setSubmitting] = useState(false)
   const [editingUser, setEditingUser] = useState<StaffUser | null>(null)
   const [showModal, setShowModal] = useState(false)
+  const [isBackupOpen, setIsBackupOpen] = useState(false)
+  const [deletingUser, setDeletingUser] = useState<StaffUser | null>(null)
 
   const [form, setForm] = useState({
     first_name_ar: "",
@@ -90,6 +93,17 @@ export default function StaffManagement() {
       setDepartments(extractResults(data))
     } catch (e) {
       console.error("فشل تحميل الأكاديميات:", e)
+    }
+  }
+
+  const handleDeleteUser = async (u: StaffUser) => {
+    try {
+      await api.delete(`/auth/users/${u.id}/`)
+      toast.success(`تم حذف المستخدم ${u.full_name_ar} بنجاح`)
+      setUsers((prev) => prev.filter((item) => item.id !== u.id))
+      setDeletingUser(null)
+    } catch (err: any) {
+      toast.error(err.response?.data?.detail || "تعذر حذف المستخدم")
     }
   }
 
@@ -219,7 +233,16 @@ export default function StaffManagement() {
           <option value="trainer">مدرب</option>
           <option value="viewer">مشاهد</option>
         </select>
-        <Can action="staff:create"><Button onClick={openCreateModal}><Plus className="h-4 w-4" /> إضافة موظف</Button></Can>
+        <Can action="staff:create">
+          <div className="flex items-center gap-2">
+            <Button variant="outline" onClick={() => setIsBackupOpen(true)}>
+              <Database className="h-4 w-4" /> النسخ الاحتياطي
+            </Button>
+            <Button onClick={openCreateModal}>
+              <Plus className="h-4 w-4" /> إضافة موظف
+            </Button>
+          </div>
+        </Can>
       </div>
 
       <div className="overflow-x-auto rounded-2xl border border-border bg-card">
@@ -253,6 +276,11 @@ export default function StaffManagement() {
                 <td className="px-4 py-3 text-center">
                   <div className="flex justify-center gap-1">
                     <Can action="staff:update"><Button size="sm" variant="ghost" onClick={() => openEditModal(user)}><Pencil className="h-4 w-4" /></Button></Can>
+                    <Can action="staff:delete">
+                      <Button size="sm" variant="ghost" className="text-error hover:bg-error/10 hover:text-error" onClick={() => setDeletingUser(user)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </Can>
                   </div>
                 </td>
               </tr>
@@ -260,6 +288,24 @@ export default function StaffManagement() {
           </tbody>
         </table>
       </div>
+
+      <BackupModal isOpen={isBackupOpen} onClose={() => setIsBackupOpen(false)} />
+
+      {/* Delete User Confirmation Modal */}
+      {deletingUser && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
+          <div className="bg-card rounded-2xl p-6 max-w-md w-full border border-border shadow-xl space-y-4 text-right" dir="rtl">
+            <h3 className="text-lg font-bold">تأكيد حذف المستخدم</h3>
+            <p className="text-sm text-muted-foreground">
+              هل أنت تأكد من رغبتك في حذف المستخدم "{deletingUser.full_name_ar}"؟
+            </p>
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" onClick={() => setDeletingUser(null)}>إلغاء</Button>
+              <Button variant="destructive" onClick={() => handleDeleteUser(deletingUser)}>حذف النهائي</Button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <AnimatePresence>
         {showModal && (

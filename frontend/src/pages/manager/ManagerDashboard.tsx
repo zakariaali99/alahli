@@ -12,6 +12,7 @@ import {
   LayoutGrid,
   RefreshCw,
   AlertTriangle,
+  ArrowRight,
 } from "lucide-react"
 import { useDepartment, useSports } from "@/lib/hooks/useDepartments"
 import type { Department, Sport } from "@/lib/types"
@@ -211,6 +212,13 @@ export default function ManagerDashboard() {
     <div className="space-y-8">
       <div className="bg-white rounded-3xl border border-gray-200/80 p-6 sm:p-8 shadow-sm flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
         <div className="flex items-center gap-4">
+          <button
+            onClick={() => navigate(`/manager/${activeDepartment.id}/sports`)}
+            className="w-10 h-10 rounded-2xl border border-gray-200 bg-gray-50 flex items-center justify-center text-muted-foreground hover:text-foreground transition-colors shrink-0"
+            aria-label="الرجوع لقطع الرياضات"
+          >
+            <ArrowRight className="w-5 h-5" />
+          </button>
           <div className="w-16 h-16 rounded-2xl flex items-center justify-center text-white shadow-md shrink-0 overflow-hidden bg-white border border-gray-100">
             <img src={getAcademyLogo(activeDepartment)} alt="Logo" className="w-full h-full object-contain" />
           </div>

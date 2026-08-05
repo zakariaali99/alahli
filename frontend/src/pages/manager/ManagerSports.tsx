@@ -1,9 +1,11 @@
+import { useState } from "react"
 import { useNavigate, useParams, useSearchParams } from "react-router-dom"
 import { motion } from "framer-motion"
-import { AlertTriangle, ArrowLeft, Check, Pin, RefreshCw, Trophy } from "lucide-react"
+import { AlertTriangle, ArrowLeft, Check, Pin, RefreshCw, Trash2, Trophy } from "lucide-react"
 import { useDepartment, useSports } from "@/lib/hooks/useDepartments"
 import type { Department, Sport } from "@/lib/types"
 import { getAcademyLogo } from "@/lib/departments"
+import { api } from "@/lib/api"
 
 function fallbackDepartment(academyId: number): Department {
   return {
@@ -26,6 +28,9 @@ export default function ManagerSports() {
   const sportParam = searchParams.get("sport")
   const numericId = academyId ? Number(academyId) : undefined
 
+  const [deletingSportId, setDeletingSportId] = useState<number | null>(null)
+  const [deleteConfirmSport, setDeleteConfirmSport] = useState<Sport | null>(null)
+
   const {
     data: department,
     isLoading: deptLoading,
@@ -38,6 +43,19 @@ export default function ManagerSports() {
     isError: sportsError,
     refetch: refetchSports,
   } = useSports(numericId)
+
+  const handleDeleteSport = async (sport: Sport) => {
+    try {
+      setDeletingSportId(sport.id)
+      await api.delete(`/sports/${sport.id}/`)
+      await refetchSports()
+      setDeleteConfirmSport(null)
+    } catch (err: any) {
+      alert(err.response?.data?.detail || "حدث خطأ أثناء حذف الرياضة")
+    } finally {
+      setDeletingSportId(null)
+    }
+  }
 
   const activeDepartment = department ?? (deptError && numericId ? fallbackDepartment(numericId) : null)
 
@@ -174,18 +192,70 @@ export default function ManagerSports() {
                       {sp.name}
                     </p>
                   </div>
-                  {isSelected && (
-                    <motion.span
-                      initial={{ scale: 0 }}
-                      animate={{ scale: 1 }}
-                      className="w-7 h-7 rounded-full bg-primary flex items-center justify-center shrink-0"
+                  <div className="flex items-center gap-2" onClick={(e) => e.stopPropagation()}>
+                    <button
+                      type="button"
+                      onClick={() => setDeleteConfirmSport(sp)}
+                      className="p-2 rounded-xl text-gray-400 hover:text-rose-600 hover:bg-rose-50 transition-colors"
+                      title="حذف الرياضة"
                     >
-                      <Check className="w-4 h-4 text-white" />
-                    </motion.span>
-                  )}
+                      <Trash2 className="w-4 h-4" />
+                    </button>
+                    {isSelected && (
+                      <motion.span
+                        initial={{ scale: 0 }}
+                        animate={{ scale: 1 }}
+                        className="w-7 h-7 rounded-full bg-primary flex items-center justify-center shrink-0"
+                      >
+                        <Check className="w-4 h-4 text-white" />
+                      </motion.span>
+                    )}
+                  </div>
                 </motion.button>
               )
             })}
+          </div>
+        )}
+
+        {/* ── Delete Confirmation Modal ── */}
+        {deleteConfirmSport && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-xs p-4">
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="bg-white rounded-3xl p-6 sm:p-8 max-w-md w-full shadow-2xl space-y-6 text-right"
+              dir="rtl"
+            >
+              <div className="w-12 h-12 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center">
+                <Trash2 className="w-6 h-6" />
+              </div>
+              <div className="space-y-2">
+                <h3 className="text-xl font-black text-[#0f2942]">حذف رياضة "{deleteConfirmSport.name_ar}"</h3>
+                <p className="text-sm text-muted-foreground">
+                  هل أنت تأكد من رغبتك في حذف هذه الرياضة؟ هذا الإجراء لا يمكن التراجع عنه.
+                </p>
+              </div>
+              <div className="flex items-center justify-end gap-3 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setDeleteConfirmSport(null)}
+                  className="px-5 py-2.5 rounded-2xl border border-gray-200 text-sm font-bold text-gray-700 hover:bg-gray-50 transition-colors"
+                >
+                  إلغاء
+                </button>
+                <button
+                  type="button"
+                  disabled={deletingSportId === deleteConfirmSport.id}
+                  onClick={() => handleDeleteSport(deleteConfirmSport)}
+                  className="px-5 py-2.5 rounded-2xl bg-rose-600 hover:bg-rose-700 text-white text-sm font-bold transition-colors disabled:opacity-50 flex items-center gap-2"
+                >
+                  {deletingSportId === deleteConfirmSport.id ? (
+                    <RefreshCw className="w-4 h-4 animate-spin" />
+                  ) : null}
+                  تأكيد الحذف
+                </button>
+              </div>
+            </motion.div>
           </div>
         )}
       </div>

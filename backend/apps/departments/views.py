@@ -64,7 +64,7 @@ class SportViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action == "destroy":
-            return [IsSuperAdmin()]
+            return [IsManagementOrAbove()]
         if self.action in ["create", "update", "partial_update"]:
             return [IsManagementOrAbove()]
         if self.action in ["list", "retrieve"]:
@@ -84,7 +84,7 @@ class GroupViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action == "destroy":
-            return [IsSuperAdmin()]
+            return [IsManagementOrAbove()]
         if self.action in ["create", "update", "partial_update"]:
             return [IsManagementOrAbove()]
         if self.action in ["list", "retrieve"]:
