@@ -1,7 +1,24 @@
 import json
-from datetime import datetime
+from datetime import datetime, date, time
+from decimal import Decimal
 from django.db import transaction
 from django.apps import apps
+
+def _serialize_value(v):
+    if isinstance(v, (datetime, date, time)):
+        return v.isoformat()
+    if isinstance(v, Decimal):
+        return str(v)
+    if hasattr(v, "name"):
+        return str(v.name) if v.name else None
+    return v
+
+def _serialize_list(queryset):
+    rows = list(queryset.values())
+    for r in rows:
+        for k, v in list(r.items()):
+            r[k] = _serialize_value(v)
+    return rows
 
 def generate_backup_data():
     """Generates complete dictionary dump of system data."""
@@ -14,20 +31,25 @@ def generate_backup_data():
     Subscription = apps.get_model("subscriptions", "Subscription")
     FAQ = apps.get_model("faqs", "FAQ")
 
+    users_data = list(User.objects.all().values(
+        "id", "phone", "first_name_ar", "last_name_ar",
+        "role", "academy_id", "is_active", "date_joined"
+    ))
+    for u in users_data:
+        for k, v in list(u.items()):
+            u[k] = _serialize_value(v)
+
     data = {
         "version": "1.0",
         "timestamp": datetime.now().isoformat(),
-        "departments": list(Department.objects.all().values()),
-        "sports": list(Sport.objects.all().values()),
-        "groups": list(Group.objects.all().values()),
-        "users": list(User.objects.all().values(
-            "id", "phone", "first_name_ar", "last_name_ar",
-            "role", "academy_id", "is_active", "date_joined"
-        )),
-        "athletes": list(Athlete.objects.all().values()),
-        "subscription_packages": list(SubscriptionPackage.objects.all().values()),
-        "subscriptions": list(Subscription.objects.all().values()),
-        "faqs": list(FAQ.objects.all().values()),
+        "departments": _serialize_list(Department.objects.all()),
+        "sports": _serialize_list(Sport.objects.all()),
+        "groups": _serialize_list(Group.objects.all()),
+        "users": users_data,
+        "athletes": _serialize_list(Athlete.objects.all()),
+        "subscription_packages": _serialize_list(SubscriptionPackage.objects.all()),
+        "subscriptions": _serialize_list(Subscription.objects.all()),
+        "faqs": _serialize_list(FAQ.objects.all()),
     }
     return data
 
@@ -48,17 +70,17 @@ def restore_backup_data(backup_dict, mode="smart_merge"):
     stats = {"created": 0, "merged": 0}
 
     if mode == "overwrite":
-        # Clear non-core transactional records
         Subscription.objects.all().delete()
         SubscriptionPackage.objects.all().delete()
         Group.objects.all().delete()
 
     # 1. Restore/Merge Departments
-    dept_map = {} # old_id -> new_obj
+    dept_map = {}
     for item in backup_dict.get("departments", []):
         old_id = item.get("id")
+        name_ar = item.get("name_ar") or item.get("name") or f"قسم {old_id}"
         dept, created = Department.objects.get_or_create(
-            name_ar=item.get("name_ar"),
+            name_ar=name_ar,
             defaults={
                 "name": item.get("name") or "",
                 "color": item.get("color") or "#0F4C81",
@@ -72,7 +94,7 @@ def restore_backup_data(backup_dict, mode="smart_merge"):
             stats["merged"] += 1
 
     # 2. Restore/Merge Sports
-    sport_map = {} # old_id -> new_obj
+    sport_map = {}
     for item in backup_dict.get("sports", []):
         old_id = item.get("id")
         dept_id = item.get("department_id")
@@ -80,9 +102,10 @@ def restore_backup_data(backup_dict, mode="smart_merge"):
         if not dept:
             continue
         
+        name_ar = item.get("name_ar") or item.get("name") or f"رياضة {old_id}"
         sport, created = Sport.objects.get_or_create(
             department=dept,
-            name_ar=item.get("name_ar"),
+            name_ar=name_ar,
             defaults={
                 "name": item.get("name") or "",
                 "is_pinned": item.get("is_pinned", False),
@@ -105,14 +128,12 @@ def restore_backup_data(backup_dict, mode="smart_merge"):
         if not sp:
             continue
 
+        name_ar = item.get("name_ar") or item.get("name") or f"مجموعة {old_id}"
         grp, created = Group.objects.get_or_create(
             sport=sp,
-            name_ar=item.get("name_ar"),
+            name_ar=name_ar,
             defaults={
-                "name": item.get("name") or "",
-                "age_min": item.get("age_min") or 5,
-                "age_max": item.get("age_max") or 18,
-                "capacity": item.get("capacity") or 30,
+                "days": item.get("days") or item.get("schedule_days") or "",
                 "is_active": item.get("is_active", True),
             }
         )
@@ -137,8 +158,6 @@ def restore_backup_data(backup_dict, mode="smart_merge"):
                 role=item.get("role") or "athlete",
                 is_active=item.get("is_active", True),
             )
-            usr.set_password("12345678")
-            usr.save()
             stats["created"] += 1
         else:
             stats["merged"] += 1
@@ -149,32 +168,33 @@ def restore_backup_data(backup_dict, mode="smart_merge"):
     for item in backup_dict.get("athletes", []):
         old_id = item.get("id")
         m_num = item.get("membership_number")
-        phone = item.get("phone_number") or ""
+        phone = item.get("phone") or item.get("phone_number") or f"child_{old_id}"
+        full_name = item.get("full_name") or item.get("full_name_ar") or f"{item.get('first_name', '')} {item.get('family_name', '')}".strip() or "رياضي"
         
         ath = None
         if m_num:
             ath = Athlete.objects.filter(membership_number=m_num).first()
         if not ath and phone:
-            ath = Athlete.objects.filter(phone_number=phone).first()
+            ath = Athlete.objects.filter(phone=phone).first()
             
         if not ath:
-            u_account = user_map.get(item.get("user_account_id"))
-            p_account = user_map.get(item.get("parent_account_id"))
             dept = dept_map.get(item.get("department_id")) or Department.objects.filter(id=item.get("department_id")).first()
-            grp = group_map.get(item.get("group_id")) or Group.objects.filter(id=item.get("group_id")).first()
+            sp = sport_map.get(item.get("sport_id")) or Sport.objects.filter(id=item.get("sport_id")).first()
+            b_date = item.get("birth_date") or "2010-01-01"
 
             ath = Athlete.objects.create(
-                user_account=u_account,
-                parent_account=p_account,
+                full_name=full_name,
+                phone=phone,
+                parent_name=item.get("parent_name") or "",
+                parent_phone=item.get("parent_phone") or "",
+                membership_number=m_num or f"ALA-{old_id}",
+                birth_date=b_date,
+                gender=item.get("gender") or "male",
                 department=dept,
-                group=grp,
-                first_name=item.get("first_name") or "",
-                family_name=item.get("family_name") or "",
-                full_name_ar=item.get("full_name_ar") or "",
-                phone_number=phone,
-                membership_number=m_num,
-                birth_date=item.get("birth_date"),
-                status=item.get("status") or "approved",
+                sport=sp,
+                health_status=item.get("health_status") or "",
+                notes=item.get("notes") or "",
+                is_active=item.get("is_active", True),
             )
             stats["created"] += 1
         else:
@@ -190,13 +210,16 @@ def restore_backup_data(backup_dict, mode="smart_merge"):
         if not dept:
             continue
 
+        pkg_name = item.get("name") or item.get("title") or f"باقة {old_id}"
         pkg, created = SubscriptionPackage.objects.get_or_create(
             department=dept,
-            title=item.get("title"),
+            name=pkg_name,
             defaults={
                 "sport": sp,
                 "price": item.get("price") or "0.00",
-                "duration_months": item.get("duration_months") or 1,
+                "renewal_price": item.get("renewal_price") or item.get("price") or "0.00",
+                "duration_type": item.get("duration_type") or "months",
+                "duration_value": item.get("duration_value") or item.get("duration_months") or 1,
                 "is_active": item.get("is_active", True),
             }
         )
@@ -206,19 +229,25 @@ def restore_backup_data(backup_dict, mode="smart_merge"):
 
     # 7. Restore/Merge Subscriptions
     for item in backup_dict.get("subscriptions", []):
+        old_sub_id = item.get("id")
         ath = athlete_map.get(item.get("athlete_id")) or Athlete.objects.filter(id=item.get("athlete_id")).first()
-        pkg = package_map.get(item.get("package_id")) or SubscriptionPackage.objects.filter(id=item.get("package_id")).first()
-        if not ath or not pkg:
+        grp = group_map.get(item.get("group_id")) or Group.objects.filter(id=item.get("group_id")).first()
+        if not ath:
             continue
+
+        start_d = item.get("start_date") or "2026-01-01"
+        end_d = item.get("end_date") or "2026-02-01"
+        amt = item.get("amount") or item.get("amount_paid") or "0.00"
 
         sub, created = Subscription.objects.get_or_create(
             athlete=ath,
-            package=pkg,
-            start_date=item.get("start_date"),
+            start_date=start_d,
             defaults={
-                "end_date": item.get("end_date"),
+                "group": grp,
+                "end_date": end_d,
+                "amount": amt,
+                "payment_method": item.get("payment_method") or "cash",
                 "status": item.get("status") or "active",
-                "amount_paid": item.get("amount_paid") or "0.00",
             }
         )
         if created:
