@@ -10,7 +10,7 @@ interface BackupModalProps {
 }
 
 export function BackupModal({ isOpen, onClose }: BackupModalProps) {
-  const token = localStorage.getItem("token")
+  const token = localStorage.getItem("access_token") || localStorage.getItem("token")
   const [mode, setMode] = useState<"smart_merge" | "overwrite">("smart_merge")
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isExporting, setIsExporting] = useState(false)
@@ -25,10 +25,13 @@ export function BackupModal({ isOpen, onClose }: BackupModalProps) {
       setStatusMessage(null)
       const res = await fetch(`${getApiBase()}/auth/backup/export/`, {
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: token ? `Bearer ${token}` : "",
         },
       })
-      if (!res.ok) throw new Error("فشل في تحميل النسخة الاحتياطية")
+      if (!res.ok) {
+        const errData = await res.json().catch(() => ({}))
+        throw new Error(errData.detail || `فشل في تحميل النسخة الاحتياطية (${res.status})`)
+      }
       
       const blob = await res.blob()
       const url = window.URL.createObjectURL(blob)
@@ -65,7 +68,7 @@ export function BackupModal({ isOpen, onClose }: BackupModalProps) {
       const res = await fetch(`${getApiBase()}/auth/backup/import/`, {
         method: "POST",
         headers: {
-          Authorization: `Bearer ${token}`,
+          Authorization: token ? `Bearer ${token}` : "",
         },
         body: formData,
       })
