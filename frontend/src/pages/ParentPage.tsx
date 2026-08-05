@@ -87,12 +87,21 @@ export default function ParentPage() {
   const regs = regData ? extractResults<ParentRegistration>(regData as any) : []
   const parent = regs[0]
 
+  const { data: userData } = useQuery({
+    queryKey: ["user-parent-fallback", id],
+    queryFn: () => api.get<{ id: number; full_name_ar: string; phone: string; residence?: string }>(`/auth/users/${id}/`),
+    enabled: !!id,
+  })
+
+  const parentName = parent?.user_name || userData?.full_name_ar || "ولي الأمر"
+  const parentPhone = parent?.user_phone || userData?.phone || "—"
+  const parentResidence = parent?.residence || userData?.residence || "—"
+
   const openEditModal = () => {
-    if (!parent) return
     setEditForm({
-      full_name: parent.user_name || "",
-      whatsapp_phone: parent.user_phone || "",
-      residence: parent.residence || "",
+      full_name: parentName,
+      whatsapp_phone: parentPhone !== "—" ? parentPhone : "",
+      residence: parentResidence !== "—" ? parentResidence : "",
     })
     setEditError("")
     setShowEditModal(true)
@@ -243,36 +252,38 @@ export default function ParentPage() {
             <Loader2 className="w-4 h-4 animate-spin" /> جاري تحميل البيانات...
           </div>
         )}
-        {!regLoading && !parent && (
+        {!regLoading && !parent && !userData && (
           <div className="flex flex-col items-center justify-center gap-3 py-8 text-muted-foreground">
             <AlertCircle className="w-8 h-8 opacity-40" />
             <p className="text-sm">لم يتم العثور على ولي الأمر</p>
           </div>
         )}
-        {parent && (
+        {(parent || userData) && (
           <div className="flex flex-col md:flex-row gap-6 items-start md:items-center">
             <div className="flex h-16 w-16 items-center justify-center rounded-2xl bg-emerald-500/10 text-emerald-600 shrink-0">
               <Users className="w-8 h-8" />
             </div>
             <div className="flex-1 space-y-3">
               <div className="flex flex-wrap items-center gap-3">
-                <h2 className="text-xl font-extrabold">{parent.user_name || "—"}</h2>
+                <h2 className="text-xl font-extrabold">{parentName}</h2>
                 {statusBadge()}
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-8 gap-y-2 text-sm">
                 <p className="flex items-center gap-2 text-muted-foreground">
                   <Phone className="w-4 h-4 text-primary" />
-                  <span dir="ltr">{parent.user_phone || "—"}</span>
-                  <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">الواتساب</span>
+                  <span dir="ltr">{parentPhone}</span>
+                  <span className="text-[10px] bg-primary/10 text-primary px-1.5 py-0.5 rounded-full">الهاتف</span>
                 </p>
                 <p className="flex items-center gap-2 text-muted-foreground">
                   <MapPin className="w-4 h-4 text-primary" />
-                  {parent.residence || "—"}
+                  {parentResidence}
                 </p>
               </div>
-              <p className="text-xs text-muted-foreground">
-                تاريخ التسجيل: {formatDate(parent.created_at)}
-              </p>
+              {parent?.created_at && (
+                <p className="text-xs text-muted-foreground">
+                  تاريخ التسجيل: {formatDate(parent.created_at)}
+                </p>
+              )}
             </div>
             <Button type="button" variant="outline" onClick={openEditModal}>
               <Pencil className="w-4 h-4" />

@@ -516,14 +516,20 @@ export default function AthleteProfilePage() {
                   <p className="text-foreground font-semibold">{athlete.department_name || "—"}</p>
                 </div>
               </div>
-              {athlete.parent_phone && (
-                <div className="col-span-2 flex items-start gap-3">
-                  <div className="w-8 h-8 rounded-lg bg-primary-container/10 text-primary/60 flex items-center justify-center shrink-0 mt-0.5">
-                    <Phone className="w-4 h-4" />
+              {(athlete.parent_name || athlete.parent_phone) && (
+                <div className="col-span-2 flex items-start gap-3 bg-primary/5 p-3 rounded-xl border border-primary/10">
+                  <div className="w-8 h-8 rounded-lg bg-primary/10 text-primary flex items-center justify-center shrink-0 mt-0.5">
+                    <User className="w-4 h-4" />
                   </div>
                   <div>
-                    <p className="text-[11px] text-muted-foreground mb-0.5">هاتف ولي الأمر</p>
-                    <p className="text-foreground font-semibold" dir="ltr">{athlete.parent_phone}</p>
+                    <p className="text-[11px] font-bold text-muted-foreground mb-0.5">بيانات ولي الأمر</p>
+                    <p className="text-foreground font-extrabold text-sm">{athlete.parent_name || "ولي الأمر"}</p>
+                    {athlete.parent_phone && (
+                      <p className="text-xs text-primary font-bold mt-0.5 flex items-center gap-1.5" dir="ltr">
+                        <Phone className="w-3 h-3 shrink-0" />
+                        <span>{athlete.parent_phone}</span>
+                      </p>
+                    )}
                   </div>
                 </div>
               )}

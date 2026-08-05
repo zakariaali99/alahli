@@ -73,6 +73,21 @@ class AthleteDetailSerializer(serializers.ModelSerializer):
                 data["photo"] = request.build_absolute_uri(instance.photo.url)
         if request and data.get("qr_code"):
             data["qr_code"] = request.build_absolute_uri(data["qr_code"])
+
+        # Fallback to parent account if parent_name or parent_phone is empty
+        if not data.get("parent_name") or not data.get("parent_phone"):
+            p_rel = instance.parents.select_related("parent").first()
+            if p_rel and p_rel.parent:
+                if not data.get("parent_name"):
+                    data["parent_name"] = p_rel.parent.full_name_ar or f"{p_rel.parent.first_name_ar} {p_rel.parent.last_name_ar}".strip()
+                if not data.get("parent_phone"):
+                    data["parent_phone"] = p_rel.parent.phone
+            elif instance.registration and instance.registration.user and instance.registration.role_choice == "parent":
+                if not data.get("parent_name"):
+                    data["parent_name"] = instance.registration.user.full_name_ar
+                if not data.get("parent_phone"):
+                    data["parent_phone"] = instance.registration.user.phone
+
         return data
 
 

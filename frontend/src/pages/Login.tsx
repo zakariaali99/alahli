@@ -39,11 +39,6 @@ export default function LoginPage() {
       return
     }
 
-    if (isStaffLogin && !password.trim()) {
-      setErrorMessage("يرجى إدخال كلمة المرور لحساب الإدارة")
-      return
-    }
-
     const phoneErr = validateLibyanPhone(phone)
     if (phoneErr) { setErrorMessage(phoneErr); return }
 
@@ -59,7 +54,7 @@ export default function LoginPage() {
         localStorage.setItem("remember_me", "false")
       }
 
-      const loggedInUser = await login(phone.trim(), isStaffLogin ? password : "")
+      const loggedInUser = await login(phone.trim(), "")
       if (loggedInUser.role === "athlete" || loggedInUser.role === "parent") {
         navigate("/user")
       } else {
@@ -86,13 +81,13 @@ export default function LoginPage() {
           </div>
           <h1 className="text-3xl font-black leading-tight text-[#102033]">
             منصة إدارة الأكاديمية
-            <span className="block text-[#0F4C81] mt-1">تسجيل دخول آمن</span>
+            <span className="block text-[#0F4C81] mt-1">تسجيل دخول مباشر</span>
           </h1>
           <p className="text-sm leading-7 text-[#4d6178]">
-            سجّل الدخول برقم هاتفك للوصول لحسابك، أو اختر دخول الإدارة للموظفين.
+            سجّل الدخول برقم هاتفك للوصول لحسابك فوراً بالنظام.
           </p>
           <div className="space-y-2 text-xs text-[#4d6178] border-t border-border/20 pt-4">
-            <p>• دخول مباشر برقم الهاتف للرياضيين وأولياء الأمور</p>
+            <p>• دخول مباشر برقم الهاتف لجميع الحسابات</p>
             <p>• اختيار الأكاديمية والتسجيل الذاتي السريع</p>
             <p>• تتبع الحضور ومتابعة الاشتراكات</p>
           </div>
@@ -108,7 +103,7 @@ export default function LoginPage() {
             className="p-6 md:p-8 border border-white/80 shadow-[0_20px_60px_-28px_rgba(16,32,51,0.45)] backdrop-blur-md"
           >
             <h2 className="text-xl font-extrabold text-[#102033]">تسجيل الدخول</h2>
-            <p className="mt-1 text-xs text-[#5f7288]">أدخل رقم هاتفك للوصول لحسابك</p>
+            <p className="mt-1 text-xs text-[#5f7288]">أدخل رقم هاتفك للوصول لحسابك مباشرة</p>
 
             {errorMessage && (
               <div className="mt-4 flex items-center gap-2 rounded-xl border border-[#A63F3F]/25 bg-[#A63F3F]/8 px-3 py-2 text-xs text-[#A63F3F]">
@@ -130,30 +125,6 @@ export default function LoginPage() {
                 />
               </div>
 
-              {isStaffLogin && (
-                <div>
-                  <label className="mb-1.5 block text-xs font-bold text-[#102033]" htmlFor="password">كلمة المرور للإدارة</label>
-                  <div className="relative">
-                    <Input
-                      id="password"
-                      autoComplete="current-password"
-                      type={showPassword ? "text" : "password"}
-                      value={password}
-                      onChange={(e) => setPassword(e.target.value)}
-                      icon={<Lock className="h-4 w-4 text-muted-foreground" />}
-                      className="pl-10"
-                    />
-                    <button
-                      className="absolute left-3.5 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground transition-colors cursor-pointer"
-                      type="button"
-                      onClick={() => setShowPassword((v) => !v)}
-                    >
-                      {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
-                    </button>
-                  </div>
-                </div>
-              )}
-
               <div className="flex items-center justify-between gap-2 pt-1">
                 <label className="flex cursor-pointer items-center gap-2 text-xs text-[#102033] select-none">
                   <input
@@ -164,14 +135,6 @@ export default function LoginPage() {
                   />
                   تذكرني
                 </label>
-
-                <button
-                  type="button"
-                  onClick={() => setIsStaffLogin(!isStaffLogin)}
-                  className="text-xs text-[#0F4C81] hover:underline font-semibold"
-                >
-                  {isStaffLogin ? "← دخول الرياضيين وأولياء الأمور" : "دخول الإدارة والموظفين"}
-                </button>
               </div>
 
               <Button className="h-10 w-full rounded-xl text-sm font-bold mt-2" disabled={isLoading} type="submit">

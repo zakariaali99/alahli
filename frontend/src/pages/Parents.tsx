@@ -4,7 +4,7 @@ import { motion, type Variants } from "framer-motion"
 import {
   Users, Search, Filter, CheckCircle2,
   Clock, XCircle, ChevronLeft, ChevronRight, UserX,
-  RefreshCw, Phone,
+  RefreshCw, Phone, Trash2, Pencil, Loader2, AlertTriangle, X,
 } from "lucide-react"
 import { useQuery, useQueryClient } from "@tanstack/react-query"
 import { api } from "@/lib/api"
@@ -68,8 +68,52 @@ export default function ParentsPage() {
   const [page, setPage] = useState(1)
   const PAGE_SIZE = 20
   const [showSyncModal, setShowSyncModal] = useState(false)
+  const [parentToDelete, setParentToDelete] = useState<Parent | null>(null)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [parentToEdit, setParentToEdit] = useState<Parent | null>(null)
+  const [editName, setEditName] = useState("")
+  const [editPhone, setEditPhone] = useState("")
+  const [isSavingEdit, setIsSavingEdit] = useState(false)
 
   const queryClient = useQueryClient()
+
+  const openEditModal = (p: Parent) => {
+    setParentToEdit(p)
+    setEditName(p.full_name_ar)
+    setEditPhone(p.phone)
+  }
+
+  const handleDeleteParent = async () => {
+    if (!parentToDelete) return
+    try {
+      setIsDeleting(true)
+      await api.delete(`/auth/users/${parentToDelete.id}/`)
+      setParentToDelete(null)
+      await queryClient.invalidateQueries({ queryKey: ["parents-list"] })
+    } catch (err: any) {
+      alert(api.getErrorMessage(err, "تعذر حذف حساب ولي الأمر"))
+    } finally {
+      setIsDeleting(false)
+    }
+  }
+
+  const handleSaveEditParent = async (e: React.FormEvent) => {
+    e.preventDefault()
+    if (!parentToEdit) return
+    try {
+      setIsSavingEdit(true)
+      await api.patch(`/auth/users/${parentToEdit.id}/`, {
+        first_name_ar: editName.trim(),
+        phone: editPhone.trim(),
+      })
+      setParentToEdit(null)
+      await queryClient.invalidateQueries({ queryKey: ["parents-list"] })
+    } catch (err: any) {
+      alert(api.getErrorMessage(err, "تعذر حفظ التعديلات"))
+    } finally {
+      setIsSavingEdit(false)
+    }
+  }
 
   const handleRefresh = async () => {
     setShowSyncModal(true)
@@ -205,19 +249,20 @@ export default function ParentsPage() {
               <th className="px-4 py-3">رقم الهاتف</th>
               <th className="px-4 py-3">تاريخ التسجيل</th>
               <th className="px-4 py-3">الحالة</th>
+              <th className="px-4 py-3 text-center">الإجراءات</th>
             </tr>
           </thead>
           <tbody>
             {isLoading && (
               <tr>
-                <td colSpan={4}>
+                <td colSpan={5}>
                   <TableSkeleton rows={8} />
                 </td>
               </tr>
             )}
             {!isLoading && parents.length === 0 && (
               <tr>
-                <td colSpan={4}>
+                <td colSpan={5}>
                   <div className="flex flex-col items-center justify-center py-16 gap-3 text-muted-foreground">
                     <UserX className="w-10 h-10 opacity-30" />
                     <p className="text-sm">لا يوجد أولياء أمور مسجلين</p>
@@ -248,6 +293,28 @@ export default function ParentsPage() {
                 <td className="px-4 py-3 text-muted-foreground text-xs">{formatDate(p.created_at)}</td>
                 <td className="px-4 py-3">
                   <RegistrationStatusBadge status={p.registration_status} />
+                </td>
+                <td className="px-4 py-3" onClick={(e) => e.stopPropagation()}>
+                  <div className="flex items-center justify-center gap-1">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title="تعديل"
+                      onClick={() => openEditModal(p)}
+                      className="text-gray-600 hover:text-primary hover:bg-primary/10 h-8 w-8"
+                    >
+                      <Pencil className="w-4 h-4" />
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      title="حذف"
+                      onClick={() => setParentToDelete(p)}
+                      className="text-red-600 hover:bg-red-50 h-8 w-8"
+                    >
+                      <Trash2 className="w-4 h-4" />
+                    </Button>
+                  </div>
                 </td>
               </tr>
             ))}
@@ -301,6 +368,95 @@ export default function ParentsPage() {
             <div className="space-y-1">
               <h3 className="font-extrabold text-foreground text-lg">تحديث البيانات</h3>
               <p className="text-xs text-muted-foreground">يرجى الانتظار، جاري جلب أحدث البيانات...</p>
+            </div>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Edit Parent Modal */}
+      {parentToEdit && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4" dir="rtl">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-card border border-border p-6 rounded-3xl shadow-2xl max-w-md w-full space-y-5"
+          >
+            <div className="flex items-center justify-between border-b border-border/40 pb-3">
+              <h3 className="text-lg font-bold text-foreground flex items-center gap-2">
+                <Pencil className="w-4 h-4 text-primary" />
+                تعديل بيانات ولي الأمر
+              </h3>
+              <button onClick={() => setParentToEdit(null)} className="p-1 rounded-lg hover:bg-muted text-muted-foreground">
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEditParent} className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-muted-foreground mb-1">الاسم الكامل</label>
+                <Input
+                  value={editName}
+                  onChange={(e) => setEditName(e.target.value)}
+                  placeholder="اسم ولي الأمر"
+                  required
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-bold text-muted-foreground mb-1">رقم الهاتف</label>
+                <Input
+                  value={editPhone}
+                  onChange={(e) => setEditPhone(e.target.value)}
+                  placeholder="0910000000"
+                  dir="ltr"
+                  required
+                />
+              </div>
+
+              <div className="flex justify-end gap-2 pt-2">
+                <Button type="button" variant="outline" onClick={() => setParentToEdit(null)}>
+                  إلغاء
+                </Button>
+                <Button type="submit" disabled={isSavingEdit} className="bg-primary text-primary-foreground font-bold">
+                  {isSavingEdit ? <Loader2 className="w-4 h-4 animate-spin" /> : "حفظ التعديلات"}
+                </Button>
+              </div>
+            </form>
+          </motion.div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {parentToDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-xs p-4" dir="rtl">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            className="bg-card border border-border p-6 rounded-3xl shadow-2xl max-w-sm w-full space-y-4 text-center"
+          >
+            <div className="mx-auto w-12 h-12 rounded-2xl bg-red-500/10 text-red-600 flex items-center justify-center">
+              <AlertTriangle className="w-6 h-6" />
+            </div>
+            <div>
+              <h3 className="text-lg font-bold text-foreground">تأكيد حذف ولي الأمر</h3>
+              <p className="text-xs text-muted-foreground mt-1">
+                هل أنت تأكد من حذف حساب ولي الأمر <span className="font-bold text-foreground">"{parentToDelete.full_name_ar}"</span>؟ لن يتمكن من تسجيل الدخول بعد الآن.
+              </p>
+            </div>
+            <div className="flex items-center justify-center gap-3 pt-2">
+              <Button type="button" variant="outline" onClick={() => setParentToDelete(null)}>
+                إلغاء
+              </Button>
+              <Button
+                type="button"
+                variant="destructive"
+                disabled={isDeleting}
+                onClick={handleDeleteParent}
+                className="font-bold gap-1.5"
+              >
+                {isDeleting ? <Loader2 className="w-4 h-4 animate-spin" /> : <Trash2 className="w-4 h-4" />}
+                حذف الحساب
+              </Button>
             </div>
           </motion.div>
         </div>

@@ -49,7 +49,8 @@ class UserViewSet(viewsets.ModelViewSet):
 
     def get_permissions(self):
         if self.action in ["create", "update", "partial_update", "destroy"]:
-            return [IsSuperAdmin()]
+            from .permissions import IsManagementOrAbove
+            return [IsManagementOrAbove()]
         return [IsStaffOrAbove()]
 
     def create(self, request, *args, **kwargs):
@@ -92,22 +93,8 @@ def login_view(request):
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
-    # Phone-only login for client users (athletes and parents)
-    if existing_user.role in ["athlete", "parent"]:
-        user = existing_user
-    else:
-        # Require password for staff and management accounts
-        if not password:
-            return Response(
-                {"detail": "كلمة المرور مطلوبة لحسابات الإدارة والموظفين"},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-        user = authenticate(username=phone, password=password)
-        if not user:
-            return Response(
-                {"detail": "رقم الهاتف أو كلمة المرور غير صحيحة"},
-                status=status.HTTP_401_UNAUTHORIZED,
-            )
+    # Phone-only login for all accounts (managers, staff, parents, athletes)
+    user = existing_user
 
     user = User.objects.select_related("athlete__department").get(pk=user.pk)
     refresh = RefreshToken.for_user(user)

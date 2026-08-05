@@ -621,18 +621,22 @@ class ParentAthleteViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=["get"])
     def children_of(self, request):
+        from django.db.models import Q
         from apps.accounts.permissions import is_management_staff
 
         if not is_management_staff(request.user):
             return Response({"detail": "لا تملك صلاحية الوصول"}, status=status.HTTP_403_FORBIDDEN)
 
         parent_id = request.query_params.get("parent_id")
-        parent = User.objects.filter(id=parent_id, role=User.Role.PARENT).first() if parent_id else None
+        parent = User.objects.filter(id=parent_id).first() if parent_id else None
         if not parent:
             return Response({"detail": "ولي الأمر غير موجود"}, status=status.HTTP_404_NOT_FOUND)
 
         dept_id = request.query_params.get("department")
-        athletes = Athlete.objects.filter(parents__parent=parent).select_related("department", "sport", "registration")
+        athletes = Athlete.objects.filter(
+            Q(parents__parent=parent) | Q(parent_phone=parent.phone) | Q(registration__user=parent)
+        ).select_related("department", "sport", "registration").distinct()
+
         if dept_id:
             athletes = athletes.filter(department_id=dept_id)
         serializer = AthleteDetailSerializer(athletes, many=True, context={"request": request})

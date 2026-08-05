@@ -7,7 +7,8 @@ interface Athlete {
   membership_number: string
   full_name: string
   phone: string
-  parent_phone: string
+  parent_name?: string
+  parent_phone?: string
   birth_date: string
   gender: "male" | "female"
   age: number | null
