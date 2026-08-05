@@ -1,16 +1,13 @@
-import { useState } from "react"
 import { useNavigate } from "react-router-dom"
 import { motion } from "framer-motion"
-import { AlertTriangle, Database, RefreshCw } from "lucide-react"
+import { AlertTriangle, RefreshCw } from "lucide-react"
 import { useDepartments } from "@/lib/hooks/useDepartments"
 import { extractResults } from "@/lib/response"
 import type { Department } from "@/lib/types"
 import { getAcademyLogo, isParentAcademy } from "@/lib/departments"
-import { BackupModal } from "@/components/BackupModal"
 
 export default function ManagerHome() {
   const navigate = useNavigate()
-  const [isBackupOpen, setIsBackupOpen] = useState(false)
   const { data, isLoading, isError, refetch } = useDepartments()
   const rawDepartments = extractResults(data)
   const departments = [...rawDepartments].sort((a, b) => {
@@ -96,32 +93,6 @@ export default function ManagerHome() {
           })}
         </div>
       )}
-
-      {/* Backup & Restore Action Bar for Special Manager */}
-      <div className="mt-12 w-full max-w-4xl px-4">
-        <div className="p-6 rounded-3xl bg-white border border-gray-200/80 shadow-md flex flex-col sm:flex-row items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-primary/10 text-primary flex items-center justify-center shrink-0">
-              <Database className="w-6 h-6" />
-            </div>
-            <div className="text-right">
-              <h3 className="text-lg font-black text-[#0f2942]">النسخ الاحتياطي واستعادة البيانات</h3>
-              <p className="text-xs text-muted-foreground font-semibold">
-                تأمين بيانات النظام أو دمج واستعادة نسختك الاحتياطية بأمان
-              </p>
-            </div>
-          </div>
-          <button
-            onClick={() => setIsBackupOpen(true)}
-            className="w-full sm:w-auto px-6 py-3 rounded-2xl bg-primary hover:bg-primary/90 text-white font-bold text-sm shadow-md transition-all flex items-center justify-center gap-2"
-          >
-            <Database className="w-4 h-4" />
-            <span>إدارة النسخ الاحتياطي</span>
-          </button>
-        </div>
-      </div>
-
-      <BackupModal isOpen={isBackupOpen} onClose={() => setIsBackupOpen(false)} />
     </div>
   )
 }

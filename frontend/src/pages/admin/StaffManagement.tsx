@@ -1,6 +1,6 @@
 import { useEffect, useState, type FormEvent } from "react"
 import { AnimatePresence, motion } from "framer-motion"
-import { Plus, Pencil, X, UserCog, ShieldCheck, SearchIcon, Trash2, Database } from "lucide-react"
+import { Plus, Pencil, X, UserCog, ShieldCheck, SearchIcon, Trash2 } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import { LoadingSpinner } from "@/components/ui/loading-spinner"
 import { api } from "@/lib/api"
@@ -8,7 +8,6 @@ import { extractResults } from "@/lib/response"
 import { validateLibyanPhone } from "@/lib/utils"
 import { useToast } from "@/lib/toast"
 import { Can } from "@/components/ui/can"
-import { BackupModal } from "@/components/BackupModal"
 
 type StaffUser = {
   id: number
@@ -58,7 +57,6 @@ export default function StaffManagement() {
   const [submitting, setSubmitting] = useState(false)
   const [editingUser, setEditingUser] = useState<StaffUser | null>(null)
   const [showModal, setShowModal] = useState(false)
-  const [isBackupOpen, setIsBackupOpen] = useState(false)
   const [deletingUser, setDeletingUser] = useState<StaffUser | null>(null)
 
   const [form, setForm] = useState({
@@ -235,9 +233,6 @@ export default function StaffManagement() {
         </select>
         <Can action="staff:create">
           <div className="flex items-center gap-2">
-            <Button variant="outline" onClick={() => setIsBackupOpen(true)}>
-              <Database className="h-4 w-4" /> النسخ الاحتياطي
-            </Button>
             <Button onClick={openCreateModal}>
               <Plus className="h-4 w-4" /> إضافة موظف
             </Button>
@@ -288,8 +283,6 @@ export default function StaffManagement() {
           </tbody>
         </table>
       </div>
-
-      <BackupModal isOpen={isBackupOpen} onClose={() => setIsBackupOpen(false)} />
 
       {/* Delete User Confirmation Modal */}
       {deletingUser && (
