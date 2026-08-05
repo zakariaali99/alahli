@@ -139,6 +139,30 @@ export default function ManagerLayout() {
                 {department ? department.name_ar : "بوابة الإدارة العامة"}
               </span>
             </Link>
+
+            {/* Desktop Topbar Quick Links */}
+            {numericId && (
+              <div className="hidden lg:flex items-center gap-1 mr-4 border-r border-gray-200 pr-4">
+                {navLinks.map((link, idx) => {
+                  const Icon = link.icon
+                  const isActive = location.pathname === link.path
+                  return (
+                    <button
+                      key={idx}
+                      onClick={() => navigate(link.path)}
+                      className={`flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold transition-all ${
+                        isActive
+                          ? "bg-primary/10 text-primary"
+                          : "text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                      }`}
+                    >
+                      <Icon className="w-3.5 h-3.5" style={{ color: isActive ? themeColor : undefined }} />
+                      <span>{link.label}</span>
+                    </button>
+                  )
+                })}
+              </div>
+            )}
           </div>
 
           <div className="flex items-center gap-4">
