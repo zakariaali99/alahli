@@ -184,6 +184,7 @@ export default function ParentPage() {
       }
       if (childPhoto) body.photo = childPhoto
       if (sportParam) body.sport = Number(sportParam)
+      if (deptParam) body.department = Number(deptParam)
 
       await api.post("/athletes/parent/athletes/", body)
       toast.success("تمت إضافة الابن بنجاح")

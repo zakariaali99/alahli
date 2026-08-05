@@ -562,7 +562,7 @@ class ParentAthleteViewSet(viewsets.ModelViewSet):
                 return Response({"detail": "تنسيق الصورة غير صالح"}, status=status.HTTP_400_BAD_REQUEST)
 
         sport_id = request.data.get("sport") or parent.preferred_sport_id
-        dept_id = parent.academy_id or request.data.get("department")
+        dept_id = request.data.get("department") or parent.academy_id
         if not dept_id:
             from apps.departments.models import Department
             dept = Department.objects.filter(name_ar__icontains="أوس").first() or Department.objects.order_by("id").first()
@@ -590,9 +590,12 @@ class ParentAthleteViewSet(viewsets.ModelViewSet):
             reviewed_at=timezone.now() if staff_mode else None,
         )
 
+        p_name = parent.full_name_ar or f"{parent.first_name_ar} {parent.last_name_ar}".strip()
         athlete = Athlete.objects.create(
             full_name=full_name,
             phone=phone,
+            parent_name=p_name,
+            parent_phone=parent.phone,
             birth_date=birth_date,
             gender="male",
             photo=photo_file,

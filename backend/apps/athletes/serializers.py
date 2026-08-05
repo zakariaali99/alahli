@@ -38,6 +38,15 @@ class AthleteListSerializer(serializers.ModelSerializer):
                 data["photo"] = instance.photo.name
             elif not raw_name.startswith(("http://", "https://")) and request:
                 data["photo"] = request.build_absolute_uri(instance.photo.url)
+
+        if data.get("phone") and str(data.get("phone")).startswith("child_"):
+            p_phone = instance.parent_phone
+            if not p_phone:
+                p_rel = instance.parents.select_related("parent").first()
+                if p_rel and p_rel.parent:
+                    p_phone = p_rel.parent.phone
+            data["phone"] = p_phone or "—"
+
         return data
 
 
@@ -87,6 +96,10 @@ class AthleteDetailSerializer(serializers.ModelSerializer):
                     data["parent_name"] = instance.registration.user.full_name_ar
                 if not data.get("parent_phone"):
                     data["parent_phone"] = instance.registration.user.phone
+
+        # If phone is a dummy child_ placeholder, replace with inherited parent phone
+        if data.get("phone") and str(data.get("phone")).startswith("child_"):
+            data["phone"] = data.get("parent_phone") or "—"
 
         return data
 

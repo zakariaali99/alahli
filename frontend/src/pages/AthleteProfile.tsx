@@ -495,7 +495,9 @@ export default function AthleteProfilePage() {
                 </div>
                 <div>
                   <p className="text-[11px] text-muted-foreground mb-0.5">رقم الهاتف</p>
-                  <p className="text-foreground font-semibold" dir="ltr">{athlete.phone}</p>
+                  <p className="text-foreground font-semibold" dir="ltr">
+                    {athlete.phone && !athlete.phone.startsWith("child_") ? athlete.phone : (athlete.parent_phone || "—")}
+                  </p>
                 </div>
               </div>
               <div className="flex items-start gap-3">
