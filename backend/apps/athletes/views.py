@@ -197,7 +197,7 @@ class AthleteViewSet(viewsets.ModelViewSet):
     search_fields = ["full_name", "membership_number", "phone"]
 
     def get_queryset(self):
-        qs = Athlete.objects.select_related("department", "registration").prefetch_related("subscriptions")
+        qs = Athlete.objects.select_related("department", "sport", "registration").prefetch_related("subscriptions", "parents__parent")
         user = self.request.user
         qs = scope_by_academy(user, qs, academy_field="department", request=self.request)
         if not is_staff_user(user):

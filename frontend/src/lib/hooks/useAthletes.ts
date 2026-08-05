@@ -38,6 +38,7 @@ export function useAthletes(params: AthleteListParams = {}) {
   return useQuery({
     queryKey: ["athletes", params],
     queryFn: () => api.get<PaginatedResponse<Athlete>>("/athletes/", params as Record<string, string>),
+    staleTime: 30_000,
   })
 }
 
@@ -46,6 +47,7 @@ export function useAthlete(id: number) {
     queryKey: ["athletes", id],
     queryFn: () => api.get<Athlete>(`/athletes/${id}/`),
     enabled: !!id,
+    staleTime: 30_000,
   })
 }
 

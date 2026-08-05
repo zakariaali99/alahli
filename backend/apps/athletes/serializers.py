@@ -23,6 +23,16 @@ class AthleteListSerializer(serializers.ModelSerializer):
         ]
 
     def get_subscription_end_date(self, obj):
+        if hasattr(obj, "_prefetched_objects_cache") and "subscriptions" in obj._prefetched_objects_cache:
+            subs = list(obj.subscriptions.all())
+            active_subs = [s for s in subs if s.status == "active"]
+            if active_subs:
+                active_subs.sort(key=lambda s: s.end_date, reverse=True)
+                return str(active_subs[0].end_date)
+            if subs:
+                subs.sort(key=lambda s: s.end_date, reverse=True)
+                return str(subs[0].end_date)
+            return None
         sub = obj.subscriptions.filter(status="active").order_by("-end_date").first()
         if sub:
             return str(sub.end_date)
@@ -42,9 +52,14 @@ class AthleteListSerializer(serializers.ModelSerializer):
         if data.get("phone") and str(data.get("phone")).startswith("child_"):
             p_phone = instance.parent_phone
             if not p_phone:
-                p_rel = instance.parents.select_related("parent").first()
-                if p_rel and p_rel.parent:
-                    p_phone = p_rel.parent.phone
+                if hasattr(instance, "_prefetched_objects_cache") and "parents" in instance._prefetched_objects_cache:
+                    p_rels = list(instance.parents.all())
+                    if p_rels and p_rels[0].parent:
+                        p_phone = p_rels[0].parent.phone
+                else:
+                    p_rel = instance.parents.select_related("parent").first()
+                    if p_rel and p_rel.parent:
+                        p_phone = p_rel.parent.phone
             data["phone"] = p_phone or "—"
 
         return data
