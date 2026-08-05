@@ -6,9 +6,16 @@ from .models import Athlete, RegistrationRequest
 
 class AthleteFilter(filters.FilterSet):
     department = filters.NumberFilter(field_name="department_id")
-    sport = filters.NumberFilter(field_name="sport_id")
+    sport = filters.NumberFilter(method="filter_sport")
     gender = filters.ChoiceFilter(choices=Athlete.Gender.choices)
     is_active = filters.BooleanFilter()
+
+    def filter_sport(self, queryset, name, value):
+        return queryset.filter(
+            Q(sport_id=value)
+            | Q(sport__isnull=True)
+            | Q(subscriptions__package__sport_id=value)
+        ).distinct()
 
     class Meta:
         model = Athlete
